@@ -9,6 +9,7 @@ LIBC_SRCS:=$(wildcard libc/*.c)
 LD_SRCS:=$(wildcard ld/*.c)
 
 $(USER).iso: kernel $(USER).img
+	@mkdir -p bootcd/boot/kernel
 	cp kernel bootcd/boot/kernel/kernel
 	mkisofs -r -no-emul-boot -input-charset utf-8 -b boot/cdboot -o $@ bootcd/
 
