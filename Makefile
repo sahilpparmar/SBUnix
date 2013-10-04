@@ -49,4 +49,4 @@ submit:
 	cp -v $(USER).tgz.gpg $(SUBMITTO)$(USER)=`date +%F=%T`.tgz.gpg
 
 clean:
-	rm -rfv obj kernel libc.a libc.so ld.so
+	rm -rfv obj kernel libc.a libc.so ld.so $(USER).iso $(USER).img
