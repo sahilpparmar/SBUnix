@@ -1,2 +1,0 @@
-void exit(int status) {
-}
