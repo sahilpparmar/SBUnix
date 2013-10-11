@@ -1,2 +1,2 @@
-void kernel_allocate();
+void init_paging();
 
