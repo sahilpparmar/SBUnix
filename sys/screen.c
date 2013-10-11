@@ -10,11 +10,18 @@
 #define MAX_COL 80
 #define SIZEOF_LINE 160     // MAX_COL * 2 bytes
 #define SIZEOF_BUFFER 4000  // MAX_ROW * MAX_COL * 2 bytes
-#define START_VADDR 0xB8000
-#define END_VADDR   0xB8FA0 // START_VADDR + SIZEOF_BUFFER 
+
+uint64_t START_VADDR; 
+uint64_t END_VADDR;         // START_VADDR + SIZEOF_BUFFER 
 
 static uint64_t video_addr;
 static uint8_t color_attr;
+
+void init_screen(uint64_t vaddr)
+{
+    START_VADDR = vaddr; 
+    END_VADDR   = vaddr + SIZEOF_BUFFER;
+}
 
 static uint64_t get_video_addr()
 {
@@ -98,4 +105,3 @@ void clear_screen()
 
     set_cursor_pos(0, 0);
 }
-
