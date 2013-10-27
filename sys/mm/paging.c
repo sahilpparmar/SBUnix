@@ -9,7 +9,6 @@
 #define ENTRIES_PER_PDE  512
 #define ENTRIES_PER_PDPE 512
 #define ENTRIES_PER_PML4 512
-#define K_MEM_PAGES 518
 
 #define I86_PDPE_PRESENT_WRITABLE I86_PDPE_PRESENT | I86_PDPE_WRITABLE; 
 #define I86_PDE_PRESENT_WRITABLE I86_PDE_PRESENT | I86_PDE_WRITABLE; 
@@ -17,25 +16,26 @@
 
 static uint64_t *pml4_table;
 
-void init_paging()
+void init_paging(uint64_t kernmem,uint64_t physbase, uint64_t k_size)
 {
     //Allocate free memory for PML4 table 
     pml4_table = (uint64_t*) pmmngr_alloc_block();
 
     // Kernal Memory Mapping 
-    // Mappings for virtual address range [0xFFFFFFFF80200000, 0xFFFFFFFF80600000]
-    // to physical address range [0x200000, 0x600000]
-    init_mapping(0xFFFFFFFF80200000, 0x200000, K_MEM_PAGES);
+    // Mappings for virtual address range [0xFFFFFFFF80200000, 0xFFFFFFFF80406000]
+    // to physical address range [0x200000, 0x406000]
+    // 2 MB for Kernal + 6 Pages for PML4, PDPE, PDE, PTE(3) tables
+    init_mapping(kernmem, physbase, k_size);
 
     // Remap Video base address: Virtual memory 0xFFFFFFFF804B8000 to Physical memory 0xB8000
     // pte_table[184] = 0xB8000 | 0x3;
-    init_mapping(0xFFFFFFFF800B8000,0xB8000,1);
+    init_mapping(0xFFFFFFFF804B8000,0xB8000,1);
 
     // Set CR3 register to address of PML4 table
     asm volatile ("movq %0, %%cr3;" :: "r"((uint64_t)pml4_table));
 
     // Change Video base address
-    init_screen(0xFFFFFFFF800B8000);
+    init_screen(0xFFFFFFFF804B8000);
     
 }
 

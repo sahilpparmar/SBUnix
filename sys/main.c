@@ -6,6 +6,13 @@
 #include <sys/paging.h>
 #include <sys/phys_mm.h>
 
+#define K_MEM_PAGES 518
+
+#define INITIAL_STACK_SIZE 4096
+char stack[INITIAL_STACK_SIZE];
+uint32_t* loader_stack;
+extern char kernmem, physbase;
+
 
 void start(uint32_t* modulep, void* physbase, void* physfree)
 {
@@ -33,15 +40,11 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
     // Start physical memory at 4MB
     pmmngr_init((phys_size - 0x300000)/8192, phys_base + 0x300000); 
 
-    init_paging();
+    init_paging((uint64_t)&kernmem,(uint64_t)physbase,K_MEM_PAGES);
 
     while(1);
 }
 
-#define INITIAL_STACK_SIZE 4096
-char stack[INITIAL_STACK_SIZE];
-uint32_t* loader_stack;
-extern char kernmem, physbase;
 
 void boot(void)
 {
