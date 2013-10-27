@@ -10,9 +10,7 @@
 #define ENTRIES_PER_PDPE 512
 #define ENTRIES_PER_PML4 512
 
-#define I86_PDPE_PRESENT_WRITABLE I86_PDPE_PRESENT | I86_PDPE_WRITABLE; 
-#define I86_PDE_PRESENT_WRITABLE I86_PDE_PRESENT | I86_PDE_WRITABLE; 
-#define I86_PTE_PRESENT_WRITABLE I86_PTE_PRESENT | I86_PTE_WRITABLE; 
+#define I86_PRESENT_WRITABLE I86_PRESENT | I86_WRITABLE; 
 
 static uint64_t *pml4_table;
 
@@ -20,7 +18,7 @@ uint64_t* alloc_pte(uint64_t *pde_table,int pde_off)
 {
     uint64_t *pte_table;
     pte_table = (uint64_t *) pmmngr_alloc_block();
-    pde_table[pde_off] = (uint64_t) pte_table | I86_PTE_PRESENT_WRITABLE;   
+    pde_table[pde_off] = (uint64_t) pte_table | I86_PRESENT_WRITABLE;   
     return pte_table;
 }
 
@@ -28,7 +26,7 @@ uint64_t* alloc_pde(uint64_t *pdpe_table,int pdpe_off)
 {
     uint64_t *pde_table;
     pde_table = (uint64_t *) pmmngr_alloc_block();
-    pdpe_table[pdpe_off] = (uint64_t) pde_table | I86_PDE_PRESENT_WRITABLE;   
+    pdpe_table[pdpe_off] = (uint64_t) pde_table | I86_PRESENT_WRITABLE;   
     return pde_table;
 }
 
@@ -36,7 +34,7 @@ uint64_t* alloc_pdpe(uint64_t *pml4_table,int pml4_off)
 {
     uint64_t *pdpe_table;
     pdpe_table = (uint64_t *) pmmngr_alloc_block();
-    pml4_table[pml4_off] = (uint64_t) pdpe_table | I86_PDPE_PRESENT_WRITABLE;   
+    pml4_table[pml4_off] = (uint64_t) pdpe_table | I86_PRESENT_WRITABLE;   
     return pdpe_table;
 }
 
