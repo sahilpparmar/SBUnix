@@ -13,7 +13,6 @@ char stack[INITIAL_STACK_SIZE];
 uint32_t* loader_stack;
 extern char kernmem, physbase;
 
-
 void start(uint32_t* modulep, void* physbase, void* physfree)
 {
     uint64_t phys_size = 0x0, phys_base = 0x0;
@@ -40,7 +39,7 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
     // Start physical memory at 4MB
     pmmngr_init((phys_size - 0x300000)/8192, phys_base + 0x300000); 
 
-    init_paging((uint64_t)&kernmem,(uint64_t)physbase,K_MEM_PAGES);
+    init_paging((uint64_t)&kernmem, (uint64_t)physbase, K_MEM_PAGES);
 
     while(1);
 }

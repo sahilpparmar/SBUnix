@@ -12,7 +12,23 @@
 
 #define I86_PRESENT_WRITABLE I86_PRESENT | I86_WRITABLE; 
 
-static uint64_t *pml4_table;
+static uint64_t *cur_pml4_t;
+static uint64_t *ker_pml4_t;
+
+uint64_t* get_pml4_t()
+{
+    return cur_pml4_t;
+}
+
+void set_pml4_t(uint64_t *addr)
+{
+    cur_pml4_t = addr;
+}
+
+uint64_t* get_ker_pml4_t()
+{
+    return ker_pml4_t;
+}
 
 uint64_t* alloc_pte(uint64_t *pde_table,int pde_off)
 {
@@ -30,11 +46,11 @@ uint64_t* alloc_pde(uint64_t *pdpe_table,int pdpe_off)
     return pde_table;
 }
 
-uint64_t* alloc_pdpe(uint64_t *pml4_table,int pml4_off)
+uint64_t* alloc_pdpe(uint64_t *cur_pml4_t,int pml4_off)
 {
     uint64_t *pdpe_table;
     pdpe_table = (uint64_t *) pmmngr_alloc_block();
-    pml4_table[pml4_off] = (uint64_t) pdpe_table | I86_PRESENT_WRITABLE;   
+    cur_pml4_t[pml4_off] = (uint64_t) pdpe_table | I86_PRESENT_WRITABLE;   
     return pdpe_table;
 }
 
@@ -50,9 +66,9 @@ void init_mapping(uint64_t vaddr, uint64_t paddr, uint64_t size)
     pdpe_off = (v_addr >> 30) & 0x1FF;
     pml4_off = (v_addr >> 39) & 0x1FF;
 
-    if (*(pml4_table + pml4_off) != NULL)
+    if (*(cur_pml4_t + pml4_off) != NULL)
     {
-        addr = (uint64_t) *(pml4_table + pml4_off);
+        addr = (uint64_t) *(cur_pml4_t + pml4_off);
         pdpe_table =(uint64_t*) (addr & I86_ADDR); 
         if  (*(pdpe_table + pdpe_off) != NULL)
         {
@@ -76,7 +92,7 @@ void init_mapping(uint64_t vaddr, uint64_t paddr, uint64_t size)
     }
     else
     {
-        pdpe_table = alloc_pdpe(pml4_table,pml4_off);
+        pdpe_table = alloc_pdpe(cur_pml4_t,pml4_off);
         pde_table = alloc_pde(pdpe_table,pdpe_off);
         pte_table = alloc_pte(pde_table,pde_off);
     }
@@ -120,7 +136,8 @@ void init_mapping(uint64_t vaddr, uint64_t paddr, uint64_t size)
 void init_paging(uint64_t kernmem,uint64_t physbase, uint64_t k_size)
 {
     //Allocate free memory for PML4 table 
-    pml4_table = (uint64_t*) pmmngr_alloc_block();
+    cur_pml4_t = (uint64_t*) pmmngr_alloc_block();
+    ker_pml4_t = cur_pml4_t;
 
     // Kernal Memory Mapping 
     // Mappings for virtual address range [0xFFFFFFFF80200000, 0xFFFFFFFF80406000]
@@ -132,7 +149,7 @@ void init_paging(uint64_t kernmem,uint64_t physbase, uint64_t k_size)
     init_mapping(0xFFFFFFFF800B8000,0xB8000,1);
 
     // Set CR3 register to address of PML4 table
-    asm volatile ("movq %0, %%cr3;" :: "r"((uint64_t)pml4_table));
+    asm volatile ("movq %0, %%cr3;" :: "r"((uint64_t)cur_pml4_t));
 
     // Change Video base address
     init_screen(0xFFFFFFFF800B8000);
