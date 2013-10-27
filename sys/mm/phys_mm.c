@@ -3,9 +3,9 @@
 #include <stdio.h>
 #include <screen.h>
 
-#define PMMNGR_BLOCKS_PER_BYTE 8
-#define PMMNGR_BLOCK_SIZE 4096
-#define PMMNGR_BLOCK_ALIGN PMMNGR_BLOCK_SIZE
+#define PHYS_BLOCKS_PER_BYTE 8
+#define PHYS_BLOCK_SIZE 4096
+#define PHYS_BLOCK_ALIGN PHYS_BLOCK_SIZE
 
 static uint64_t _mmngr_memory_size;
 static uint64_t _mmngr_used_blocks;
@@ -27,12 +27,12 @@ static void mmap_unset(int bit)
     _mmngr_memory_map[bit / 64] &= ~ (1 << (bit % 64));
 }
 
-static uint64_t pmmngr_get_block_count () {
+static uint64_t phys_get_block_count () {
 
     return _mmngr_max_blocks;
 }
 
-static uint64_t pmmngr_get_free_block_count () {
+static uint64_t phys_get_free_block_count () {
 
     return _mmngr_max_blocks - _mmngr_used_blocks;
 }
@@ -45,19 +45,19 @@ static int mmap_test(int bit)
     return _mmngr_memory_map[bit / 64] &  (1 << (bit % 64));
 }
 
-static uint64_t  pmmngr_get_memory_size () {
+static uint64_t  phys_get_memory_size () {
     return _mmngr_memory_size;
 }
 
 
-static uint64_t pmmngr_get_use_block_count () {
+static uint64_t phys_get_use_block_count () {
 
     return _mmngr_used_blocks;
 }
 
-static uint64_t pmmngr_get_block_size () {
+static uint64_t phys_get_block_size () {
 
-    return PMMNGR_BLOCK_SIZE;
+    return PHYS_BLOCK_SIZE;
 }
 #endif
 
@@ -66,7 +66,7 @@ static int mmap_first_free ()
     uint64_t i;
     int j;
 
-    for (i=0; i< pmmngr_get_block_count() /64; i++) {
+    for (i=0; i< phys_get_block_count() /64; i++) {
         if (_mmngr_memory_map[i] != 0xFFFFFFFFFFFFFFFF) {
 
             for (j=0; j<64; j++) {              //! test each bit in the dword
@@ -81,26 +81,26 @@ static int mmap_first_free ()
     return -1;
 }
 
-void pmmngr_init (uint64_t physSize, uint64_t physBase) {
+void phys_init (uint64_t physSize, uint64_t physBase) {
 
     _mmngr_memory_size = physSize;
     _mmngr_memory_map  = bitmap_t;
-    _mmngr_max_blocks  = (physSize*1024) / PMMNGR_BLOCK_SIZE;
+    _mmngr_max_blocks  = (physSize*1024) / PHYS_BLOCK_SIZE;
     _mmngr_used_blocks = 0;
     _mmngr_base_addr   = physBase;
 
     //set_cursor_pos(18, 5);
     //printf("Bimap addr = %p", bitmap_t);
     
-    memset(_mmngr_memory_map, 0x0, pmmngr_get_block_count() / PMMNGR_BLOCKS_PER_BYTE );
+    memset(_mmngr_memory_map, 0x0, phys_get_block_count() / PHYS_BLOCKS_PER_BYTE );
 }
 
-uint64_t pmmngr_alloc_block () {
+uint64_t phys_alloc_block () {
 
     uint64_t addr = 0;
     int frame = -1;
 
-    if (pmmngr_get_free_block_count() <= 0)
+    if (phys_get_free_block_count() <= 0)
         return 0;   //out of memory
 
     frame = mmap_first_free();
@@ -109,15 +109,15 @@ uint64_t pmmngr_alloc_block () {
 
     mmap_set(frame);
 
-    addr = _mmngr_base_addr + (frame * PMMNGR_BLOCK_SIZE);
+    addr = _mmngr_base_addr + (frame * PHYS_BLOCK_SIZE);
     _mmngr_used_blocks++;
     
     return addr;
 }
 
-void pmmngr_free_block (uint64_t addr) {
+void phys_free_block (uint64_t addr) {
 
-    int frame = (addr - _mmngr_base_addr) / PMMNGR_BLOCK_SIZE;
+    int frame = (addr - _mmngr_base_addr) / PHYS_BLOCK_SIZE;
 
     mmap_unset(frame);
 

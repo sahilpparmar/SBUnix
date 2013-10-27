@@ -1,6 +1,5 @@
 #include <defs.h>
 #include <stdio.h>
-#include <screen.h>
 #include <sys/paging_tables.h>
 #include <sys/paging.h>
 #include <sys/phys_mm.h>
@@ -30,10 +29,11 @@ uint64_t* get_ker_pml4_t()
     return ker_pml4_t;
 }
 
+//TO DO : Put condition check for non existing pte table entry in pde_table
 uint64_t* alloc_pte(uint64_t *pde_table,int pde_off)
 {
     uint64_t *pte_table;
-    pte_table = (uint64_t *) pmmngr_alloc_block();
+    pte_table = (uint64_t *) phys_alloc_block();
     pde_table[pde_off] = (uint64_t) pte_table | I86_PRESENT_WRITABLE;   
     return pte_table;
 }
@@ -41,7 +41,7 @@ uint64_t* alloc_pte(uint64_t *pde_table,int pde_off)
 uint64_t* alloc_pde(uint64_t *pdpe_table,int pdpe_off)
 {
     uint64_t *pde_table;
-    pde_table = (uint64_t *) pmmngr_alloc_block();
+    pde_table = (uint64_t *) phys_alloc_block();
     pdpe_table[pdpe_off] = (uint64_t) pde_table | I86_PRESENT_WRITABLE;   
     return pde_table;
 }
@@ -49,12 +49,12 @@ uint64_t* alloc_pde(uint64_t *pdpe_table,int pdpe_off)
 uint64_t* alloc_pdpe(uint64_t *cur_pml4_t,int pml4_off)
 {
     uint64_t *pdpe_table;
-    pdpe_table = (uint64_t *) pmmngr_alloc_block();
+    pdpe_table = (uint64_t *) phys_alloc_block();
     cur_pml4_t[pml4_off] = (uint64_t) pdpe_table | I86_PRESENT_WRITABLE;   
     return pdpe_table;
 }
 
-void init_mapping(uint64_t vaddr, uint64_t paddr, uint64_t size)
+void map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t size)
 {
     uint64_t *pdpe_table, *pde_table, *pte_table;
 
@@ -99,60 +99,58 @@ void init_mapping(uint64_t vaddr, uint64_t paddr, uint64_t size)
 
     phys_addr = paddr;  
 
-    if (size + pte_off <= ENTRIES_PER_PTE)
-    {
-        for ( i = pte_off ; i < (pte_off + size) ; i++)
-        {
+    if (size + pte_off <= ENTRIES_PER_PTE) {
+        for ( i = pte_off; i < (pte_off + size); i++) {
             pte_table[i] = phys_addr | 0x3;
             phys_addr += 0x1000;
         }
-        printf("PDPE Address %p, PDE Address %p, PTE Address %p", pdpe_table ,pde_table,pte_table);
-    }
-    else
-    {
-        for ( i = pte_off ; i < ENTRIES_PER_PTE ; i++)
-        {
-            pte_table[i] = phys_addr | 0x3;
-            phys_addr += 0x1000;
-        }
-        printf("PDPE Address %p, PDE Address %p, PTE Address %p", pdpe_table ,pde_table,pte_table);
+        printf(" PDPE Address %p, PDE Address %p, PTE Address %p", pdpe_table ,pde_table,pte_table);
+    } else {
+        int lsize = size, no_of_pte_t;
 
-        for ( j = 0 ; j < (size - (ENTRIES_PER_PTE - pte_off))/ENTRIES_PER_PTE ; j++ )
-        {   
-            printf("PDPE Address %p, PDE Address %p, PTE Address %p", pdpe_table ,pde_table,pte_table);
-            pte_table = alloc_pte(pde_table,pde_off+j+1);
-            for(k = 0; k < ENTRIES_PER_PTE; k++ )
-            {
+        printf(" SIZE = %d PDPE Address %p, PDE Address %p, PTE Address %p", lsize, pdpe_table ,pde_table,pte_table);
+        for ( i = pte_off ; i < ENTRIES_PER_PTE; i++) {
+            pte_table[i] = phys_addr | 0x3;
+            phys_addr += 0x1000;
+        }
+        lsize = lsize - (ENTRIES_PER_PTE - pte_off);
+        no_of_pte_t = lsize/ENTRIES_PER_PTE;
+
+        for (j = 1; j <= no_of_pte_t; j++) {   
+            pte_table = alloc_pte(pde_table, pde_off+j);
+            printf(" PDPE Address %p, PDE Address %p, PTE Address %p", pdpe_table ,pde_table, pte_table);
+            for(k = 0; k < ENTRIES_PER_PTE; k++ ) { 
                 pte_table[k] = phys_addr | 0x3;
                 phys_addr += 0x1000;
             }
-
-            //TO DO : Put condition check for non existing pte table entry in pde_table
-            pte_table = alloc_pte(pde_table,pde_off+j+1);
+        }
+        lsize = lsize - (ENTRIES_PER_PTE * pte_off);
+        pte_table = alloc_pte(pde_table, pde_off+j);
+        
+        printf(" SIZE = %d PDPE Address %p, PDE Address %p, PTE Address %p", lsize, pdpe_table ,pde_table,pte_table);
+        for(k = 0; k < lsize; k++ ) { 
+            pte_table[k] = phys_addr | 0x3;
+            phys_addr += 0x1000;
         }
     }
 }
 
 void init_paging(uint64_t kernmem,uint64_t physbase, uint64_t k_size)
 {
-    //Allocate free memory for PML4 table 
-    cur_pml4_t = (uint64_t*) pmmngr_alloc_block();
+    // Allocate free memory for PML4 table 
+    cur_pml4_t = (uint64_t*) phys_alloc_block();
     ker_pml4_t = cur_pml4_t;
 
     // Kernal Memory Mapping 
     // Mappings for virtual address range [0xFFFFFFFF80200000, 0xFFFFFFFF80406000]
     // to physical address range [0x200000, 0x406000]
     // 2 MB for Kernal + 6 Pages for PML4, PDPE, PDE, PTE(3) tables
-    init_mapping(kernmem, physbase, k_size);
+    map_virt_phys_addr(kernmem, physbase, k_size);
 
-    // Remap Video base address: Virtual memory 0xFFFFFFFF800B8000 to Physical memory 0xB8000
-    init_mapping(0xFFFFFFFF800B8000,0xB8000,1);
+    // Use existing Video address mapping: Virtual memory 0xFFFFFFFF800B8000 to Physical memory 0xB8000
+    map_virt_phys_addr(0xFFFFFFFF800B8000, 0xB8000, 1);
 
     // Set CR3 register to address of PML4 table
     asm volatile ("movq %0, %%cr3;" :: "r"((uint64_t)cur_pml4_t));
-
-    // Change Video base address
-    init_screen(0xFFFFFFFF800B8000);
-    
 }
 

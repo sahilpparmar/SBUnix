@@ -37,7 +37,7 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
     printf("PhysBase = %p PhysFree = %p", physbase, physfree);
 
     // Start physical memory at 4MB
-    pmmngr_init((phys_size - 0x300000)/8192, phys_base + 0x300000); 
+    phys_init((phys_size - 0x300000)/8192, phys_base + 0x300000); 
 
     init_paging((uint64_t)&kernmem, (uint64_t)physbase, K_MEM_PAGES);
 
