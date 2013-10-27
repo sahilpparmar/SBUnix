@@ -155,7 +155,7 @@ void init_paging(uint64_t kernmem, uint64_t physbase, uint64_t k_size)
     asm volatile ("movq %0, %%cr3;" :: "r"(PADDR((uint64_t)(cur_pml4_t))));
 
     /*set value of top virtual address*/
-    vmmngr_init(kernmem + (k_size * PAGESIZE));
+    virt_init(kernmem + (k_size * PAGESIZE));
    
     /*setting available free physical memory to zero*/ 
     init_kmalloc();

@@ -7,7 +7,7 @@
 
 uint64_t topVirtAddr;
 
-void vmmngr_init (uint64_t virtBase)
+void virt_init (uint64_t virtBase)
 {
     topVirtAddr = virtBase;
 }
@@ -18,7 +18,7 @@ void set_top_virtaddr(uint64_t value)
 
 }
 
-void* vmmngr_alloc_pages (uint32_t no_of_vpages)
+void* virt_alloc_pages (uint32_t no_of_vpages)
 {
     void *ret_addr = NULL; 
     uint64_t* physadd = NULL;
