@@ -1,23 +1,23 @@
 #ifndef _LINUX_SCHED_H
 #define _LINUX_SCHED_H
 
-#include <mm_types.h>
-#include <types.h>
+#include <sys/mm_types.h>
+#include <sys/types.h>
 
-struct task_struct;
+struct proc_struct;
 
-struct task_struct {
+struct proc_struct {
     unsigned int flags;    
     int prio;
 
-    int exit_state;
+    int state;
     pid_t pid;
 
-    struct mm_struct *mm;
-
-    struct task_struct *parent;
-    struct task_struct *children;
-
+    //struct mm_struct mm;
+    uint64_t pml4_t;
+    
+    struct proc_struct *parent;
+    struct proc_struct *children;
 };
 
 #endif
