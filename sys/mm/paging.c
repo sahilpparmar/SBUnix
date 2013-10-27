@@ -53,15 +53,15 @@ void init_mapping(uint64_t vaddr, uint64_t paddr, uint64_t size)
     if (*(pml4_table + pml4_off) != NULL)
     {
         addr = (uint64_t) *(pml4_table + pml4_off);
-        pdpe_table =(uint64_t*) (addr & I86_PDPE_PDB_ADDR); 
+        pdpe_table =(uint64_t*) (addr & I86_ADDR); 
         if  (*(pdpe_table + pdpe_off) != NULL)
         {
             addr  = (uint64_t) *(pdpe_table + pdpe_off);
-            pde_table =(uint64_t*) (addr & I86_PDE_PTB_ADDR); 
+            pde_table =(uint64_t*) (addr & I86_ADDR); 
             if  (*(pde_table + pde_off) != NULL)
             {
                 addr  = (uint64_t) *(pde_table + pde_off);
-                pte_table =(uint64_t*) (addr & I86_PTE_PTB_ADDR); 
+                pte_table =(uint64_t*) (addr & I86_ADDR); 
             }
             else
             {
