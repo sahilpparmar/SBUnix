@@ -3,6 +3,9 @@
 #include <sys/paging_tables.h>
 #include <sys/paging.h>
 #include <sys/phys_mm.h>
+#include <sys/virt_mm.h>
+#include <sys/kmalloc.h>
+#include <sys/types.h>
 
 #define ENTRIES_PER_PTE  512
 #define ENTRIES_PER_PDE  512
@@ -100,7 +103,7 @@ void map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t size)
     if (size + pte_off <= ENTRIES_PER_PTE) {
         for (i = pte_off; i < (pte_off + size); i++) {
             pte_table[i] = phys_addr | 0x3;
-            phys_addr += 0x1000;
+            phys_addr += PAGESIZE;
         }
         printf(" SIZE = %d PDPE Address %p, PDE Address %p, PTE Address %p", size, pdpe_table , pde_table, pte_table);
     } else {
@@ -109,7 +112,7 @@ void map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t size)
         printf(" SIZE = %d PDPE Address %p, PDE Address %p, PTE Address %p", lsize, pdpe_table ,pde_table, pte_table);
         for ( i = pte_off ; i < ENTRIES_PER_PTE; i++) {
             pte_table[i] = phys_addr | 0x3;
-            phys_addr += 0x1000;
+            phys_addr += PAGESIZE;
         }
         lsize = lsize - (ENTRIES_PER_PTE - pte_off);
         no_of_pte_t = lsize/ENTRIES_PER_PTE;
@@ -119,7 +122,7 @@ void map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t size)
             printf(" SIZE = %d PDPE Address %p, PDE Address %p, PTE Address %p", lsize, pdpe_table ,pde_table, pte_table);
             for(k = 0; k < ENTRIES_PER_PTE; k++ ) { 
                 pte_table[k] = phys_addr | 0x3;
-                phys_addr += 0x1000;
+                phys_addr += PAGESIZE;
             }
         }
         lsize = lsize - (ENTRIES_PER_PTE * pte_off);
@@ -128,12 +131,12 @@ void map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t size)
         printf(" SIZE = %d PDPE Address %p, PDE Address %p, PTE Address %p", lsize, pdpe_table ,pde_table, pte_table);
         for(k = 0; k < lsize; k++ ) { 
             pte_table[k] = phys_addr | 0x3;
-            phys_addr += 0x1000;
+            phys_addr += PAGESIZE;
         }
     }
 }
 
-void init_paging(uint64_t kernmem,uint64_t physbase, uint64_t k_size)
+void init_paging(uint64_t kernmem, uint64_t physbase, uint64_t k_size)
 {
     // Allocate free memory for PML4 table 
     cur_pml4_t = (uint64_t*) VADDR(phys_alloc_block());
@@ -150,6 +153,13 @@ void init_paging(uint64_t kernmem,uint64_t physbase, uint64_t k_size)
     map_virt_phys_addr(0xFFFFFFFF800B8000, 0xB8000, 1);
     // Set CR3 register to address of PML4 table
     asm volatile ("movq %0, %%cr3;" :: "r"(PADDR((uint64_t)(cur_pml4_t))));
+
+    /*set value of top virtual address*/
+    vmmngr_init(kernmem + (k_size * PAGESIZE));
+   
+    /*setting available free physical memory to zero*/ 
+    init_kmalloc();
+
 }
 
 

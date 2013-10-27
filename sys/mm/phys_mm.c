@@ -2,9 +2,10 @@
 #include <sys/phys_mm.h>
 #include <stdio.h>
 #include <screen.h>
+#include <sys/types.h>
 
 #define PHYS_BLOCKS_PER_BYTE 8
-#define PHYS_BLOCK_SIZE 4096
+#define PHYS_BLOCK_SIZE PAGESIZE 
 #define PHYS_BLOCK_ALIGN PHYS_BLOCK_SIZE
 
 static uint64_t _mmngr_memory_size;
@@ -13,9 +14,9 @@ static uint64_t _mmngr_max_blocks;
 static uint64_t* _mmngr_memory_map;
 static uint64_t _mmngr_base_addr;
 
-// Currently this works for 128(8192*64*4k) MB RAM.
+// Currently this works for 128(512*64*4k) MB RAM.
 // Need to design a better way to dynamically allocate the bitmap!
-static uint64_t bitmap_t[8192];
+static uint64_t bitmap_t[512];
 
 static void mmap_set(int bit)
 {
@@ -32,7 +33,7 @@ static uint64_t phys_get_block_count () {
     return _mmngr_max_blocks;
 }
 
-static uint64_t phys_get_free_block_count () {
+uint64_t phys_get_free_block_count () {
 
     return _mmngr_max_blocks - _mmngr_used_blocks;
 }
