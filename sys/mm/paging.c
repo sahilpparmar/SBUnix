@@ -139,10 +139,13 @@ void map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t size)
 void init_paging(uint64_t kernmem, uint64_t physbase, uint64_t k_size)
 {
     // Allocate free memory for PML4 table 
-    cur_pml4_t = (uint64_t*) VADDR(phys_alloc_block());
-    ker_pml4_t = cur_pml4_t;
+    uint64_t pml4_paddr = phys_alloc_block();
+
+    ker_pml4_t = cur_pml4_t = (uint64_t*) VADDR(pml4_paddr);
     printf(" $$ PML4 Address %p", cur_pml4_t);
 
+    cur_pml4_t[510] = pml4_paddr | I86_PRESENT_WRITABLE;   
+    printf(" $$ pml4[510]= %p", cur_pml4_t[510]);
     // Kernal Memory Mapping 
     // Mappings for virtual address range [0xFFFFFFFF80200000, 0xFFFFFFFF80406000]
     // to physical address range [0x200000, 0x406000]
