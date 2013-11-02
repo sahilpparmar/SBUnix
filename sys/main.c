@@ -40,10 +40,6 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
     phys_init((phys_size - 0x300000)/8192, phys_base + 0x300000); 
 
     init_paging((uint64_t)&kernmem, (uint64_t)physbase, K_MEM_PAGES);
-    map(0xFFFFFFFF80406000,phys_alloc_block(),1);
-//    map(0xFFFFFFFFA0606000,phys_alloc_block(),1);
-//    map(0xFFFFFFFF80A06000,phys_alloc_block(),1);
-//    map(0xFFFFEEEE80606000,phys_alloc_block(),1);
 
     while(1);
 }

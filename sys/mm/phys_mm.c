@@ -20,60 +20,58 @@ static uint64_t bitmap_t[512];
 
 static void mmap_set(int bit)
 {
-    _mmngr_memory_map[bit / 64] |= (1 << (bit % 64));
+    _mmngr_memory_map[bit / 64] |= (1UL << (bit % 64));
 }
 
 static void mmap_unset(int bit)
 {
-    _mmngr_memory_map[bit / 64] &= ~ (1 << (bit % 64));
+    _mmngr_memory_map[bit / 64] &= ~ (1UL << (bit % 64));
 }
 
-static uint64_t phys_get_block_count () {
-
+static uint64_t phys_get_block_count() 
+{
     return _mmngr_max_blocks;
 }
 
-uint64_t phys_get_free_block_count () {
-
+uint64_t phys_get_free_block_count()
+{
     return _mmngr_max_blocks - _mmngr_used_blocks;
 }
-
 
 // Uncomment below functions when we actually use them
 #if 0
 static int mmap_test(int bit)
 {
-    return _mmngr_memory_map[bit / 64] &  (1 << (bit % 64));
+    return _mmngr_memory_map[bit / 64] & (1UL << (bit % 64));
 }
 
-static uint64_t  phys_get_memory_size () {
+static uint64_t  phys_get_memory_size() {
     return _mmngr_memory_size;
 }
 
-
-static uint64_t phys_get_use_block_count () {
+static uint64_t phys_get_use_block_count() {
 
     return _mmngr_used_blocks;
 }
 
-static uint64_t phys_get_block_size () {
+static uint64_t phys_get_block_size() {
 
     return PHYS_BLOCK_SIZE;
 }
+
 #endif
 
-static int mmap_first_free () 
+static int mmap_first_free() 
 {
-    uint64_t i;
-    int j;
+    uint64_t i, j;
 
-    for (i=0; i< phys_get_block_count() /64; i++) {
+    for (i = 0; i < phys_get_block_count()/64; i++) {
         if (_mmngr_memory_map[i] != 0xFFFFFFFFFFFFFFFF) {
 
-            for (j=0; j<64; j++) {              //! test each bit in the dword
+            for (j = 0; j < 64; j++) {              // test each bit in the qword
+                uint64_t bit = 1UL << j;
 
-                int bit = 1 << j;
-                if (! (_mmngr_memory_map[i] & bit) ) {
+                if (!(_mmngr_memory_map[i] & bit)) {
                     return i*64 + j;
                 }
             }
@@ -82,7 +80,7 @@ static int mmap_first_free ()
     return -1;
 }
 
-void phys_init (uint64_t physSize, uint64_t physBase) {
+void phys_init(uint64_t physSize, uint64_t physBase) {
 
     _mmngr_memory_size = physSize;
     _mmngr_memory_map  = bitmap_t;
@@ -90,13 +88,10 @@ void phys_init (uint64_t physSize, uint64_t physBase) {
     _mmngr_used_blocks = 0;
     _mmngr_base_addr   = physBase;
 
-    //set_cursor_pos(18, 5);
-    //printf("Bimap addr = %p", bitmap_t);
-    
     memset(_mmngr_memory_map, 0x0, phys_get_block_count() / PHYS_BLOCKS_PER_BYTE );
 }
 
-uint64_t phys_alloc_block () {
+uint64_t phys_alloc_block() {
 
     uint64_t addr = 0;
     int frame = -1;
@@ -116,7 +111,7 @@ uint64_t phys_alloc_block () {
     return addr;
 }
 
-void phys_free_block (uint64_t addr) {
+void phys_free_block(uint64_t addr) {
 
     int frame = (addr - _mmngr_base_addr) / PHYS_BLOCK_SIZE;
 
