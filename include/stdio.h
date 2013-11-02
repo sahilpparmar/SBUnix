@@ -14,5 +14,8 @@ int scanf(const char *format, ...);
 void *memcpy(void *destination, void *source, int num);
 void *memset(void *ptr, int value, int num);
 
+int pow(int , int);
+int atoi(char *p);
+int octal_decimal(int n);
 #endif
 

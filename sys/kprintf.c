@@ -63,7 +63,7 @@ int printf(char *str, ...)
                     ival = -ival;
                 }
                 dstr = itoa(ival, istr+99, 10);
-                
+
                 if (isNegative) {
                     *--dstr = '-';
                 }
@@ -103,11 +103,11 @@ void *memcpy(void *destination, void *source, int num)
 {
     uint8_t *dest = (uint8_t *)destination;
     uint8_t *src = (uint8_t *)source;
-   
+
     while(num--) {
         *dest++ = *src++; 
     }
-    
+
     return destination;
 }
 
@@ -118,6 +118,41 @@ void *memset(void *ptr, int value, int num)
     while(num--) {
         *temp++ = (uint8_t)value; 
     }
-   
+
     return ptr;
+}
+
+int pow(int base, int power)
+{ 
+    int i = 0, product = 1;
+
+    for(i = 0; i < power; ++i)
+    {
+        product = product * base;
+    }
+
+    return product;
+}
+
+int atoi(char *p) {
+    int k = 0;
+
+    while (*p) {
+        k = (k<<3)+(k<<1)+(*p)-'0';
+        p++;
+    }
+    return k;
+}
+
+
+int octal_decimal(int n){
+    int decimal=0, i=0, rem; 
+ 
+    while (n!=0) { 
+        rem = n%10; 
+        n/=10; 
+        decimal += rem * pow(8,i);
+        ++i; 
+    }
+    return decimal;
 }
