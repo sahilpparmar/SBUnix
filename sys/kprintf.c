@@ -45,54 +45,60 @@ int printf(char *str, ...)
 
     va_start(ap, str); 
     for (ptr = str; *ptr; ptr++) {
-        if (*ptr != '%') {
+        if (*ptr == '%') {
+            switch (*++ptr) {
+                case 'd':
+                {
+                    // Consider negative signed integers
+                    int32_t isNegative = 0;
+                    int32_t ival = va_arg(ap, int32_t);
+                    char *dstr;
+
+                    if (ival < 0) {
+                        isNegative = 1;
+                        ival = -ival;
+                    }
+                    dstr = itoa(ival, istr+99, 10);
+
+                    if (isNegative) {
+                        *--dstr = '-';
+                    }
+                    len += puts(dstr);
+                    break;
+                }
+                case 'p':
+                {
+                    // Prepend "0x"
+                    char *pstr = itoa(va_arg(ap, uint64_t), istr+99, 16);
+                    *--pstr = 'x';
+                    *--pstr = '0';
+                    len += puts(pstr);
+                    break;
+                }
+                case 'x':
+                    len += puts(itoa(va_arg(ap, uint32_t), istr+99, 16));
+                    break;
+                case 'c':
+                    putchar(va_arg(ap, int32_t));
+                    len++;
+                    break;
+                case 's':
+                    len += puts(va_arg(ap, char*));
+                    break;
+                default:
+                    putchar(*ptr);
+                    len++;
+                    break;
+            }
+        } else if (*ptr == '\n') {
+            newline();
+            len++;
+        } else if (*ptr == '\t') {
+            newtab();    
+            len++;
+        } else {
             putchar(*ptr);
             len++;
-            continue;
-        }
-        switch (*++ptr) {
-            case 'd':
-            {
-                // Consider negative signed integers
-                int32_t isNegative = 0;
-                int32_t ival = va_arg(ap, int32_t);
-                char *dstr;
-
-                if (ival < 0) {
-                    isNegative = 1;
-                    ival = -ival;
-                }
-                dstr = itoa(ival, istr+99, 10);
-
-                if (isNegative) {
-                    *--dstr = '-';
-                }
-                len += puts(dstr);
-                break;
-            }
-            case 'p':
-            {
-                // Prepend "0x"
-                char *pstr = itoa(va_arg(ap, uint64_t), istr+99, 16);
-                *--pstr = 'x';
-                *--pstr = '0';
-                len += puts(pstr);
-                break;
-            }
-            case 'x':
-                len += puts(itoa(va_arg(ap, uint32_t), istr+99, 16));
-                break;
-            case 'c':
-                putchar(va_arg(ap, int32_t));
-                len++;
-                break;
-            case 's':
-                len += puts(va_arg(ap, char*));
-                break;
-            default:
-                putchar(*ptr);
-                len++;
-                break;
         }
     }
     va_end(ap); 

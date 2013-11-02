@@ -27,3 +27,5 @@ void init_screen(uint64_t);
 void clear_screen();
 void scroll(int32_t lines);
 
+void newline();
+void newtab();

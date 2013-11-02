@@ -105,3 +105,21 @@ void clear_screen()
 
     set_cursor_pos(0, 0);
 }
+
+void newline()
+{
+    int32_t row = 0, col = 0;
+    get_cursor_pos(&row, &col);
+    row += 1;
+    col = 0;
+    set_cursor_pos(row, col);
+}
+
+void newtab()
+{
+    uint64_t addr;
+    addr = get_video_addr();
+    addr += 8;
+    set_video_addr(addr);    
+}
+
