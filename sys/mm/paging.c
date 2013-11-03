@@ -3,6 +3,9 @@
 #include <sys/paging_tables.h>
 #include <sys/paging.h>
 #include <sys/phys_mm.h>
+#include <sys/virt_mm.h>
+#include <sys/kmalloc.h>
+#include <sys/types.h>
 
 #define ENTRIES_PER_PTE  512
 #define ENTRIES_PER_PDE  512
@@ -16,7 +19,7 @@
 #define VADDR(PADDR) ((KERNEL_START_VADDR) + ALIGN(PADDR))
 #define PADDR(VADDR) (ALIGN(VADDR) - (KERNEL_START_VADDR))
 
-#define I86_PRESENT_WRITABLE I86_PRESENT | I86_WRITABLE; 
+#define PAGING_PRESENT_WRITABLE PAGING_PRESENT | PAGING_WRITABLE; 
 
 static uint64_t *cur_pml4_t;
 static uint64_t *ker_pml4_t;
@@ -37,27 +40,36 @@ uint64_t* get_ker_pml4_t()
     return ker_pml4_t;
 }
 
+void set_pre_paging(bool value)
+{
+    pre_paging = value;
+}
+
+bool get_pre_paging()
+{
+    return pre_paging;
+}
 
 // TO DO : Put condition check for non existing pte table entry in pde_table
 
 uint64_t* alloc_pte(uint64_t *pde_table,int pde_off)
 {
     uint64_t pte_table = phys_alloc_block();
-    pde_table[pde_off] = pte_table | I86_PRESENT_WRITABLE;   
+    pde_table[pde_off] = pte_table | PAGING_PRESENT_WRITABLE;   
     return (uint64_t*)VADDR(pte_table);
 } 
 
 uint64_t* alloc_pde(uint64_t *pdpe_table,int pdpe_off)
 {
     uint64_t pde_table = phys_alloc_block();
-    pdpe_table[pdpe_off] = pde_table | I86_PRESENT_WRITABLE;   
+    pdpe_table[pdpe_off] = pde_table | PAGING_PRESENT_WRITABLE;   
     return (uint64_t*)VADDR(pde_table);
 }
 
 uint64_t* alloc_pdpe(uint64_t *cur_pml4_t,int pml4_off)
 {
     uint64_t pdpe_table = phys_alloc_block();
-    cur_pml4_t[pml4_off] = pdpe_table | I86_PRESENT_WRITABLE;   
+    cur_pml4_t[pml4_off] = pdpe_table | PAGING_PRESENT_WRITABLE;   
     return (uint64_t*)VADDR(pdpe_table);
 }
 
@@ -76,7 +88,7 @@ void alloc_pte_entry_s(uint64_t vaddr, uint64_t paddr)
     vaddr = ((uint64_t)tvaddr | 0xFFFFFF0000000000);
     addr = (uint64_t *)vaddr; 
     
-    *addr = paddr | 0x03; //phys_alloc_block();
+    *addr = paddr | PAGING_PRESENT_WRITABLE; //phys_alloc_block();
 } 
 
 void alloc_pte_s(uint64_t vaddr)
@@ -91,7 +103,7 @@ void alloc_pte_s(uint64_t vaddr)
 
     vaddr = ((uint64_t)tvaddr | 0xFFFFFF7F80000000);
     addr = (uint64_t *)vaddr; 
-    *addr = phys_alloc_block() | 0x03; //phys_alloc_block();
+    *addr = phys_alloc_block() | PAGING_PRESENT_WRITABLE; //phys_alloc_block();
     
 } 
 
@@ -108,7 +120,7 @@ void alloc_pde_s(uint64_t vaddr)
 
     vaddr = ((uint64_t)tvaddr | 0xFFFFFF7FBFC00000);
     addr = (uint64_t *)vaddr; 
-    *addr = phys_alloc_block()| 0x03;               //phys_alloc_block();
+    *addr = phys_alloc_block()| PAGING_PRESENT_WRITABLE;                //phys_alloc_block();
 
 }
 
@@ -126,7 +138,7 @@ void alloc_pdpe_s(uint64_t vaddr)
     vaddr = ((uint64_t)tvaddr | 0xFFFFFF7FBFDFE000);
     addr = (uint64_t *)vaddr; 
     
-    *addr = phys_alloc_block() | 0x03;               //phys_alloc_block();
+    *addr = phys_alloc_block() | PAGING_PRESENT_WRITABLE;               //phys_alloc_block();
 
 }
 
@@ -147,14 +159,14 @@ void self_ref(uint64_t vaddr, uint64_t paddr)
     v_addr = vaddr;
 
     phys_addr = (uint64_t) *(cur_pml4_t + pml4_off);
-    if (phys_addr & I86_PRESENT) {
+    if (phys_addr & PAGING_PRESENT) {
         pdpe_table =(uint64_t*) VADDR(phys_addr); 
         phys_addr = (uint64_t) *(pdpe_table + pdpe_off);
-        if (phys_addr & I86_PRESENT)
+        if (phys_addr & PAGING_PRESENT)
         { 
             pde_table =(uint64_t*) VADDR(phys_addr); 
             phys_addr  = (uint64_t) *(pde_table + pde_off);
-            if (phys_addr & I86_PRESENT) { 
+            if (phys_addr & PAGING_PRESENT) { 
                 pte_table =(uint64_t*) VADDR(phys_addr);
                 alloc_pte_entry_s(v_addr,p_addr); 
             } 
@@ -181,15 +193,15 @@ void self_ref(uint64_t vaddr, uint64_t paddr)
 //------------self referencing
 
 
-void map(uint64_t vaddr, uint64_t paddr, uint64_t size)
+void map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t size)
 {
-    if (pre_paging)
-        map_virt_phys_addr(vaddr, paddr, size);
+    if (get_pre_paging())
+        map_kernel(vaddr, paddr, size);
     else
         self_ref(vaddr, paddr);
 }
 
-void map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t size)
+void map_kernel(uint64_t vaddr, uint64_t paddr, uint64_t size)
 {
     uint64_t *pdpe_table = NULL, *pde_table = NULL, *pte_table = NULL;
 
@@ -203,16 +215,16 @@ void map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t size)
     //printf(" $$ NEW MAPPING $$ OFF => %d %d %d %d ", pml4_off, pdpe_off, pde_off, pte_off);
 
     phys_addr = (uint64_t) *(cur_pml4_t + pml4_off);
-    //printf("%d",phys_addr & I86_PRESENT);
-    if (phys_addr != 0x0) {
+    //printf("%d",phys_addr & PAGING_PRESENT);
+    if  (phys_addr & PAGING_PRESENT) {
         pdpe_table =(uint64_t*) VADDR(phys_addr); 
 
         phys_addr = (uint64_t) *(pdpe_table + pdpe_off);
-        if (phys_addr != 0x0) {
+        if (phys_addr & PAGING_PRESENT) {
             pde_table =(uint64_t*) VADDR(phys_addr); 
 
             phys_addr  = (uint64_t) *(pde_table + pde_off);
-            if (phys_addr != 0x0) {
+            if (phys_addr & PAGING_PRESENT) {
                 pte_table =(uint64_t*) VADDR(phys_addr); 
             } else {
                 pte_table = alloc_pte(pde_table, pde_off);
@@ -231,8 +243,8 @@ void map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t size)
 
     if (size + pte_off <= ENTRIES_PER_PTE) {
         for (i = pte_off; i < (pte_off + size); i++) {
-            pte_table[i] = phys_addr | 0x3;
-            phys_addr += 0x1000;
+            pte_table[i] = phys_addr | PAGING_PRESENT_WRITABLE; 
+            phys_addr += PAGESIZE;
         }
         //printf(" SIZE = %d PDPE Address %p, PDE Address %p, PTE Address %p", size, pdpe_table , pde_table, pte_table);
     } else {
@@ -240,8 +252,8 @@ void map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t size)
 
        // printf(" SIZE = %d PDPE Address %p, PDE Address %p, PTE Address %p", lsize, pdpe_table ,pde_table, pte_table);
         for ( i = pte_off ; i < ENTRIES_PER_PTE; i++) {
-            pte_table[i] = phys_addr | 0x3;
-            phys_addr += 0x1000;
+            pte_table[i] = phys_addr | PAGING_PRESENT_WRITABLE;
+            phys_addr += PAGESIZE;
         }
         lsize = lsize - (ENTRIES_PER_PTE - pte_off);
         no_of_pte_t = lsize/ENTRIES_PER_PTE;
@@ -250,8 +262,8 @@ void map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t size)
             pte_table = alloc_pte(pde_table, pde_off+j);
          //   printf(" SIZE = %d PDPE Address %p, PDE Address %p, PTE Address %p", lsize, pdpe_table ,pde_table, pte_table);
             for(k = 0; k < ENTRIES_PER_PTE; k++ ) { 
-                pte_table[k] = phys_addr | 0x3;
-                phys_addr += 0x1000;
+                pte_table[k] = phys_addr | PAGING_PRESENT_WRITABLE;
+                phys_addr += PAGESIZE;
             }
         }
         lsize = lsize - (ENTRIES_PER_PTE * pte_off);
@@ -259,8 +271,8 @@ void map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t size)
         
         //printf(" SIZE = %d PDPE Address %p, PDE Address %p, PTE Address %p", lsize, pdpe_table ,pde_table, pte_table);
         for(k = 0; k < lsize; k++ ) { 
-            pte_table[k] = phys_addr | 0x3;
-            phys_addr += 0x1000;
+            pte_table[k] = phys_addr | PAGING_PRESENT_WRITABLE;
+            phys_addr += PAGESIZE;
         }
     }
 }
@@ -273,7 +285,7 @@ void init_paging(uint64_t kernmem,uint64_t physbase, uint64_t k_size)
     ker_pml4_t = cur_pml4_t = (uint64_t*) VADDR(pml4_paddr);
     printf(" $$ PML4 Address %p", cur_pml4_t);
 
-    cur_pml4_t[510] = pml4_paddr | I86_PRESENT_WRITABLE;   
+    cur_pml4_t[510] = pml4_paddr | PAGING_PRESENT_WRITABLE;   
     printf(" $$ pml4[510]= %p", cur_pml4_t[510]);
     
     pre_paging = TRUE;
@@ -283,12 +295,19 @@ void init_paging(uint64_t kernmem,uint64_t physbase, uint64_t k_size)
     // to physical address range [0x200000, 0x406000]
     // 2 MB for Kernal + 6 Pages for PML4, PDPE, PDE, PTE(3) tables
     
-    map(kernmem, physbase, k_size);
+    map_virt_phys_addr(kernmem, physbase, k_size);
 
     // Use existing Video address mapping: Virtual memory 0xFFFFFFFF800B8000 to Physical memory 0xB8000
-    map(0xFFFFFFFF800B8000, 0xB8000, 1);
+    map_virt_phys_addr(0xFFFFFFFF800B8000, 0xB8000, 1);
     
     // Set CR3 register to address of PML4 table
     asm volatile ("movq %0, %%cr3;" :: "r"(PADDR((uint64_t)(cur_pml4_t))));
     pre_paging = FALSE;
+    
+    /*set value of top virtual address*/
+    virt_init(kernmem + (k_size * PAGESIZE));
+           
+    /*setting available free physical memory to zero*/ 
+    init_kmalloc();
 }
+

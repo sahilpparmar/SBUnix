@@ -1,6 +1,6 @@
 void init_paging(uint64_t, uint64_t, uint64_t);
 void map_virt_phys_addr(uint64_t,uint64_t,uint64_t);
-void map(uint64_t,uint64_t,uint64_t);
+void map_kernel(uint64_t,uint64_t,uint64_t);
 void self_ref(uint64_t,uint64_t);
 
 uint64_t* alloc_pte(uint64_t *pde_table,int pde_off);

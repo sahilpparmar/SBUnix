@@ -12,6 +12,7 @@ static uint64_t currptr;
 void init_kmalloc()
 {
     free_mem_avail = 0;
+    currptr = 0;
 }
 
 void* kmalloc(uint32_t size)

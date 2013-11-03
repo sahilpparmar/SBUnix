@@ -5,6 +5,7 @@
 #include <sys/irq_common.h>
 #include <sys/paging.h>
 #include <sys/phys_mm.h>
+#include <sys/virt_mm.h>
 
 #define K_MEM_PAGES 518
 
