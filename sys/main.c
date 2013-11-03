@@ -6,10 +6,11 @@
 #include <sys/paging.h>
 #include <sys/phys_mm.h>
 #include <sys/virt_mm.h>
+#include <sys/kmalloc.h>
 
 #define K_MEM_PAGES 518
-
 #define INITIAL_STACK_SIZE 4096
+
 char stack[INITIAL_STACK_SIZE];
 uint32_t* loader_stack;
 extern char kernmem, physbase;
