@@ -140,7 +140,7 @@ static void map_kernel_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t s
 
 /***************** Map VAddr to PAddr using Self Referencing Technique **************/
 
-static void alloc_pte_entry_s(uint64_t vaddr, uint64_t paddr)
+static uint64_t* get_pte_entry(uint64_t vaddr)
 {
     //printf("in pte entry self ref");
     uint64_t tvaddr;
@@ -151,11 +151,10 @@ static void alloc_pte_entry_s(uint64_t vaddr, uint64_t paddr)
 
     vaddr = ((uint64_t)tvaddr | 0xFFFFFF0000000000);
     addr = (uint64_t *)vaddr; 
-    
-    *addr = paddr | PAGING_PRESENT_WRITABLE;
+    return addr;
 } 
 
-static void alloc_pte_s(uint64_t vaddr)
+static uint64_t* get_pde_entry(uint64_t vaddr)
 {
     //printf("in pte self ref");
     uint64_t tvaddr;
@@ -166,10 +165,11 @@ static void alloc_pte_s(uint64_t vaddr)
 
     vaddr = ((uint64_t)tvaddr | 0xFFFFFF7F80000000);
     addr = (uint64_t *)vaddr; 
-    *addr = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
+    
+    return addr;
 } 
 
-static void alloc_pde_s(uint64_t vaddr)
+static uint64_t* get_pdpe_entry(uint64_t vaddr)
 {
     //printf("in pde self ref");
     uint64_t tvaddr;
@@ -180,10 +180,12 @@ static void alloc_pde_s(uint64_t vaddr)
 
     vaddr = ((uint64_t)tvaddr | 0xFFFFFF7FBFC00000);
     addr = (uint64_t *)vaddr; 
-    *addr = phys_alloc_block()| PAGING_PRESENT_WRITABLE;
+
+    return addr;
+
 }
 
-static void alloc_pdpe_s(uint64_t vaddr)
+static uint64_t* get_pml4_entry(uint64_t vaddr)
 {
     // printf("in pdpe self ref");
     uint64_t tvaddr;
@@ -195,48 +197,55 @@ static void alloc_pdpe_s(uint64_t vaddr)
     vaddr = ((uint64_t)tvaddr | 0xFFFFFF7FBFDFE000);
     addr = (uint64_t *)vaddr; 
     
-    *addr = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
+    return addr;
 }
 
 void map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t size)
 {
-    uint64_t *pdpe_table = NULL, *pde_table = NULL, *pte_table = NULL;
-    int phys_addr, pde_off, pdpe_off, pml4_off;
+    uint64_t *pml4_entry, *pdpe_entry = NULL, *pde_entry = NULL, *pte_entry = NULL;
+    int phys_addr; 
 
-    pde_off  = (vaddr >> 21) & 0x1FF;
-    pdpe_off = (vaddr >> 30) & 0x1FF;
-    pml4_off = (vaddr >> 39) & 0x1FF;
+    pml4_entry = get_pml4_entry(vaddr);
+    pdpe_entry = get_pdpe_entry(vaddr); 
+    pde_entry = get_pde_entry(vaddr);   
+    pte_entry = get_pte_entry(vaddr);
     
-    phys_addr = (uint64_t) *(cur_pml4_t + pml4_off);
-
+    phys_addr = (uint64_t) *(pml4_entry);
+    
     if (phys_addr & PAGING_PRESENT) {
-        pdpe_table =(uint64_t*) VADDR(phys_addr); 
-        phys_addr = (uint64_t) *(pdpe_table + pdpe_off);
+        phys_addr = (uint64_t) *(pdpe_entry);
+        printf("Inside pdpe available");
 
         if (phys_addr & PAGING_PRESENT) { 
-            pde_table =(uint64_t*) VADDR(phys_addr); 
-            phys_addr  = (uint64_t) *(pde_table + pde_off);
+            phys_addr  = (uint64_t) *(pde_entry);
+            printf("Inside pde available");
 
             if (phys_addr & PAGING_PRESENT) { 
-                pte_table =(uint64_t*) VADDR(phys_addr);
-                alloc_pte_entry_s(vaddr,paddr); 
+                printf("Inside pte available");
+                *pte_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
             } else {
-                alloc_pte_s(vaddr);
+                printf("Inside pte creation");
+                *pde_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
+                *pte_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
             }
 
         } else {
-            alloc_pde_s(vaddr);
-            alloc_pte_s(vaddr);
+            printf("Inside pde and pte creation");
+            *pdpe_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
+            *pde_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
+            *pte_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
         }
 
     } else {
-        alloc_pdpe_s(vaddr);
-        alloc_pde_s(vaddr);
-        alloc_pte_s(vaddr);
+            printf("Inside pdpe, pde and pte creation");
+            *pml4_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
+            *pdpe_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
+            *pde_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
+            *pte_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
+
     }
-    
-    alloc_pte_entry_s(vaddr, paddr);
-    printf("\nPDPEt: %p, PDEt: %p, PTEt: %p ", pdpe_table ,pde_table, pte_table);
+
+    printf("\nPDPEt: %p, PDEt: %p, PTEt: %p ", pdpe_entry ,pde_entry, pte_entry);
 }
 
 void init_paging(uint64_t kernmem,uint64_t physbase, uint64_t k_size)
