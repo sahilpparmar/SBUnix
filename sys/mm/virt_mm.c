@@ -10,7 +10,7 @@
 
 uint64_t topVirtAddr;
 
-uint64_t get_top_virt()
+uint64_t get_top_virtaddr()
 {
     return topVirtAddr;
 }

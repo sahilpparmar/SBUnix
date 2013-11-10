@@ -214,30 +214,30 @@ void map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t size)
     
     if (phys_addr & PAGING_PRESENT) {
         phys_addr = (uint64_t) *(pdpe_entry);
-        printf("Inside pdpe available");
+        //printf("Inside pdpe available");
 
         if (phys_addr & PAGING_PRESENT) { 
             phys_addr  = (uint64_t) *(pde_entry);
-            printf("Inside pde available");
+           // printf("Inside pde available");
 
             if (phys_addr & PAGING_PRESENT) { 
-                printf("Inside pte available");
+            //    printf("Inside pte available");
                 *pte_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
             } else {
-                printf("Inside pte creation");
+          //      printf("Inside pte creation");
                 *pde_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
                 *pte_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
             }
 
         } else {
-            printf("Inside pde and pte creation");
+        //    printf("Inside pde and pte creation");
             *pdpe_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
             *pde_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
             *pte_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
         }
 
     } else {
-            printf("Inside pdpe, pde and pte creation");
+      //      printf("Inside pdpe, pde and pte creation");
             *pml4_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
             *pdpe_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
             *pde_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
@@ -245,7 +245,7 @@ void map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t size)
 
     }
 
-    printf("\nPDPEt: %p, PDEt: %p, PTEt: %p ", pdpe_entry ,pde_entry, pte_entry);
+    //printf("\nPDPEt: %p, PDEt: %p, PTEt: %p ", pdpe_entry ,pde_entry, pte_entry);
 }
 
 void init_paging(uint64_t kernmem, uint64_t physbase, uint64_t k_size)
@@ -275,24 +275,26 @@ void init_paging(uint64_t kernmem, uint64_t physbase, uint64_t k_size)
            
     // Setting available free physical memory to zero
     init_kmalloc();
+    
 }
 
-uint64_t proc_pml4()
+void user_process_pml4()
 {
     uint64_t virtAddr, physAddr;
-    uint64_t *pml4_table = NULL;
 
-    virtAddr = get_top_virt();
-    set_top_virtaddr(PAGESIZE);
-
+    virtAddr = get_top_virtaddr();
     physAddr = phys_alloc_block();
 
     map_kernel_virt_phys_addr(virtAddr, physAddr, 1);
-    
-    pml4_table = (uint64_t*) virtAddr;
-    printf("\tKernel PML4t:%p", pml4_table);
+    cur_pml4_t = (uint64_t *) VADDR(physAddr);    
+//    printf("\tKernel PML4t:%p", ker_pml4_t);
+      
+    cur_pml4_t[511] = ker_pml4_t[511];
+    cur_pml4_t[510] = physAddr | PAGING_PRESENT_WRITABLE;
+//    printf("\tCur PML4t:%p,  %p , %p",cur_pml4_t, cur_pml4_t[511], cur_pml4_t[510]);
 
-    pml4_table[510] = physAddr | PAGING_PRESENT_WRITABLE;   
-    return 0;
+    asm volatile ("movq %0, %%cr3;" :: "r"(PADDR((uint64_t)(cur_pml4_t))));
+    printf("\tCurrent PML4t:%p", cur_pml4_t);
+    
 }
 
