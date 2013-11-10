@@ -10,6 +10,12 @@
 
 uint64_t topVirtAddr;
 
+uint64_t get_top_virt()
+{
+    return topVirtAddr;
+}
+
+
 void virt_init (uint64_t virtBase)
 {
     topVirtAddr = virtBase;
