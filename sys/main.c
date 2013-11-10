@@ -42,7 +42,7 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
     phys_init((phys_size - 0x300000)/8192, phys_base + 0x300000); 
 
     init_paging((uint64_t)&kernmem, (uint64_t)physbase, K_MEM_PAGES);
-    
+
     while(1);
 }
 

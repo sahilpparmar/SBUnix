@@ -12,6 +12,7 @@ uint64_t topVirtAddr;
 
 uint64_t get_top_virtaddr()
 {
+    topVirtAddr += 0x1000;
     return topVirtAddr;
 }
 

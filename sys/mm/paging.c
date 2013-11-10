@@ -21,18 +21,7 @@
 
 #define PAGING_PRESENT_WRITABLE PAGING_PRESENT | PAGING_WRITABLE; 
 
-static uint64_t *cur_pml4_t;
 static uint64_t *ker_pml4_t;
-
-uint64_t* get_pml4_t()
-{
-    return cur_pml4_t;
-}
-
-void set_pml4_t(uint64_t *addr)
-{
-    cur_pml4_t = addr;
-}
 
 uint64_t* get_ker_pml4_t()
 {
@@ -58,7 +47,7 @@ static uint64_t* alloc_pde(uint64_t *pdpe_table, int pdpe_off)
 static uint64_t* alloc_pdpe(uint64_t *cur_pml4_t, int pml4_off)
 {
     uint64_t pdpe_table = phys_alloc_block();
-    cur_pml4_t[pml4_off] = pdpe_table | PAGING_PRESENT_WRITABLE;   
+    ker_pml4_t[pml4_off] = pdpe_table | PAGING_PRESENT_WRITABLE;   
     return (uint64_t*)VADDR(pdpe_table);
 }
 
@@ -75,8 +64,8 @@ static void map_kernel_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t s
 
     // printf(" $$ NEW MAPPING $$ OFF => %d %d %d %d ", pml4_off, pdpe_off, pde_off, pte_off);
 
-    phys_addr = (uint64_t) *(cur_pml4_t + pml4_off);
-     printf("%p",phys_addr);
+    phys_addr = (uint64_t) *(ker_pml4_t + pml4_off);
+    // printf("%p",phys_addr);
     if (phys_addr & PAGING_PRESENT) {
         pdpe_table =(uint64_t*) VADDR(phys_addr); 
 
@@ -95,7 +84,7 @@ static void map_kernel_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t s
             pte_table = alloc_pte(pde_table, pde_off);
         }
     } else {
-        pdpe_table = alloc_pdpe(cur_pml4_t, pml4_off);
+        pdpe_table = alloc_pdpe(ker_pml4_t, pml4_off);
         pde_table = alloc_pde(pdpe_table, pdpe_off);
         pte_table = alloc_pte(pde_table, pde_off);
     }
@@ -253,10 +242,10 @@ void init_paging(uint64_t kernmem, uint64_t physbase, uint64_t k_size)
     // Allocate free memory for PML4 table 
     uint64_t pml4_paddr = phys_alloc_block();
 
-    ker_pml4_t = cur_pml4_t = (uint64_t*) VADDR(pml4_paddr);
-    printf("\tKernel PML4t:%p", cur_pml4_t);
+    ker_pml4_t = (uint64_t*) VADDR(pml4_paddr);
+    printf("\tKernel PML4t:%p", ker_pml4_t);
 
-    cur_pml4_t[510] = pml4_paddr | PAGING_PRESENT_WRITABLE;   
+    ker_pml4_t[510] = pml4_paddr | PAGING_PRESENT_WRITABLE;   
     
     // Kernal Memory Mapping 
     // Mappings for virtual address range [0xFFFFFFFF80200000, 0xFFFFFFFF80406000]
@@ -268,7 +257,7 @@ void init_paging(uint64_t kernmem, uint64_t physbase, uint64_t k_size)
     map_kernel_virt_phys_addr(0xFFFFFFFF800B8000, 0xB8000, 1);
     
     // Set CR3 register to address of PML4 table
-    asm volatile ("movq %0, %%cr3;" :: "r"(PADDR((uint64_t)(cur_pml4_t))));
+    asm volatile ("movq %0, %%cr3;" :: "r"(PADDR((uint64_t)(ker_pml4_t))));
     
     // Set value of top virtual address
     virt_init(kernmem + (k_size * PAGESIZE));
@@ -278,23 +267,25 @@ void init_paging(uint64_t kernmem, uint64_t physbase, uint64_t k_size)
     
 }
 
-void user_process_pml4()
+uint64_t user_process_pml4()
 {
-    uint64_t virtAddr, physAddr;
+    uint64_t virtAddr, physAddr, *cur_pml4_t;
 
     virtAddr = get_top_virtaddr();
     physAddr = phys_alloc_block();
 
     map_kernel_virt_phys_addr(virtAddr, physAddr, 1);
-    cur_pml4_t = (uint64_t *) VADDR(physAddr);    
+    cur_pml4_t = (uint64_t *) virtAddr;    
 //    printf("\tKernel PML4t:%p", ker_pml4_t);
       
     cur_pml4_t[511] = ker_pml4_t[511];
     cur_pml4_t[510] = physAddr | PAGING_PRESENT_WRITABLE;
 //    printf("\tCur PML4t:%p,  %p , %p",cur_pml4_t, cur_pml4_t[511], cur_pml4_t[510]);
 
-    asm volatile ("movq %0, %%cr3;" :: "r"(PADDR((uint64_t)(cur_pml4_t))));
-    printf("\tCurrent PML4t:%p", cur_pml4_t);
+    asm volatile ("movq %0, %%cr3;" :: "r"((uint64_t)(physAddr)));
     
+//    printf("\tCurrent PML4t:%p", physAddr);
+    
+    return physAddr;
 }
 
