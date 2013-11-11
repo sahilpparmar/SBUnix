@@ -42,7 +42,6 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
     phys_init((phys_size - 0x300000)/8192, phys_base + 0x300000); 
 
     init_paging((uint64_t)&kernmem, (uint64_t)physbase, K_MEM_PAGES);
-
     while(1);
 }
 
@@ -75,7 +74,6 @@ void boot(void)
     printf("|    SBUnix    |");
     set_cursor_pos(13, 25);
     printf("----------------");
-
     start(
             (uint32_t*)((char*)(uint64_t)loader_stack[3] + (uint64_t)&kernmem - (uint64_t)&physbase),
             &physbase,

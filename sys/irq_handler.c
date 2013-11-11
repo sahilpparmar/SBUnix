@@ -60,8 +60,8 @@ static void irq0_handler(registers_t regs)
         }
     }
 
-    set_cursor_pos(24, 55);
-    printf("         ");
+ //   set_cursor_pos(24, 55);
+ //   printf("         ");
     set_cursor_pos(24, 55);
     printf("%d:%d:%d", hr, min, sec);
 }

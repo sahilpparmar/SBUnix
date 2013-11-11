@@ -6,10 +6,10 @@
 #include <stdio.h>
 #include <screen.h>
 
-#define MAX_ROW 25
+#define MAX_ROW 24
 #define MAX_COL 80
 #define SIZEOF_LINE 160     // MAX_COL * 2 bytes
-#define SIZEOF_BUFFER 4000  // MAX_ROW * MAX_COL * 2 bytes
+#define SIZEOF_BUFFER 3840  // MAX_ROW * MAX_COL * 2 bytes
 
 uint64_t START_VADDR; 
 uint64_t END_VADDR;         // START_VADDR + SIZEOF_BUFFER 
@@ -60,7 +60,7 @@ void scroll(int32_t lines)
     uint64_t source, dest;
     int32_t rows, cols, size;
 
-    if (lines >= MAX_COL) {
+    if (lines >= MAX_ROW) {
         clear_screen();
     } else {
         source = START_VADDR + (lines * SIZEOF_LINE);
@@ -81,17 +81,36 @@ void putchar(char mychar)
 {
     char *temp;
     uint64_t addr = get_video_addr();
-
-    if(addr >= END_VADDR) {
-        scroll(1); 
-        addr = get_video_addr();
-    }
+    int32_t rows, columns;
+    get_cursor_pos(&rows, &columns);
+    
+    if (rows == 24 && columns >= 55) 
+    {
     
     temp = (char *)addr;
     *temp++ = mychar;
     *temp++ = get_color();
     set_video_addr((uint64_t)temp);
+
+    }
+    else if(rows == 24) {
+        scroll(1);
+        addr = get_video_addr();
+        temp = (char *)addr;
+        *temp++ = mychar;
+        *temp++ = get_color();
+        set_video_addr((uint64_t)temp);
+
+    }
+    else
+    {
+    temp = (char *)addr;
+    *temp++ = mychar;
+    *temp++ = get_color();
+    set_video_addr((uint64_t)temp);
+    }
 }
+
 
 void clear_screen()
 {
