@@ -129,14 +129,14 @@ static void map_kernel_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t s
 
 /***************** Map VAddr to PAddr using Self Referencing Technique **************/
 
-static uint64_t* get_pte_entry(uint64_t vaddr)
+uint64_t* get_pte_entry(uint64_t vaddr)
 {
     //printf("in pte entry self ref");
     uint64_t tvaddr;
     uint64_t *addr;
 
-    tvaddr  = ((uint64_t)vaddr << 16 >> 16);
-    tvaddr  = tvaddr >> 12 << 3;
+    tvaddr  = ((uint64_t)vaddr << 16 >> 28 << 3);
+    //tvaddr  = tvaddr >> 12 << 3;
 
     vaddr = ((uint64_t)tvaddr | 0xFFFFFF0000000000);
     addr = (uint64_t *)vaddr; 
@@ -149,8 +149,8 @@ static uint64_t* get_pde_entry(uint64_t vaddr)
     uint64_t tvaddr;
     uint64_t *addr;
 
-    tvaddr  = ((uint64_t)vaddr << 16 >> 16);
-    tvaddr  = tvaddr >> 21 << 3;
+    tvaddr  = ((uint64_t)vaddr << 16 >> 37 << 3 );
+    //tvaddr  = tvaddr >> 21 << 3;
 
     vaddr = ((uint64_t)tvaddr | 0xFFFFFF7F80000000);
     addr = (uint64_t *)vaddr; 
@@ -164,8 +164,8 @@ static uint64_t* get_pdpe_entry(uint64_t vaddr)
     uint64_t tvaddr;
     uint64_t *addr;
 
-    tvaddr  = ((uint64_t)vaddr << 16 >> 16);
-    tvaddr  = tvaddr >> 30 << 3;
+    tvaddr  = ((uint64_t)vaddr << 16 >> 46 << 3);
+    //tvaddr  = tvaddr >> 30 << 3;
 
     vaddr = ((uint64_t)tvaddr | 0xFFFFFF7FBFC00000);
     addr = (uint64_t *)vaddr; 
@@ -180,8 +180,8 @@ static uint64_t* get_pml4_entry(uint64_t vaddr)
     uint64_t tvaddr;
     uint64_t *addr;
 
-    tvaddr  = ((uint64_t)vaddr << 16 >> 16);
-    tvaddr  = tvaddr >> 39 << 3;
+    tvaddr  = ((uint64_t)vaddr << 16 >> 55 << 3);
+    //tvaddr  = tvaddr >> 39 << 3;
 
     vaddr = ((uint64_t)tvaddr | 0xFFFFFF7FBFDFE000);
     addr = (uint64_t *)vaddr; 
@@ -189,7 +189,7 @@ static uint64_t* get_pml4_entry(uint64_t vaddr)
     return addr;
 }
 
-void map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t size)
+void map_virt_phys_addr(uint64_t vaddr, uint64_t paddr)
 {
     uint64_t *pml4_entry, *pdpe_entry = NULL, *pde_entry = NULL, *pte_entry = NULL;
     int phys_addr; 
@@ -211,18 +211,18 @@ void map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t size)
 
             if (phys_addr & PAGING_PRESENT) { 
             //    printf("Inside pte available");
-                *pte_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
+                *pte_entry = paddr | PAGING_PRESENT_WRITABLE;
             } else {
           //      printf("Inside pte creation");
                 *pde_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
-                *pte_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
+                *pte_entry = paddr | PAGING_PRESENT_WRITABLE;
             }
 
         } else {
         //    printf("Inside pde and pte creation");
             *pdpe_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
             *pde_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
-            *pte_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
+            *pte_entry = paddr | PAGING_PRESENT_WRITABLE;
         }
 
     } else {
@@ -230,7 +230,7 @@ void map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t size)
             *pml4_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
             *pdpe_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
             *pde_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
-            *pte_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
+            *pte_entry = paddr | PAGING_PRESENT_WRITABLE;
 
     }
 

@@ -19,7 +19,6 @@ void* kmalloc(uint32_t size)
 {
     void* retaddr = NULL; 
     int no_of_pages = 0;
-
     // Align size to BLOCK_ALIGN
     if (size % BLOCK_ALIGN) {
         size = size >> POWER2_ALIGN << POWER2_ALIGN;

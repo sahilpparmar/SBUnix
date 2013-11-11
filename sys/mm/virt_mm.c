@@ -43,7 +43,7 @@ void* virt_alloc_pages (uint32_t no_of_vpages)
         for(i = 0; i < no_of_vpages; ++i)
         {
              physadd = (uint64_t*) phys_alloc_block();
-             map_virt_phys_addr(topVirtAddr, (uint64_t)physadd, 1);
+             map_virt_phys_addr(topVirtAddr, (uint64_t)physadd);
              set_top_virtaddr(PAGESIZE);     
                   
         } 
@@ -54,15 +54,17 @@ void* virt_alloc_pages (uint32_t no_of_vpages)
 void free_virt_addr(uint64_t *vaddr)
 {
     uint64_t* temp_virt_addr = NULL;
-    uint64_t physaddr = NULL, t;
+    uint64_t physaddr = NULL;
 
+    temp_virt_addr = get_pte_entry((uint64_t)vaddr);
+/*
     t = (uint64_t)vaddr << 16 >> 16;
 
     t = t >> 12 << 3;
 
     temp_virt_addr = (uint64_t*) (t | SELF_REF_OFFSET);
+*/
     physaddr = (*temp_virt_addr) >> 12 << 12;     
-
     phys_free_block (physaddr);
     *temp_virt_addr = 0;
 }
