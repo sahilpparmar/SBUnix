@@ -1,5 +1,5 @@
 //
-// kprintf.c -- Implementation for common libc routines  
+// kkprintf.c -- Implementation for common libc routines  
 //
 
 #include <stdarg.h>
@@ -37,7 +37,7 @@ char *itoa(uint64_t val, char *str, int32_t base)
     return str;
 }
 
-int32_t printf(const char *str, ...)
+int32_t kprintf(const char *str, ...)
 {
     va_list ap;
     const char *ptr = NULL;

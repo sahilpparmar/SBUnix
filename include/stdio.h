@@ -4,7 +4,7 @@
 char *itoa(uint64_t val, char *str, int32_t base);
 void putchar(char mychar);
 int32_t puts(char *str);
-int32_t printf(const char *str, ...);
+int32_t kprintf(const char *str, ...);
 
 int32_t scanf(const char *format, ...);
 

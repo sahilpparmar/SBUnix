@@ -20,9 +20,9 @@ void fun1(void)
 {
     int i = 0;
     while(i < 10){
-        printf("\n%d In fun1()", i++);
+        kprintf("\n%d In fun1()", i++);
     }
-    printf("\nOut of fun1()");
+    kprintf("\nOut of fun1()");
     while(1);
 }
 
@@ -30,9 +30,9 @@ void fun2(void)
 {
     int i = 0;
     while(i < 10){
-        printf("\n%d In fun2()", i++);
+        kprintf("\n%d In fun2()", i++);
     }
-    printf("\nOut of fun2()");
+    kprintf("\nOut of fun2()");
     while(1);
 }
         
@@ -48,7 +48,7 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
     for(smap = (struct smap_t*)(modulep+2); smap < (struct smap_t*)((char*)modulep+modulep[1]+2*4); ++smap) {
         if (smap->type == 1 /* memory */ && smap->length != 0) {
             set_cursor_pos(15, 5);
-            printf("Available Physical Memory [%x-%x]\n", smap->base, smap->base + smap->length);
+            kprintf("Available Physical Memory [%x-%x]\n", smap->base, smap->base + smap->length);
             phys_size = smap->length;
             phys_base = smap->base;
         }
@@ -57,7 +57,7 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
     // kernel starts here
     
     set_cursor_pos(16, 5);
-    printf("PhysBase = %p PhysFree = %p", physbase, physfree);
+    kprintf("PhysBase = %p PhysFree = %p", physbase, physfree);
 
     // Start physical memory at 4MB
     phys_init((phys_size - 0x300000)/8192, phys_base + 0x300000); 
@@ -79,7 +79,7 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
     // Allow interrupts
     __asm__ __volatile__("sti");
 
-    printf("\nEnd of Kernel");
+    kprintf("\nEnd of Kernel");
 
     while(1);
 }
@@ -112,11 +112,11 @@ void boot(void)
 
     set_color(RED, BLACK);
     set_cursor_pos(11, 25);
-    printf("________________");
+    kprintf("________________");
     set_cursor_pos(12, 25);
-    printf("|    SBUnix    |");
+    kprintf("|    SBUnix    |");
     set_cursor_pos(13, 25);
-    printf("----------------");
+    kprintf("----------------");
 
     start(
             (uint32_t*)((char*)(uint64_t)loader_stack[3] + (uint64_t)&kernmem - (uint64_t)&physbase),

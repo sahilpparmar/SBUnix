@@ -16,7 +16,7 @@ void lookup(char *file_name) {
         p = (char*)(header + 1);
         
         if(strcmp(file_name, header->name) == 0) {   
-            printf("...File Name: %s..File Size: %d bytes..Contents of file: ", header->name, size_of_file);
+            kprintf("...File Name: %s..File Size: %d bytes..Contents of file: ", header->name, size_of_file);
 
             for (i = 0; i < size_of_file-1; i++) {
                 putchar(*p++);

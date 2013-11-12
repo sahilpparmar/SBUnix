@@ -162,19 +162,20 @@ struct sys_segment_descriptor {
 }__attribute__((packed));
 
 void init_tss() {
-	struct sys_segment_descriptor* sd = (struct sys_segment_descriptor*)&gdt_entries[5]; // 6th&7th entry in GDT
-	sd->sd_lolimit = sizeof(struct tss_t)-1;
-	sd->sd_lobase = ((uint64_t)&tss);
-	sd->sd_type = 9; // 386 TSS
-	sd->sd_dpl = 0;
-	sd->sd_p = 1;
-	sd->sd_hilimit = 0;
-	sd->sd_gran = 0;
-	sd->sd_hibase = ((uint64_t)&tss) >> 24;
+    struct sys_segment_descriptor* sd = (struct sys_segment_descriptor*)&gdt_entries[5]; // 6th&7th entry in GDT
+    sd->sd_lolimit = sizeof(struct tss_t)-1;
+    sd->sd_lobase = ((uint64_t)&tss);
+    sd->sd_type = 9; // 386 TSS
+    sd->sd_dpl = 0;
+    sd->sd_p = 1;
+    sd->sd_hilimit = 0;
+    sd->sd_gran = 0;
+    sd->sd_hibase = ((uint64_t)&tss) >> 24;
 
-	__asm__ __volatile__("movq %%rsp, %[tss_rsp0]\n\t"
-			     :[tss_rsp0] "=m" (tss.rsp0));
-       	load_tss();
+    __asm__ __volatile__("movq %%rsp, %[tss_rsp0]\n\t"
+            :[tss_rsp0] "=m" (tss.rsp0));
+
+    load_tss();
 }
 
 /**********************************PIC****************************************/

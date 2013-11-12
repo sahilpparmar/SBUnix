@@ -65,9 +65,9 @@ static void irq0_handler(registers_t regs)
     }
 
     set_cursor_pos(24, 55);
-    printf("         ");
+    kprintf("         ");
     set_cursor_pos(24, 55);
-    printf("%d:%d:%d", hr, min, sec);
+    kprintf("%d:%d:%d", hr, min, sec);
 
     // Restore video address
     set_video_addr(cur_video_addr);
