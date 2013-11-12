@@ -17,6 +17,9 @@
 #define LIGHT_BROWN   14
 #define WHITE         15
 
+uint64_t get_video_addr();
+void set_video_addr(uint64_t addr);
+
 void get_cursor_pos(int32_t *row, int32_t *col);
 void set_cursor_pos(int32_t row, int32_t col);
 

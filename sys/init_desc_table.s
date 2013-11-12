@@ -31,3 +31,10 @@ load_idtr:
     lidt (%rdi)
     retq
 
+# Load a new TSS
+.global load_tss
+load_tss:
+    mov $0x2b, %ax 		# Index is 0x28 plus two bits for RPL 3
+    ltr %ax
+    retq
+

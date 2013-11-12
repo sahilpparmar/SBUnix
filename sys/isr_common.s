@@ -29,12 +29,33 @@
 .extern isr_handler
 
 .global isr0
+.global isr10
+.global isr13
+.global isr14
 .global isr_common
 
 isr0:
     cli
-    pushq $0x0
-    pushq $0x0
+    pushq $0
+    pushq $0
+    jmp isr_common
+
+isr10:
+    cli
+    pushq $0
+    pushq $10
+    jmp isr_common
+
+isr13:
+    cli
+    pushq $0
+    pushq $13
+    jmp isr_common
+
+isr14:
+    cli
+    pushq $0
+    pushq $14
     jmp isr_common
 
 isr_common:

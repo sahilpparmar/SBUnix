@@ -5,8 +5,6 @@
 
 
 void lookup(char *file_name) {
-
-
     HEADER *header = (HEADER*) &_binary_tarfs_start;
     int size_of_file = 0; 
     int i;
@@ -17,19 +15,19 @@ void lookup(char *file_name) {
         size_of_file = octal_decimal(atoi(header->size));
         p = (char*)(header + 1);
         
-        if(strcmp(file_name, header->name) == 0)
-        {   
+        if(strcmp(file_name, header->name) == 0) {   
             printf("...File Name: %s..File Size: %d bytes..Contents of file: ", header->name, size_of_file);
 
             for (i = 0; i < size_of_file-1; i++) {
-            putchar(*p++);
+                putchar(*p++);
             } 
         }
         
-        if(size_of_file > 0) 
-            header = header + 1 + (size_of_file / 513 + 1);
-        else
+        if(size_of_file > 0) {
+            header = header + size_of_file / (sizeof(HEADER) + 1) + 2;
+        } else {
             header = header + 1;
+        }
     } while(header < (HEADER*)&_binary_tarfs_end);
     
 }

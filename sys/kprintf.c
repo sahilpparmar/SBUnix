@@ -37,10 +37,11 @@ char *itoa(uint64_t val, char *str, int32_t base)
     return str;
 }
 
-int printf(char *str, ...)
+int32_t printf(const char *str, ...)
 {
     va_list ap;
-    char *ptr, istr[100];
+    const char *ptr = NULL;
+    char istr[100];
     int32_t len = 0;
 
     va_start(ap, str); 
@@ -128,19 +129,19 @@ void *memset(void *ptr, int value, int num)
     return ptr;
 }
 
-int pow(int base, int power)
+int32_t pow(int base, int power)
 { 
     int i = 0, product = 1;
 
-    for(i = 0; i < power; ++i)
-    {
+    for(i = 0; i < power; ++i) {
         product = product * base;
     }
 
     return product;
 }
 
-int atoi(char *p) {
+int32_t atoi(char *p)
+{
     int k = 0;
 
     while (*p) {
@@ -150,15 +151,15 @@ int atoi(char *p) {
     return k;
 }
 
-
-int octal_decimal(int n){
-    int decimal=0, i=0, rem; 
+int32_t octal_decimal(int n) {
+    int decimal = 0, i = 0, rem; 
  
-    while (n!=0) { 
-        rem = n%10; 
-        n/=10; 
-        decimal += rem * pow(8,i);
-        ++i; 
+    while (n != 0) { 
+        rem = n % 10; 
+        n /= 10; 
+        decimal += rem * pow(8, i);
+        ++i;
     }
     return decimal;
 }
+

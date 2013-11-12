@@ -23,12 +23,12 @@ void init_screen(uint64_t vaddr)
     END_VADDR   = vaddr + SIZEOF_BUFFER;
 }
 
-static uint64_t get_video_addr()
+uint64_t get_video_addr()
 {
     return video_addr;
 }
 
-static void set_video_addr(uint64_t addr)
+void set_video_addr(uint64_t addr)
 {
     video_addr = addr;
 }
@@ -82,33 +82,19 @@ void putchar(char mychar)
     char *temp;
     uint64_t addr = get_video_addr();
     int32_t rows, columns;
+
     get_cursor_pos(&rows, &columns);
     
-    if (rows == 24 && columns >= 55) 
-    {
-    
-    temp = (char *)addr;
-    *temp++ = mychar;
-    *temp++ = get_color();
-    set_video_addr((uint64_t)temp);
-
-    }
-    else if(rows == 24) {
+    // This will allow only timer and keyboard to print at line 25 
+    if (rows == 24 && columns < 10) {
         scroll(1);
         addr = get_video_addr();
-        temp = (char *)addr;
-        *temp++ = mychar;
-        *temp++ = get_color();
-        set_video_addr((uint64_t)temp);
-
     }
-    else
-    {
+
     temp = (char *)addr;
     *temp++ = mychar;
     *temp++ = get_color();
     set_video_addr((uint64_t)temp);
-    }
 }
 
 

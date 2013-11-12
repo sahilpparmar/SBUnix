@@ -57,6 +57,8 @@ void init_gdt()
     gdt_set_gate(0, 0, 0, 0, 0);            // null descriptor 
     gdt_set_gate(1, 0x0, 0x0, 0x9A, 0x20);  // code segment for Ring 0 
     gdt_set_gate(2, 0x0, 0x0, 0x92, 0x20);  // data segment for Ring 0
+    gdt_set_gate(3, 0x0, 0x0, 0xFA, 0x20);  // code segment for Ring 3 
+    gdt_set_gate(4, 0x0, 0x0, 0xF2, 0x20);  // data segment for Ring 3 
 
     // Load GDTR
     load_gdt((uint64_t)&gdt_ptr, 0x08, 0x010);
@@ -70,6 +72,10 @@ extern void load_idtr(uint64_t);
 
 // ISR and IRQ asm routines
 extern void isr0();
+extern void isr10();
+extern void isr13();
+extern void isr14();
+
 extern void irq0();
 extern void irq1();
 
@@ -117,18 +123,28 @@ void init_idt()
     idt_ptr.base  = (uint64_t)&idt_entries;
 
     // ISRs
-    idt_set_gate(0,  (uint64_t)isr0, 0x08, 0x8E);
+    idt_set_gate(0,   (uint64_t)isr0,  0x08, 0x8E);
+    idt_set_gate(10,  (uint64_t)isr10, 0x08, 0x8E);
+    idt_set_gate(13,  (uint64_t)isr13, 0x08, 0x8E);
+    idt_set_gate(14,  (uint64_t)isr14, 0x08, 0x8E);
+
+    // IRQs
     idt_set_gate(32, (uint64_t)irq0, 0x08, 0x8E);
     idt_set_gate(33, (uint64_t)irq1, 0x08, 0x8E);
-
-    // Allow interrupts
-    asm volatile("sti");
 
     // Load IDTR
     load_idtr((uint64_t)&idt_ptr);
 }
 
 /**********************************TSS****************************************/
+
+extern void load_tss();
+
+struct tss_t {
+	uint32_t reserved;
+	uint64_t rsp0;
+	uint32_t unused[11];
+}__attribute__((packed)) tss;
 
 struct sys_segment_descriptor {
 	uint64_t sd_lolimit:16;/* segment extent (lsb) */
@@ -145,7 +161,7 @@ struct sys_segment_descriptor {
 	uint64_t sd_xx3:19;    /* reserved */
 }__attribute__((packed));
 
-void setup_tss() {
+void init_tss() {
 	struct sys_segment_descriptor* sd = (struct sys_segment_descriptor*)&gdt_entries[5]; // 6th&7th entry in GDT
 	sd->sd_lolimit = sizeof(struct tss_t)-1;
 	sd->sd_lobase = ((uint64_t)&tss);
@@ -155,6 +171,10 @@ void setup_tss() {
 	sd->sd_hilimit = 0;
 	sd->sd_gran = 0;
 	sd->sd_hibase = ((uint64_t)&tss) >> 24;
+
+	__asm__ __volatile__("movq %%rsp, %[tss_rsp0]\n\t"
+			     :[tss_rsp0] "=m" (tss.rsp0));
+       	load_tss();
 }
 
 /**********************************PIC****************************************/

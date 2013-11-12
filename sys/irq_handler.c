@@ -38,19 +38,23 @@ void init_timer(uint32_t freq)
 
 static void irq0_handler(registers_t regs)
 {
+    uint64_t cur_video_addr;
+
+    // Save current video address
+    cur_video_addr = get_video_addr();
+
     /* tick: counts the PC timer ticks at the rate of 1.18 MHz.
      * sec : counter for counting number of seconds completed. 1 sec = 100 ticks.
      * min : counter for counting number of minutes completed. 1 min = 60 seconds.
      * hr  : counter for counting number of hours completed.
      */
-    
     tick++;
     if (tick%100 == 0) {
         sec++;
-        if (sec == 60){
+        if (sec == 60) {
             min++;
             sec = 0;
-            if (min == 60){
+            if (min == 60) {
                 hr++;
                 min = 0;
                 if (hr == 24) {
@@ -60,10 +64,13 @@ static void irq0_handler(registers_t regs)
         }
     }
 
- //   set_cursor_pos(24, 55);
- //   printf("         ");
+    set_cursor_pos(24, 55);
+    printf("         ");
     set_cursor_pos(24, 55);
     printf("%d:%d:%d", hr, min, sec);
+
+    // Restore video address
+    set_video_addr(cur_video_addr);
 }
 
 /****************************************************************
@@ -166,20 +173,18 @@ void init_keyboard()
     lastKeyPressed = NOKEY;
 }
 
-// static uint32_t start = 0;
-
 /* Handles the keyboard interrupt */
 static void irq1_handler(registers_t regs)
 {
-    uint8_t scancode,val;
+    uint8_t scancode, val;
+    uint64_t cur_video_addr;
 
-    /* Read from the keyboard's data buffer */
+    // Save current video address
+    cur_video_addr = get_video_addr();
+
+    // Read from the keyboard's data buffer
     scancode = inb(0x60);
     
-    //set_cursor_pos(start%25,10);
-    //printf("Current key scancode : %d: ",scancode);
-    //start++;
-
     if (scancode & 0x80) {
         // KeyPressUp Scancodes
         if (scancode == 170 || scancode == 184 || scancode == 157) {
@@ -191,7 +196,7 @@ static void irq1_handler(registers_t regs)
          * SHIFT : Prints characters in caps and secondary characters on keys
          * ALT   : Prints ~ tilt character followed by the next character pressed
          * CTRL  : Prints ^ character followed by the next character pressed
-         * */
+         */
 
         if (scancode == 42)
             lastKeyPressed = SHIFT;
@@ -229,6 +234,8 @@ static void irq1_handler(registers_t regs)
         set_cursor_pos(24, 51);
         putchar(val);
     }       
+    // Restore video address
+    set_video_addr(cur_video_addr);
 }
 
 /****************************************************************
