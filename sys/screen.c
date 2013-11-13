@@ -6,22 +6,16 @@
 #include <stdio.h>
 #include <screen.h>
 
-#define MAX_ROW 24
+#define MAX_ROW 24          // We shall use the last row for displaying timer
 #define MAX_COL 80
 #define SIZEOF_LINE 160     // MAX_COL * 2 bytes
 #define SIZEOF_BUFFER 3840  // MAX_ROW * MAX_COL * 2 bytes
 
-uint64_t START_VADDR; 
-uint64_t END_VADDR;         // START_VADDR + SIZEOF_BUFFER 
+#define START_VADDR 0xFFFFFFFF800B8000UL
+#define END_VADDR   0xFFFFFFFF800B8F00UL  // START_VADDR + SIZEOF_BUFFER 
 
 static uint64_t video_addr;
 static uint8_t color_attr;
-
-void init_screen(uint64_t vaddr)
-{
-    START_VADDR = vaddr; 
-    END_VADDR   = vaddr + SIZEOF_BUFFER;
-}
 
 uint64_t get_video_addr()
 {
@@ -85,7 +79,7 @@ void putchar(char mychar)
 
     get_cursor_pos(&rows, &columns);
     
-    // This will allow only timer and keyboard to print at line 25 
+    // This will allow only timer to print at line 25 
     if (rows == 24 && columns < 10) {
         scroll(1);
         addr = get_video_addr();
@@ -96,7 +90,6 @@ void putchar(char mychar)
     *temp++ = get_color();
     set_video_addr((uint64_t)temp);
 }
-
 
 void clear_screen()
 {
@@ -109,6 +102,12 @@ void clear_screen()
     }
 
     set_cursor_pos(0, 0);
+}
+
+void init_screen()
+{
+    set_color(RED, BLACK);
+    clear_screen();
 }
 
 void newline()

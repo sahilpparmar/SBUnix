@@ -1,11 +1,9 @@
 #include <defs.h>
 #include <stdio.h>
-#include <sys/paging_tables.h>
 #include <sys/paging.h>
 #include <sys/phys_mm.h>
 #include <sys/virt_mm.h>
 #include <sys/kmalloc.h>
-#include <sys/types.h>
 
 #define ENTRIES_PER_PTE  512
 #define ENTRIES_PER_PDE  512
@@ -127,116 +125,6 @@ static void map_kernel_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t s
     }
 }
 
-/***************** Map VAddr to PAddr using Self Referencing Technique **************/
-
-uint64_t* get_pte_entry(uint64_t vaddr)
-{
-    //kprintf("in pte entry self ref");
-    uint64_t tvaddr;
-    uint64_t *addr;
-
-    tvaddr  = ((uint64_t)vaddr << 16 >> 28 << 3);
-    //tvaddr  = tvaddr >> 12 << 3;
-
-    vaddr = ((uint64_t)tvaddr | 0xFFFFFF0000000000);
-    addr = (uint64_t *)vaddr; 
-    return addr;
-} 
-
-static uint64_t* get_pde_entry(uint64_t vaddr)
-{
-    //kprintf("in pte self ref");
-    uint64_t tvaddr;
-    uint64_t *addr;
-
-    tvaddr  = ((uint64_t)vaddr << 16 >> 37 << 3 );
-    //tvaddr  = tvaddr >> 21 << 3;
-
-    vaddr = ((uint64_t)tvaddr | 0xFFFFFF7F80000000);
-    addr = (uint64_t *)vaddr; 
-    
-    return addr;
-} 
-
-static uint64_t* get_pdpe_entry(uint64_t vaddr)
-{
-    //kprintf("in pde self ref");
-    uint64_t tvaddr;
-    uint64_t *addr;
-
-    tvaddr  = ((uint64_t)vaddr << 16 >> 46 << 3);
-    //tvaddr  = tvaddr >> 30 << 3;
-
-    vaddr = ((uint64_t)tvaddr | 0xFFFFFF7FBFC00000);
-    addr = (uint64_t *)vaddr; 
-
-    return addr;
-
-}
-
-static uint64_t* get_pml4_entry(uint64_t vaddr)
-{
-    // kprintf("in pdpe self ref");
-    uint64_t tvaddr;
-    uint64_t *addr;
-
-    tvaddr  = ((uint64_t)vaddr << 16 >> 55 << 3);
-    //tvaddr  = tvaddr >> 39 << 3;
-
-    vaddr = ((uint64_t)tvaddr | 0xFFFFFF7FBFDFE000);
-    addr = (uint64_t *)vaddr; 
-    
-    return addr;
-}
-
-void map_virt_phys_addr(uint64_t vaddr, uint64_t paddr)
-{
-    uint64_t *pml4_entry, *pdpe_entry = NULL, *pde_entry = NULL, *pte_entry = NULL;
-    int phys_addr; 
-
-    pml4_entry = get_pml4_entry(vaddr);
-    pdpe_entry = get_pdpe_entry(vaddr); 
-    pde_entry = get_pde_entry(vaddr);   
-    pte_entry = get_pte_entry(vaddr);
-    
-    phys_addr = (uint64_t) *(pml4_entry);
-    
-    if (phys_addr & PAGING_PRESENT) {
-        phys_addr = (uint64_t) *(pdpe_entry);
-        //kprintf("Inside pdpe available");
-
-        if (phys_addr & PAGING_PRESENT) { 
-            phys_addr  = (uint64_t) *(pde_entry);
-           // kprintf("Inside pde available");
-
-            if (phys_addr & PAGING_PRESENT) { 
-            //    kprintf("Inside pte available");
-                *pte_entry = paddr | PAGING_PRESENT_WRITABLE;
-            } else {
-          //      kprintf("Inside pte creation");
-                *pde_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
-                *pte_entry = paddr | PAGING_PRESENT_WRITABLE;
-            }
-
-        } else {
-        //    kprintf("Inside pde and pte creation");
-            *pdpe_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
-            *pde_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
-            *pte_entry = paddr | PAGING_PRESENT_WRITABLE;
-        }
-
-    } else {
-      //      kprintf("Inside pdpe, pde and pte creation");
-            *pml4_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
-            *pdpe_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
-            *pde_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
-            *pte_entry = paddr | PAGING_PRESENT_WRITABLE;
-
-    }
-
-    //kprintf("\nPDPEt: %p, PDEt: %p, PTEt: %p ", pdpe_entry ,pde_entry, pte_entry);
-}
-
 void init_paging(uint64_t kernmem, uint64_t physbase, uint64_t k_size)
 {
     // Allocate free memory for PML4 table 
@@ -257,34 +145,136 @@ void init_paging(uint64_t kernmem, uint64_t physbase, uint64_t k_size)
     map_kernel_virt_phys_addr(0xFFFFFFFF800B8000, 0xB8000, 1);
     
     // Set CR3 register to address of PML4 table
-    asm volatile ("movq %0, %%cr3;" :: "r"(PADDR((uint64_t)(ker_pml4_t))));
+    __asm__ __volatile__("movq %0, %%cr3;" :: "r"(PADDR((uint64_t)(ker_pml4_t))));
     
     // Set value of top virtual address
-    virt_init(kernmem + (k_size * PAGESIZE));
+    set_top_virtaddr(kernmem + (k_size * PAGESIZE));
            
-    // Setting available free physical memory to zero
+    // Setting available free memory for kmalloc() to zero
     init_kmalloc();
-    
 }
 
-uint64_t user_process_pml4()
+/***************** Map VAddr to PAddr using Self Referencing Technique **************/
+
+uint64_t* get_pte_entry(uint64_t vaddr)
+{
+    uint64_t tvaddr;
+    uint64_t *addr;
+
+    tvaddr  = vaddr << 16 >> 28 << 3;
+
+    tvaddr = tvaddr | 0xFFFFFF0000000000UL;
+    addr = (uint64_t *)tvaddr; 
+    return addr;
+} 
+
+static uint64_t* get_pde_entry(uint64_t vaddr)
+{
+    uint64_t tvaddr;
+    uint64_t *addr;
+
+    tvaddr  = vaddr << 16 >> 37 << 3;
+
+    tvaddr = tvaddr | 0xFFFFFF7F80000000UL;
+    addr = (uint64_t *)tvaddr; 
+    
+    return addr;
+} 
+
+static uint64_t* get_pdpe_entry(uint64_t vaddr)
+{
+    uint64_t tvaddr;
+    uint64_t *addr;
+
+    tvaddr  = vaddr << 16 >> 46 << 3;
+
+    tvaddr = tvaddr | 0xFFFFFF7FBFC00000UL;
+    addr = (uint64_t *)tvaddr; 
+
+    return addr;
+
+}
+
+static uint64_t* get_pml4_entry(uint64_t vaddr)
+{
+    uint64_t tvaddr;
+    uint64_t *addr;
+
+    tvaddr  = vaddr << 16 >> 55 << 3;
+
+    tvaddr = tvaddr | 0xFFFFFF7FBFDFE000UL;
+    addr = (uint64_t *)tvaddr; 
+    
+    return addr;
+}
+
+void map_virt_phys_addr(uint64_t vaddr, uint64_t paddr)
+{
+    uint64_t *pml4_entry, *pdpe_entry, *pde_entry, *pte_entry;
+    uint64_t entry; 
+
+    pml4_entry = get_pml4_entry(vaddr);
+    pdpe_entry = get_pdpe_entry(vaddr); 
+    pde_entry = get_pde_entry(vaddr);   
+    pte_entry = get_pte_entry(vaddr);
+
+    entry = (uint64_t) *(pml4_entry);
+
+    if (entry & PAGING_PRESENT) {
+        entry = (uint64_t) *(pdpe_entry);
+        // kprintf("\tInside pdpe available");
+
+        if (entry & PAGING_PRESENT) { 
+            entry  = (uint64_t) *(pde_entry);
+            // kprintf("\tInside pde available");
+
+            if (entry & PAGING_PRESENT) { 
+                // kprintf("\tInside pte available");
+                *pte_entry = paddr | PAGING_PRESENT_WRITABLE;
+            } else {
+                // kprintf("\tInside pte creation");
+                *pde_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
+                *pte_entry = paddr | PAGING_PRESENT_WRITABLE;
+            }
+
+        } else {
+            // kprintf("\tInside pde and pte creation");
+            *pdpe_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
+            *pde_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
+            *pte_entry = paddr | PAGING_PRESENT_WRITABLE;
+        }
+    } else {
+        // kprintf("\tInside pdpe, pde and pte creation");
+        *pml4_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
+        *pdpe_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
+        *pde_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
+        *pte_entry = paddr | PAGING_PRESENT_WRITABLE;
+    }
+
+    // kprintf("\nEntries: PML4: %p, PDPE: %p, PDE: %p, PTE: %p ", pml4_entry, pdpe_entry ,pde_entry, pte_entry);
+}
+
+uint64_t create_new_pml4()
 {
     uint64_t virtAddr, physAddr, *cur_pml4_t;
 
+    // Get a free virtual and physical page
     virtAddr = get_top_virtaddr();
+    set_top_virtaddr(virtAddr + PAGESIZE);
     physAddr = phys_alloc_block();
 
-    map_kernel_virt_phys_addr(virtAddr, physAddr, 1);
+    map_virt_phys_addr(virtAddr, physAddr);
     cur_pml4_t = (uint64_t *) virtAddr;    
-//    kprintf("\tKernel PML4t:%p", ker_pml4_t);
       
+    // Reserve mapping for kernel page tables
     cur_pml4_t[511] = ker_pml4_t[511];
-    cur_pml4_t[510] = physAddr | PAGING_PRESENT_WRITABLE;
-//    kprintf("\tCur PML4t:%p,  %p , %p",cur_pml4_t, cur_pml4_t[511], cur_pml4_t[510]);
-
-    asm volatile ("movq %0, %%cr3;" :: "r"((uint64_t)(physAddr)));
     
-//    kprintf("\tCurrent PML4t:%p", physAddr);
+    // Self referencing entry
+    cur_pml4_t[510] = physAddr | PAGING_PRESENT_WRITABLE;
+
+    asm volatile ("movq %0, %%cr3;" :: "r"(physAddr));
+    
+    // kprintf("\nNew PML4t: %p", physAddr);
     
     return physAddr;
 }

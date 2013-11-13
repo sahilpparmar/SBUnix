@@ -13,8 +13,7 @@
 #define INITIAL_STACK_SIZE 4096
 
 char stack[INITIAL_STACK_SIZE];
-uint32_t* loader_stack;
-extern char kernmem, physbase;
+uint32_t* loader_stack; extern char kernmem, physbase;
 
 void fun1(void)
 {
@@ -104,13 +103,10 @@ void boot(void)
     init_idt();
     init_pic();
     init_tss();
+    init_screen();
     init_timer(1);
     init_keyboard();
 
-    init_screen(0xFFFFFFFF800B8000);
-    clear_screen();
-
-    set_color(RED, BLACK);
     set_cursor_pos(11, 25);
     kprintf("________________");
     set_cursor_pos(12, 25);

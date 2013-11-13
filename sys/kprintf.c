@@ -1,5 +1,5 @@
 //
-// kkprintf.c -- Implementation for common libc routines  
+// kprintf.c -- Implementation for common libc routines  
 //
 
 #include <stdarg.h>

@@ -26,7 +26,7 @@ void set_cursor_pos(int32_t row, int32_t col);
 uint8_t get_color();
 void set_color(uint8_t fg, uint8_t bg);
 
-void init_screen(uint64_t);
+void init_screen();
 void clear_screen();
 void scroll(int32_t lines);
 

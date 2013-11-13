@@ -1,11 +1,10 @@
 #include <defs.h>
-#include <sys/phys_mm.h>
 #include <stdio.h>
 #include <screen.h>
-#include <sys/types.h>
+#include <sys/phys_mm.h>
 
 #define PHYS_BLOCKS_PER_BYTE 8
-#define PHYS_BLOCK_SIZE PAGESIZE 
+#define PHYS_BLOCK_SIZE 4096 
 #define PHYS_BLOCK_ALIGN PHYS_BLOCK_SIZE
 
 static uint64_t _mmngr_memory_size;
@@ -58,7 +57,6 @@ static uint64_t phys_get_block_size() {
 
     return PHYS_BLOCK_SIZE;
 }
-
 #endif
 
 static int mmap_first_free() 
@@ -66,7 +64,7 @@ static int mmap_first_free()
     uint64_t i, j;
 
     for (i = 0; i < phys_get_block_count()/64; i++) {
-        if (_mmngr_memory_map[i] != 0xFFFFFFFFFFFFFFFF) {
+        if (_mmngr_memory_map[i] != 0xFFFFFFFFFFFFFFFFUL) {
 
             for (j = 0; j < 64; j++) {              // test each bit in the qword
                 uint64_t bit = 1UL << j;
@@ -93,7 +91,7 @@ void phys_init(uint64_t physSize, uint64_t physBase) {
 
 uint64_t phys_alloc_block() {
 
-    uint64_t addr = 0;
+    uint64_t paddr = NULL;
     int frame = -1;
 
     if (phys_get_free_block_count() <= 0)
@@ -105,10 +103,11 @@ uint64_t phys_alloc_block() {
 
     mmap_set(frame);
 
-    addr = _mmngr_base_addr + (frame * PHYS_BLOCK_SIZE);
+    paddr = _mmngr_base_addr + (frame * PHYS_BLOCK_SIZE);
     _mmngr_used_blocks++;
     
-    return addr;
+    // kprintf("\tNewPaddr: %p", paddr);
+    return paddr;
 }
 
 void phys_free_block(uint64_t addr) {
