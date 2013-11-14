@@ -6,6 +6,7 @@
 #define PHYS_BLOCKS_PER_BYTE 8
 #define PHYS_BLOCK_SIZE 4096 
 #define PHYS_BLOCK_ALIGN PHYS_BLOCK_SIZE
+#define PAGE_2ALIGN 12     // 2 ^ PAGE_2ALIGN = PHYS_BLOCK_ALIGN
 
 static uint64_t _mmngr_memory_size;
 static uint64_t _mmngr_used_blocks;
@@ -82,11 +83,11 @@ void phys_init(uint64_t physSize, uint64_t physBase) {
 
     _mmngr_memory_size = physSize;
     _mmngr_memory_map  = bitmap_t;
-    _mmngr_max_blocks  = (physSize*1024) / PHYS_BLOCK_SIZE;
+    _mmngr_max_blocks  = (physSize*1024) >> PAGE_2ALIGN;
     _mmngr_used_blocks = 0;
     _mmngr_base_addr   = physBase;
 
-    memset(_mmngr_memory_map, 0x0, phys_get_block_count() / PHYS_BLOCKS_PER_BYTE );
+    memset(_mmngr_memory_map, 0x0, phys_get_block_count() / PHYS_BLOCKS_PER_BYTE);
 }
 
 uint64_t phys_alloc_block() {
@@ -103,7 +104,7 @@ uint64_t phys_alloc_block() {
 
     mmap_set(frame);
 
-    paddr = _mmngr_base_addr + (frame * PHYS_BLOCK_SIZE);
+    paddr = _mmngr_base_addr + (frame << PAGE_2ALIGN);
     _mmngr_used_blocks++;
     
     // kprintf("\tNewPaddr: %p", paddr);
@@ -112,7 +113,7 @@ uint64_t phys_alloc_block() {
 
 void phys_free_block(uint64_t addr) {
 
-    int frame = (addr - _mmngr_base_addr) / PHYS_BLOCK_SIZE;
+    int frame = (addr - _mmngr_base_addr) >> PAGE_2ALIGN;
 
     mmap_unset(frame);
 
