@@ -3,7 +3,6 @@
 #include <screen.h>
 #include <sys/phys_mm.h>
 
-#define PHYS_BLOCKS_PER_BYTE 8
 #define PHYS_BLOCK_SIZE 4096 
 #define PHYS_BLOCK_ALIGN PHYS_BLOCK_SIZE
 #define PAGE_2ALIGN 12     // 2 ^ PAGE_2ALIGN = PHYS_BLOCK_ALIGN
@@ -79,15 +78,23 @@ static int mmap_first_free()
     return -1;
 }
 
-void phys_init(uint64_t physSize, uint64_t physBase) {
+void phys_init(uint64_t physBase, uint64_t physSize) {
 
-    _mmngr_memory_size = physSize;
-    _mmngr_memory_map  = bitmap_t;
-    _mmngr_max_blocks  = (physSize*1024) >> PAGE_2ALIGN;
+    // Start Physical Pages from 4MB
+    _mmngr_base_addr   = physBase + 0x300000UL;
+    _mmngr_memory_size = physSize - 0x300000UL;                   
+    _mmngr_max_blocks  = _mmngr_memory_size >> PAGE_2ALIGN;     
     _mmngr_used_blocks = 0;
-    _mmngr_base_addr   = physBase;
 
-    memset(_mmngr_memory_map, 0x0, phys_get_block_count() / PHYS_BLOCKS_PER_BYTE);
+    // Set all physical memory to 0
+    memset((void*)_mmngr_base_addr, 0x0, _mmngr_memory_size);
+
+    kprintf("\nPhysical Blocks Base:%p, Size:%p, Max:%p", _mmngr_base_addr, _mmngr_memory_size, _mmngr_max_blocks);
+
+    // Set Bitmap
+    _mmngr_memory_map  = bitmap_t;
+    memset(_mmngr_memory_map, 0x0, sizeof(bitmap_t));
+
 }
 
 uint64_t phys_alloc_block() {

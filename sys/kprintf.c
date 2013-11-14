@@ -106,7 +106,7 @@ int32_t kprintf(const char *str, ...)
     return len;
 }
 
-void *memcpy(void *destination, void *source, int num) 
+void *memcpy(void *destination, void *source, uint64_t num) 
 {
     uint8_t *dest = (uint8_t *)destination;
     uint8_t *src = (uint8_t *)source;
@@ -118,7 +118,7 @@ void *memcpy(void *destination, void *source, int num)
     return destination;
 }
 
-void *memset(void *ptr, int value, int num)
+void *memset(void *ptr, int value, uint64_t num)
 {
     uint8_t *temp = (uint8_t *)ptr;
 

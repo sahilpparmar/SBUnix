@@ -7,7 +7,6 @@
 #include <sys/phys_mm.h>
 #include <sys/virt_mm.h>
 #include <sys/kmalloc.h>
-//#include <sys/proc_mngr.h>
 
 #define K_MEM_PAGES 518
 #define INITIAL_STACK_SIZE 4096
@@ -47,21 +46,18 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
     for(smap = (struct smap_t*)(modulep+2); smap < (struct smap_t*)((char*)modulep+modulep[1]+2*4); ++smap) {
         if (smap->type == 1 /* memory */ && smap->length != 0) {
             set_cursor_pos(15, 5);
-            kprintf("Available Physical Memory [%x-%x]\n", smap->base, smap->base + smap->length);
-            phys_size = smap->length;
+            kprintf("Available Physical Memory [%x-%x]", smap->base, smap->base + smap->length);
             phys_base = smap->base;
+            phys_size = smap->length;
         }
     }
    
     // kernel starts here
-    
-    set_cursor_pos(16, 5);
-    kprintf("PhysBase = %p PhysFree = %p", physbase, physfree);
 
-    // Start physical memory at 4MB
-    phys_init((phys_size - 0x300000)/8192, phys_base + 0x300000); 
+    phys_init(phys_base, phys_size); 
 
     init_paging((uint64_t)&kernmem, (uint64_t)physbase, K_MEM_PAGES);
+
 
 // TODO: Context Switching code
 #if 0

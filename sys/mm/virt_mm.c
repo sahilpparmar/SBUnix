@@ -17,7 +17,7 @@ void set_top_virtaddr(uint64_t vaddr)
     // kprintf("\nTopVaddr = %p", topVirtAddr);
 }
 
-void* virt_alloc_pages (uint32_t no_of_vpages)
+void* virt_alloc_pages(uint32_t no_of_vpages)
 {
     void *ret_addr = NULL; 
     uint64_t* physaddr = NULL;
@@ -35,6 +35,7 @@ void* virt_alloc_pages (uint32_t no_of_vpages)
         topVirtAddr += PAGESIZE;     
     }
 
+    // kprintf("\tNew Vaddr = %p", ret_addr);
     return ret_addr;
 }
 

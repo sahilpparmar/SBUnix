@@ -229,14 +229,14 @@ void map_virt_phys_addr(uint64_t vaddr, uint64_t paddr)
             // kprintf("\tInside pde available");
 
             if (entry & PAGING_PRESENT) { 
-                entry  = (uint64_t) *(pde_entry);
+                entry  = (uint64_t) *(pte_entry);
                 // kprintf("\tInside pte available");
 
                 if (entry & PAGING_PRESENT) { 
-                    // kprintf("\tPhysical page already mapped; so freeing physical page");
+                    // kprintf("\tPhysical page already mapped; so freeing physical page %p", entry);
                     phys_free_block(paddr);
                 } else {
-                    // kprintf("\tNew Physical page mapped");
+                    // kprintf("\tNew Physical page mapped %p", paddr);
                     *pte_entry = paddr | PAGING_PRESENT_WRITABLE;
                 }
 
@@ -282,9 +282,9 @@ uint64_t create_new_pml4()
     // Self referencing entry
     new_pml4_t[510] = physAddr | PAGING_PRESENT_WRITABLE;
 
-    asm volatile ("movq %0, %%cr3;" :: "r"(physAddr));
+    __asm__ __volatile__ ("movq %0, %%cr3;" :: "r"(physAddr));
     
-    // kprintf("\nNew PML4t: %p", physAddr);
+    kprintf("\nNew PML4t: %p", physAddr);
     
     return physAddr;
 }
