@@ -8,7 +8,6 @@
 #include <sys/virt_mm.h>
 #include <sys/kmalloc.h>
 #include <sys/proc_mngr.h>
-#include <sys/mm.h>
 
 #define K_MEM_PAGES 518
 #define INITIAL_STACK_SIZE 4096
@@ -79,7 +78,6 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
     //task_struct* proc2 = (task_struct*)kmalloc(sizeof(task_struct));
     //create_new_process(proc1, (uint64_t)fun1);
     // create_new_process(proc2, (uint64_t)fun2);
-    create_proc("bin/hello");
 
 #if !PREMPTIVE_OS
     init_schedule();

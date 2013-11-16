@@ -26,7 +26,7 @@ void readelf(char* filename) {
     for(i = 0; i < header->e_shnum; ++i) {
         //printf("\n...%x....%x",section_header->sh_type, section_header->sh_offset);         
         p = (char*)((void *) string_table + section_header->sh_name);   //index into string table to get name of section
-        //printf("\n....%s", p); 
+        kprintf("\n....%s", p); 
         section_header = section_header + 1;
     }
 }

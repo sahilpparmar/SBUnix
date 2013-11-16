@@ -13,6 +13,7 @@ struct task_struct
     uint64_t kernel_stack[KERNEL_STACK_SIZE];
     uint64_t rip_register;
     uint64_t rsp_register;
+    mm_struct* mm; 
     task_struct* next;       // The next process in the process list
     task_struct* last;   // The process that ran last
 };
