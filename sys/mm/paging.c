@@ -233,7 +233,7 @@ void map_virt_phys_addr(uint64_t vaddr, uint64_t paddr)
                 // kprintf("\tInside pte available");
 
                 if (entry & PAGING_PRESENT) { 
-                    // kprintf("\tPhysical page already mapped; so freeing physical page %p", entry);
+                    // kprintf("\tPhysical page already mapped; so freeing physical page %p", paddr);
                     phys_free_block(paddr);
                 } else {
                     // kprintf("\tNew Physical page mapped %p", paddr);
