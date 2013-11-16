@@ -8,6 +8,7 @@
 #include <sys/virt_mm.h>
 #include <sys/kmalloc.h>
 #include <sys/proc_mngr.h>
+#include <sys/mm.h>
 
 #define K_MEM_PAGES 518
 #define INITIAL_STACK_SIZE 4096
@@ -21,7 +22,7 @@ void fun1(void)
     while(i < 10){
         kprintf("\n%d In fun1()", i++);
 #if !PREMPTIVE_OS
-        schedule();
+    //    schedule();
 #endif
     }
     kprintf("\nOut of fun1()");
@@ -66,18 +67,19 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
     init_paging((uint64_t)&kernmem, (uint64_t)physbase, K_MEM_PAGES);
 
     // Allow interrupts
-    __asm__ __volatile__("sti");
+    //__asm__ __volatile__("sti");
 
 // Context Switching code
-#if 0
+#if 1
     // Reset the kernel stack
-    __asm__ __volatile__("movq %0, %%rbp" : :"a"(&stack[0]));
-    __asm__ __volatile__("movq %0, %%rsp" : :"a"(&stack[INITIAL_STACK_SIZE]));
+    //__asm__ __volatile__("movq %0, %%rbp" : :"a"(&stack[0]));
+    //__asm__ __volatile__("movq %0, %%rsp" : :"a"(&stack[INITIAL_STACK_SIZE]));
 
-    task_struct* proc1 = (task_struct*)kmalloc(sizeof(task_struct));
-    task_struct* proc2 = (task_struct*)kmalloc(sizeof(task_struct));
-    create_new_process(proc1, (uint64_t)fun1);
-    create_new_process(proc2, (uint64_t)fun2);
+    //task_struct* proc1 = (task_struct*)kmalloc(sizeof(task_struct));
+    //task_struct* proc2 = (task_struct*)kmalloc(sizeof(task_struct));
+    //create_new_process(proc1, (uint64_t)fun1);
+    // create_new_process(proc2, (uint64_t)fun2);
+    create_proc("bin/hello");
 
 #if !PREMPTIVE_OS
     init_schedule();

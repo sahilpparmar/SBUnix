@@ -285,7 +285,8 @@ uint64_t create_new_pml4()
     __asm__ __volatile__ ("movq %0, %%cr3;" :: "r"(physAddr));
     
     kprintf("\nNew PML4t: %p", physAddr);
-    
+    init_kmalloc();    
+
     return physAddr;
 }
 

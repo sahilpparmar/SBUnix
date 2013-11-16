@@ -25,6 +25,6 @@ struct posix_header_ustar {
 };
 
 typedef struct posix_header_ustar HEADER; 
-void lookup(char *file_name);
+void* lookup(char *file_name);
 
 #endif

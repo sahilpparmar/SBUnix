@@ -4,10 +4,9 @@
 #include <stdio.h>
 
 
-void lookup(char *file_name) {
+void* lookup(char *file_name) {
     HEADER *header = (HEADER*) &_binary_tarfs_start;
     int size_of_file = 0; 
-    int i;
     char *p;
     
     do {
@@ -15,12 +14,9 @@ void lookup(char *file_name) {
         size_of_file = octal_decimal(atoi(header->size));
         p = (char*)(header + 1);
         
+        //kprintf("\n...File Name: %s..File Size: %d bytes..Type %s: ", header->name, size_of_file, header->typeflag);
         if(strcmp(file_name, header->name) == 0) {   
-            kprintf("...File Name: %s..File Size: %d bytes..Contents of file: ", header->name, size_of_file);
-
-            for (i = 0; i < size_of_file-1; i++) {
-                putchar(*p++);
-            } 
+            return (void*)p;
         }
         
         if(size_of_file > 0) {
@@ -30,5 +26,8 @@ void lookup(char *file_name) {
         }
     } while(header < (HEADER*)&_binary_tarfs_end);
     
+    kprintf("\n File not found");
+    return NULL;
+
 }
 
