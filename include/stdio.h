@@ -9,11 +9,18 @@ int32_t kprintf(const char *str, ...);
 
 int32_t scanf(const char *format, ...);
 
+// By default copies 1 byte at a time
 void *memcpy(void *destination, void *source, uint64_t num);
-void *memset(void *ptr, int value, uint64_t num);
+// Copies 8 bytes at a time
+void *memcpy8(void *destination, void *source, uint64_t num);
+
+// By default sets 1 byte of memory
+void *memset(void *ptr, uint8_t value, uint64_t num);
+// Sets 8 bytes of memory
+void *memset8(void *ptr, uint64_t value, uint64_t num);
 
 int32_t pow(int base, int power);
 int32_t atoi(char *p);
-int32_t octal_decimal(int n);
+int32_t oct_to_dec(int n);
 #endif
 

@@ -106,6 +106,7 @@ int32_t kprintf(const char *str, ...)
     return len;
 }
 
+// Copies 1 byte at a time
 void *memcpy(void *destination, void *source, uint64_t num) 
 {
     uint8_t *dest = (uint8_t *)destination;
@@ -118,14 +119,38 @@ void *memcpy(void *destination, void *source, uint64_t num)
     return destination;
 }
 
-void *memset(void *ptr, int value, uint64_t num)
+// Copies 8 bytes at a time
+void *memcpy8(void *destination, void *source, uint64_t num) 
+{
+    uint64_t *dest = (uint64_t *)destination;
+    uint64_t *src = (uint64_t *)source;
+
+    while(num--) {
+        *dest++ = *src++; 
+    }
+
+    return destination;
+}
+
+// Sets 1 byte at a time
+void *memset(void *ptr, uint8_t value, uint64_t num)
 {
     uint8_t *temp = (uint8_t *)ptr;
 
     while(num--) {
-        *temp++ = (uint8_t)value; 
+        *temp++ = value; 
     }
+    return ptr;
+}
 
+// Sets 8 bytes at a time
+void *memset8(void *ptr, uint64_t value, uint64_t num)
+{
+    uint64_t *temp = (uint64_t *)ptr;
+
+    while(num--) {
+        *temp++ = value; 
+    }
     return ptr;
 }
 
@@ -151,15 +176,15 @@ int32_t atoi(char *p)
     return k;
 }
 
-int32_t octal_decimal(int n) {
-    int decimal = 0, i = 0, rem; 
+int32_t oct_to_dec(int n) {
+    int dec = 0, i = 0, rem; 
  
     while (n != 0) { 
         rem = n % 10; 
         n /= 10; 
-        decimal += rem * pow(8, i);
+        dec += rem * pow(8, i);
         ++i;
     }
-    return decimal;
+    return dec;
 }
 

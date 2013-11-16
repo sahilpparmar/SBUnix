@@ -87,14 +87,13 @@ void phys_init(uint64_t physBase, uint64_t physSize) {
     _mmngr_used_blocks = 0;
 
     // Set all physical memory to 0
-    memset((void*)_mmngr_base_addr, 0x0, _mmngr_memory_size);
+    memset8((void*)_mmngr_base_addr, 0x0, _mmngr_memory_size/8);
 
     kprintf("\nPhysical Blocks Base:%p, Size:%p, Max:%p", _mmngr_base_addr, _mmngr_memory_size, _mmngr_max_blocks);
 
-    // Set Bitmap
+    // Set Bitmap to all 0
     _mmngr_memory_map  = bitmap_t;
-    memset(_mmngr_memory_map, 0x0, sizeof(bitmap_t));
-
+    memset8((void*)_mmngr_memory_map, 0x0, sizeof(bitmap_t)/8);
 }
 
 uint64_t phys_alloc_block() {

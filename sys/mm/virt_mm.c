@@ -44,6 +44,8 @@ void free_virt_page(void *vaddr)
     uint64_t *pte_entry = NULL;
     uint64_t physaddr = NULL;
 
+    // Zero out the contents of page
+    memset8(vaddr, 0x0, PAGESIZE/8);
     // Get address of PTE entry
     pte_entry = get_pte_entry((uint64_t)vaddr);
     // Get physical address of the page

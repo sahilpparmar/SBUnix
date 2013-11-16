@@ -41,9 +41,10 @@ void create_proc(char *filename) {
     vma_struct *node, *iter;
     Elf64_Ehdr* header = (Elf64_Ehdr*)lookup(filename); //lookup for the file in tarfs
 
-    if(header == NULL)
+    if(header == NULL) {
         return;
-    
+    }
+
     mms = (struct mm_struct *) kmalloc(sizeof(struct mm_struct));
     mms->mmap = NULL;
     mms->pml4_t = (uint64_t *)create_new_pml4();

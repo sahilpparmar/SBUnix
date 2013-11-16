@@ -10,24 +10,23 @@ void* lookup(char *file_name) {
     char *p;
     
     do {
-        /*convert header->size string to octal to integer*/
-        size_of_file = octal_decimal(atoi(header->size));
+        // Convert header->size string to octal to decimal
+        size_of_file = oct_to_dec(atoi(header->size));
         p = (char*)(header + 1);
         
-        //kprintf("\n...File Name: %s..File Size: %d bytes..Type %s: ", header->name, size_of_file, header->typeflag);
-        if(strcmp(file_name, header->name) == 0) {   
+        // kprintf("\n...File Name: %s..File Size: %d bytes..Type %s: ", header->name, size_of_file, header->typeflag);
+        if (strcmp(file_name, header->name) == 0) {   
             return (void*)p;
         }
         
-        if(size_of_file > 0) {
+        if (size_of_file > 0) {
             header = header + size_of_file / (sizeof(HEADER) + 1) + 2;
         } else {
             header = header + 1;
         }
     } while(header < (HEADER*)&_binary_tarfs_end);
     
-    kprintf("\n File not found");
+    // kprintf("\nFile not found");
     return NULL;
-
 }
 

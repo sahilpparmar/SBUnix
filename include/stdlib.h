@@ -3,6 +3,5 @@
 
 int main(int argc, char* argv[]);
 void exit(int status);
-int printf(const char *format, ...);
 
 #endif
