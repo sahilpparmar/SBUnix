@@ -76,7 +76,9 @@ extern void isr10();
 extern void isr13();
 extern void isr14();
 
+extern void timer_handler();
 extern void irq0();
+
 extern void irq1();
 
 struct idt_entry_struct
@@ -129,7 +131,14 @@ void init_idt()
     idt_set_gate(14,  (uint64_t)isr14, 0x08, 0x8E);
 
     // IRQs
-    idt_set_gate(32, (uint64_t)irq0, 0x08, 0x8E);
+    idt_set_gate(32, 
+#if PREMPTIVE_OS
+                      (uint64_t)timer_handler,
+#else
+                      (uint64_t)irq0,
+#endif
+                                     0x08, 0x8E);
+
     idt_set_gate(33, (uint64_t)irq1, 0x08, 0x8E);
 
     // Load IDTR

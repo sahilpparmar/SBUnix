@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 char world[10] = "world";
-char blank1[10] = "     ";
+char blank[10] = "     ";
 
 int main(int argc, char* argv[])
 {
@@ -10,15 +10,15 @@ int main(int argc, char* argv[])
     char *addr = (char*)0xFFFFFFFF800B8000;
     
     i = 0;
-    *addr++ = blank1[i++];
+    *addr++ = blank[i++];
     addr++;
-    *addr++ = blank1[i++];
+    *addr++ = blank[i++];
     addr++;
-    *addr++ = blank1[i++];
+    *addr++ = blank[i++];
     addr++;
-    *addr++ = blank1[i++];
+    *addr++ = blank[i++];
     addr++;
-    *addr++ = blank1[i++];
+    *addr++ = blank[i++];
     addr++;
     i = 0;
     *addr++ = world[i++];

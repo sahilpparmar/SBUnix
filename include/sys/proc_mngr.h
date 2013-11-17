@@ -3,6 +3,9 @@
 
 #define KERNEL_STACK_SIZE 128
 
+#define cli __asm__ __volatile__("cli");
+#define sti __asm__ __volatile__("sti");
+
 typedef struct task_struct task_struct;
 
 struct task_struct

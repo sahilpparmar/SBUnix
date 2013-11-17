@@ -5,7 +5,7 @@
 #define TRUE  1
 #define FALSE 0
 
-#define PREMPTIVE_OS 0
+#define PREMPTIVE_OS 1
 
 // Unsigned data types
 typedef unsigned long   __uint64_t;

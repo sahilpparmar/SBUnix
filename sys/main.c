@@ -20,7 +20,7 @@ void fun1(void)
 {
     int i = 0;
     while(i < 10){
-        kprintf("\n%d In fun1()", i++);
+        kprintf(" %d f1", i++);
 #if !PREMPTIVE_OS
         schedule();
 #endif
@@ -33,7 +33,7 @@ void fun2(void)
 {
     int i = 0;
     while(i < 10){
-        kprintf("\n%d In fun2()", i++);
+        kprintf(" %d f2", i++);
 #if !PREMPTIVE_OS
         schedule();
 #endif
