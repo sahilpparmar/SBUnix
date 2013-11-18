@@ -7,19 +7,9 @@ char blank[10] = "     ";
 int main(int argc, char* argv[])
 {
     int i;
-    char *addr = (char*)0xFFFFFFFF800B8000;
+    volatile char *addr;
     
-    i = 0;
-    *addr++ = blank[i++];
-    addr++;
-    *addr++ = blank[i++];
-    addr++;
-    *addr++ = blank[i++];
-    addr++;
-    *addr++ = blank[i++];
-    addr++;
-    *addr++ = blank[i++];
-    addr++;
+    addr = (char*)0xFFFFFFFF800B800C;
     i = 0;
     *addr++ = world[i++];
     addr++;

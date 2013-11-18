@@ -26,16 +26,16 @@ void dump_regs()
     volatile uint64_t register cr0, cr2, cr3, cr4;
 
     __asm__ __volatile__(
-            "movq %%rsp, %[rsp]\n\t"
-            "movq %%rbp, %[rbp]\n\t"
-            "movq %%rsi, %[rsi]\n\t"
-            "movq %%rdi, %[rdi]\n\t"
-            "movq %%rax, %[rax]\n\t"
-            "movq %%rbx, %[rbx]\n\t"
-            "movq %%rcx, %[rcx]\n\t"
-            "movq %%rdx, %[rdx]\n\t"
-            "pushfq\n\t"
-            "popq %[rflags]\n\t"
+            "movq %%rsp, %[rsp];"
+            "movq %%rbp, %[rbp];"
+            "movq %%rsi, %[rsi];"
+            "movq %%rdi, %[rdi];"
+            "movq %%rax, %[rax];"
+            "movq %%rbx, %[rbx];"
+            "movq %%rcx, %[rcx];"
+            "movq %%rdx, %[rdx];"
+            "pushfq;"
+            "popq %[rflags];"
             :
             [rsp]"=m"(rsp),
             [rbp]"=m"(rbp),
@@ -48,11 +48,11 @@ void dump_regs()
             [rflags]"=m"(rflags));
 
     __asm__ __volatile__(
-            "leaq (%%rip), %[rip]\n\t"
-            "movq %%cr0, %[cr0]\n\t"
-            "movq %%cr2, %[cr2]\n\t"
-            "movq %%cr3, %[cr3]\n\t"
-            "movq %%cr4, %[cr4]\n\t"
+            "leaq (%%rip), %[rip];"
+            "movq %%cr0, %[cr0];"
+            "movq %%cr2, %[cr2];"
+            "movq %%cr3, %[cr3];"
+            "movq %%cr4, %[cr4];"
             :
             [rip]"=r"(rip),
             [cr0]"=r"(cr0), 

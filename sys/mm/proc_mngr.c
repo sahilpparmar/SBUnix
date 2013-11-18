@@ -2,8 +2,6 @@
 #include <sys/proc_mngr.h>
 #include <stdio.h>
 
-#define DEBUG_SCHEDULING 0
-
 // The process lists. The task at the head of the READY_LIST should always be executed next.
 task_struct* READY_LIST = NULL;
 task_struct* CURRENT_TASK = NULL;
@@ -46,14 +44,18 @@ void timer_handler()
 
     if (READY_LIST != NULL) {
         if (!IsInitScheduler) {
-#if DEBUG_SCHEDULING
-            kprintf("\nScheduler Not Initiated");
-#endif
             // The first time schedule gets invoked - additional processing needs done
             prev = READY_LIST;
             READY_LIST = READY_LIST->next;
             CURRENT_TASK = prev;
             IsInitScheduler = TRUE;
+
+#if DEBUG_SCHEDULING
+            kprintf("\nScheduler Initiated with PID: %d", prev->proc_id);
+#endif
+
+            LOAD_CR3(prev->mm->pml4_t);
+
             // Need to switch the kernel stack to that of the first process
             // IRETQ pops in the order of rip, cs, rflags, rsp and ss
             __asm__ __volatile__("movq %[prev_rsp], %%rsp" : : [prev_rsp] "m" (prev->rsp_register));
@@ -67,6 +69,9 @@ void timer_handler()
             next = READY_LIST;
 
             prev->rsp_register = cur_rsp;
+
+            LOAD_CR3(next->mm->pml4_t);
+
             __asm__ __volatile__("movq %[next_rsp], %%rsp" : : [next_rsp] "m" (next->rsp_register));
 
             CURRENT_TASK = READY_LIST;
@@ -76,7 +81,7 @@ void timer_handler()
             READY_LIST = READY_LIST->next;
 
 #if DEBUG_SCHEDULING
-            kprintf("\nScheduler Initiated");
+            //kprintf("\nPID:%d", next->proc_id);
 #endif
             __asm__ __volatile__("mov $0x20, %al;" "out %al, $0x20");
             sti;
@@ -84,6 +89,10 @@ void timer_handler()
         }
     } else {
         // READY_LIST is empty
+#if DEBUG_SCHEDULING
+        //__asm__ __volatile__("popq %ax");
+        //kprintf("\nList Empty");
+#endif
         __asm__ __volatile__("mov $0x20, %al;" "out %al, $0x20");
         sti;
         __asm__ __volatile__("iretq");
@@ -112,6 +121,8 @@ void schedule()
         // kprintf("\nThe task to be scheduled next is %p", READY_LIST);
         READY_LIST = READY_LIST->next;
         // kprintf("\nThe task to be scheduled after that is %p", READY_LIST);
+
+        LOAD_CR3(next->mm->pml4_t);
         switch_to(prev, next);
     }
 }
@@ -130,7 +141,7 @@ void init_schedule()
 
 #endif
 
-void create_new_process(task_struct* new_task, uint64_t func_addr)
+void schedule_process(task_struct* new_task, uint64_t func_addr)
 {
 #if PREMPTIVE_OS
     // Set up kernel stack => ss, rsp, rflags, cs, rip
@@ -153,6 +164,10 @@ void create_new_process(task_struct* new_task, uint64_t func_addr)
     new_task->rip_register = func_addr;
     new_task->next = NULL;
     new_task->last = NULL;
+
+#if DEBUG_SCHEDULING
+    kprintf("\tEntry Point:%p", func_addr);
+#endif
 
     // Add to the ready list 
     add_to_ready_list(new_task);

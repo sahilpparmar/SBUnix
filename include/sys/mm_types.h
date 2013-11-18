@@ -13,14 +13,14 @@ struct vm_area_struct {
 };
 
 struct mm_struct {
-    vma_struct * mmap;              // list of VMAs
-    vma_struct * mmap_cache;        // last find_vma result
+    vma_struct * vma_list;          // list of VMAs
+    vma_struct * vma_cache;         // last find_vma result
     uint64_t mmap_base;             // base of mmap area
     uint64_t task_size;             // size of task vm space
     uint64_t cached_hole_size;      // if non-zero, the largest hole below free_area_cache
     uint64_t free_area_cache;       // first hole of size cached_hole_size or larger
-    uint64_t *pml4_t;
-    uint32_t map_count;             // number of VMAs
+    uint64_t pml4_t;                // Actual physical base addr for PML4 table
+    uint32_t vma_count;             // number of VMAs
 
     uint64_t hiwater_vm;            // High-water virtual memory usage
 

@@ -3,7 +3,6 @@
 #include <string.h>
 #include <stdio.h>
 
-
 void* lookup(char *file_name) {
     HEADER *header = (HEADER*) &_binary_tarfs_start;
     int size_of_file = 0; 

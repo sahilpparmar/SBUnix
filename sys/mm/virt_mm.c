@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <sys/phys_mm.h>
 #include <sys/virt_mm.h>
+#include <sys/types.h>
 #include <sys/paging.h>
 
 uint64_t topVirtAddr;
@@ -14,7 +15,7 @@ uint64_t get_top_virtaddr()
 void set_top_virtaddr(uint64_t vaddr)
 {
     topVirtAddr = vaddr;
-    // kprintf("\nTopVaddr = %p", topVirtAddr);
+    //kprintf("\nTopVaddr = %p", topVirtAddr);
 }
 
 void* virt_alloc_pages(uint32_t no_of_vpages)

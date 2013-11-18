@@ -1,5 +1,6 @@
 #include <defs.h>
 #include <stdio.h>
+#include <sys/types.h>
 #include <sys/paging.h>
 #include <sys/phys_mm.h>
 #include <sys/virt_mm.h>
@@ -13,9 +14,8 @@
 // For accessing Page table addresses, we need to first convert PhyADDR to VirADDR
 // So need to add below kernel base address
 #define KERNEL_START_VADDR 0xFFFFFFFF80000000
-#define ALIGN(ADDR) ((ADDR) >> 12 << 12)
-#define VADDR(PADDR) ((KERNEL_START_VADDR) + ALIGN(PADDR))
-#define PADDR(VADDR) (ALIGN(VADDR) - (KERNEL_START_VADDR))
+#define VADDR(PADDR) ((KERNEL_START_VADDR) + PAGE_ALIGN(PADDR))
+#define PADDR(VADDR) (PAGE_ALIGN(VADDR) - (KERNEL_START_VADDR))
 
 #define PAGING_PRESENT_WRITABLE PAGING_PRESENT | PAGING_WRITABLE; 
 
@@ -49,7 +49,7 @@ static uint64_t* alloc_pdpe(uint64_t *pml4_table, int pml4_off)
     return (uint64_t*)VADDR(pdpe_table);
 }
 
-static void map_kernel_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t no_of_pages)
+static void init_map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t no_of_pages)
 {
     uint64_t *pdpe_table = NULL, *pde_table = NULL, *pte_table = NULL;
 
@@ -139,13 +139,13 @@ void init_paging(uint64_t kernmem, uint64_t physbase, uint64_t no_of_pages)
     // Mappings for virtual address range [0xFFFFFFFF80200000, 0xFFFFFFFF80406000]
     // to physical address range [0x200000, 0x406000]
     // 2 MB for Kernal + 6 Pages for PML4, PDPE, PDE, PTE(3) tables
-    map_kernel_virt_phys_addr(kernmem, physbase, no_of_pages);
+    init_map_virt_phys_addr(kernmem, physbase, no_of_pages);
 
     // Use existing Video address mapping: Virtual memory 0xFFFFFFFF800B8000 to Physical memory 0xB8000
-    map_kernel_virt_phys_addr(0xFFFFFFFF800B8000, 0xB8000, 1);
+    init_map_virt_phys_addr(0xFFFFFFFF800B8000, 0xB8000, 1);
     
     // Set CR3 register to address of PML4 table
-    __asm__ __volatile__("movq %0, %%cr3;" :: "r"(PADDR((uint64_t)(ker_pml4_t))));
+    LOAD_CR3(pml4_paddr);
     
     // Set value of top virtual address
     set_top_virtaddr(kernmem + (no_of_pages * PAGESIZE));
@@ -261,7 +261,7 @@ void map_virt_phys_addr(uint64_t vaddr, uint64_t paddr)
         *pte_entry = paddr | PAGING_PRESENT_WRITABLE;
     }
 
-    // kprintf("\nEntries: PML4: %p, PDPE: %p, PDE: %p, PTE: %p ", pml4_entry, pdpe_entry ,pde_entry, pte_entry);
+    // kprintf("\nEntries: PML4: %p, PDPE: %p, PDE: %p, PTE: %p ", pml4_entry, pdpe_entry, pde_entry, pte_entry);
 }
 
 uint64_t create_new_pml4()
@@ -281,11 +281,6 @@ uint64_t create_new_pml4()
     
     // Self referencing entry
     new_pml4_t[510] = physAddr | PAGING_PRESENT_WRITABLE;
-
-    __asm__ __volatile__ ("movq %0, %%cr3;" :: "r"(physAddr));
-    
-    kprintf("\nNew PML4t: %p", physAddr);
-    init_kmalloc();    
 
     return physAddr;
 }

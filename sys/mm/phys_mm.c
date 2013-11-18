@@ -1,11 +1,7 @@
 #include <defs.h>
 #include <stdio.h>
 #include <screen.h>
-#include <sys/phys_mm.h>
-
-#define PHYS_BLOCK_SIZE 4096 
-#define PHYS_BLOCK_ALIGN PHYS_BLOCK_SIZE
-#define PAGE_2ALIGN 12     // 2 ^ PAGE_2ALIGN = PHYS_BLOCK_ALIGN
+#include <sys/types.h>
 
 static uint64_t _mmngr_memory_size;
 static uint64_t _mmngr_used_blocks;
@@ -55,7 +51,7 @@ static uint64_t phys_get_use_block_count() {
 
 static uint64_t phys_get_block_size() {
 
-    return PHYS_BLOCK_SIZE;
+    return PAGESIZE;
 }
 #endif
 

@@ -3,18 +3,19 @@
 #include <screen.h>
 #include <sys/init_desc_table.h>
 #include <sys/irq_common.h>
+#include <sys/types.h>
 #include <sys/paging.h>
 #include <sys/phys_mm.h>
 #include <sys/virt_mm.h>
 #include <sys/kmalloc.h>
 #include <sys/proc_mngr.h>
-#include <sys/mm.h>
 
 #define K_MEM_PAGES 518
 #define INITIAL_STACK_SIZE 4096
 
 char stack[INITIAL_STACK_SIZE];
-uint32_t* loader_stack; extern char kernmem, physbase;
+uint32_t* loader_stack;
+extern char kernmem, physbase;
 
 void fun1(void)
 {
@@ -66,24 +67,31 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
 
     init_paging((uint64_t)&kernmem, (uint64_t)physbase, K_MEM_PAGES);
 
-    // Allow interrupts
-    __asm__ __volatile__("sti");
-
-// Context Switching code
-#if 0
     // Reset the kernel stack
     __asm__ __volatile__("movq %0, %%rbp" : :"a"(&stack[0]));
     __asm__ __volatile__("movq %0, %%rsp" : :"a"(&stack[INITIAL_STACK_SIZE]));
 
-    task_struct* proc1 = (task_struct*)kmalloc(sizeof(task_struct));
-    task_struct* proc2 = (task_struct*)kmalloc(sizeof(task_struct));
-    create_new_process(proc1, (uint64_t)fun1);
-    create_new_process(proc2, (uint64_t)fun2);
+    // Allow interrupts
+    sti;
+
+// Context Switching code between fun1 and fun2
+#if 0
+
+    task_struct* proc1 = alloc_new_task();
+    schedule_process(proc1, (uint64_t)fun1);
+
+    task_struct* proc2 = alloc_new_task();
+    schedule_process(proc2, (uint64_t)fun2);
+#endif
+
+// Context Switching code between tarfs processes
+#if 0
+    create_elf_proc("bin/hello");
+    create_elf_proc("bin/world");
+#endif
 
 #if !PREMPTIVE_OS
     init_schedule();
-#endif
-
 #endif
 
     kprintf("\nEnd of Kernel");
@@ -104,7 +112,7 @@ void boot(void)
            );
 
     // Disable interrupts
-    __asm__ __volatile__("cli");
+    cli;
 
     // Intialize
     init_gdt();

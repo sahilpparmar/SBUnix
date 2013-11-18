@@ -106,9 +106,9 @@ idt_ptr_t   idt_ptr;
 
 static void idt_set_gate(int32_t index, uint64_t target_offset, uint16_t target_selector, uint8_t access_flags)
 {
-    idt_entries[index].target_offset_low  = (target_offset & 0xFFFF);
-    idt_entries[index].target_offset_mid  = (target_offset >> 16) & 0xFFFF;
-    idt_entries[index].target_offset_high = (target_offset >> 32) & 0xFFFFFFFF;
+    idt_entries[index].target_offset_low  = (target_offset & 0xFFFFUL);
+    idt_entries[index].target_offset_mid  = (target_offset >> 16) & 0xFFFFUL;
+    idt_entries[index].target_offset_high = (target_offset >> 32) & 0xFFFFFFFFUL;
 
     idt_entries[index].target_selector = target_selector;
     idt_entries[index].access_bits = access_flags;
@@ -173,7 +173,7 @@ struct sys_segment_descriptor {
 void init_tss() {
     struct sys_segment_descriptor* sd = (struct sys_segment_descriptor*)&gdt_entries[5]; // 6th&7th entry in GDT
     sd->sd_lolimit = sizeof(struct tss_t)-1;
-    sd->sd_lobase = ((uint64_t)&tss);
+    sd->sd_lobase = ((uint64_t)&tss) & 0xFFFFFFUL;
     sd->sd_type = 9; // 386 TSS
     sd->sd_dpl = 0;
     sd->sd_p = 1;
@@ -181,8 +181,7 @@ void init_tss() {
     sd->sd_gran = 0;
     sd->sd_hibase = ((uint64_t)&tss) >> 24;
 
-    __asm__ __volatile__("movq %%rsp, %[tss_rsp0]\n\t"
-            :[tss_rsp0] "=m" (tss.rsp0));
+    __asm__ __volatile__("movq %%rsp, %[tss_rsp0];" : [tss_rsp0] "=m" (tss.rsp0));
 
     load_tss();
 }

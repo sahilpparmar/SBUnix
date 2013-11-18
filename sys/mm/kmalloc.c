@@ -1,7 +1,7 @@
 #include <defs.h>
 #include <stdio.h>
 #include <sys/virt_mm.h>
-#include <sys/paging.h>
+#include <sys/types.h>
 
 // 2 ^ POWER2_ALIGN = BLOCK_ALIGN
 #define BLOCK_ALIGN  16
