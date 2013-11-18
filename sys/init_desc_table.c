@@ -75,6 +75,7 @@ extern void isr0();
 extern void isr10();
 extern void isr13();
 extern void isr14();
+extern void syscall_handler();
 
 extern void timer_handler();
 extern void irq0();
@@ -129,6 +130,7 @@ void init_idt()
     idt_set_gate(10,  (uint64_t)isr10, 0x08, 0x8E);
     idt_set_gate(13,  (uint64_t)isr13, 0x08, 0x8E);
     idt_set_gate(14,  (uint64_t)isr14, 0x08, 0x8E);
+    idt_set_gate(128, (uint64_t)syscall_handler, 0x08, 0xEE);
 
     // IRQs
     idt_set_gate(32, 

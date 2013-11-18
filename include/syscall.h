@@ -3,7 +3,7 @@
 
 #include <defs.h>
 
-#define SYSCALL_PROTO(n) static __inline uint64_t __syscall#n
+#define SYSCALL_PROTO(n) static __inline uint64_t __syscall##n
 
 SYSCALL_PROTO(0)(uint64_t n) {
 	return 0;
