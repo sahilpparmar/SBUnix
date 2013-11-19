@@ -20,6 +20,7 @@ void* mmap(uint64_t virt_addr, int bytes);
 task_struct* alloc_new_task();
 void create_elf_proc(char *filename);
 void schedule_process(task_struct* new_task, uint64_t func_addr);
+void set_tss_rsp0(uint64_t);
 
 #if PREMPTIVE_OS
 

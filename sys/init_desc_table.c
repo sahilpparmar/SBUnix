@@ -188,6 +188,11 @@ void init_tss() {
     load_tss();
 }
 
+void set_tss_rsp0(uint64_t rsp)
+{
+    tss.rsp0 = rsp; 
+}
+
 /**********************************PIC****************************************/
 
 void init_pic()

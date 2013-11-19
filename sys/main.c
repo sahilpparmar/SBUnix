@@ -116,9 +116,9 @@ void boot(void)
 
     // Intialize
     init_gdt();
+    init_tss();
     init_idt();
     init_pic();
-    init_tss();
     init_screen();
     init_timer(1);
     init_keyboard();
