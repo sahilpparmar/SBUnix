@@ -11,69 +11,6 @@
 
 
 /****************************************************************
-  IRQ0: Timer
-****************************************************************/
-
-static uint32_t sec, min, hr, tick;
-
-void init_timer(uint32_t freq)
-{
-    uint32_t divisor = 1193180 / freq;
-    uint8_t lower, upper;
-
-    // Send the command byte.
-    outb(0x43, 0x36);
-
-    // Split into upper/lower bytes
-    lower = (uint8_t)(divisor & 0xFF);
-    upper = (uint8_t)((divisor >> 8) & 0xFF);
-
-    // Send the frequency divisor
-    outb(0x40, lower);
-    outb(0x40, upper);
-
-    // Initialize timer to 0
-    sec = min = hr = tick = 0;
-}
-
-static void irq0_handler(registers_t regs)
-{
-    uint64_t cur_video_addr;
-
-    // Save current video address
-    cur_video_addr = get_video_addr();
-
-    /* tick: counts the PC timer ticks at the rate of 1.18 MHz.
-     * sec : counter for counting number of seconds completed. 1 sec = 100 ticks.
-     * min : counter for counting number of minutes completed. 1 min = 60 seconds.
-     * hr  : counter for counting number of hours completed.
-     */
-    tick++;
-    if (tick%100 == 0) {
-        sec++;
-        if (sec == 60) {
-            min++;
-            sec = 0;
-            if (min == 60) {
-                hr++;
-                min = 0;
-                if (hr == 24) {
-                    hr = 0;
-                }
-            }
-        }
-    }
-
-    set_cursor_pos(24, 55);
-    kprintf("         ");
-    set_cursor_pos(24, 55);
-    kprintf("%d:%d:%d", hr, min, sec);
-
-    // Restore video address
-    set_video_addr(cur_video_addr);
-}
-
-/****************************************************************
   IRQ1: Keyboard
 ****************************************************************/
 
@@ -177,7 +114,7 @@ void init_keyboard()
 }
 
 /* Handles the keyboard interrupt */
-static void irq1_handler(registers_t regs)
+static void keyboard_handler(registers_t regs)
 {
     uint8_t scancode, val;
 
@@ -204,23 +141,15 @@ static void irq1_handler(registers_t regs)
         else {
             switch (lastKeyPressed) {
                 case NOKEY:
-                    // set_cursor_pos(24, 50);
-                    //putchar(' ');
                     val = kbsmall[scancode];
                     break;
                 case CTRL:
-                    // set_cursor_pos(24, 50);
-                    //putchar('^');
                     val = kbsmall[scancode];
                     break;
                 case ALT:
-                    //   set_cursor_pos(24, 50);
-                    //putchar('~');
                     val = kbsmall[scancode];
                     break;
                 case SHIFT:
-                    // set_cursor_pos(24, 50);
-                    //putchar(' ');
                     val = kbcaps[scancode];
                     break;
                 default:
@@ -249,10 +178,10 @@ void irq_handler(registers_t regs)
 {
     switch (regs.int_no) {
         case 32:
-            irq0_handler(regs);
+            // Called directly from irq0()
             break;
         case 33:
-            irq1_handler(regs);
+            keyboard_handler(regs);
             break;
         default:
             break;

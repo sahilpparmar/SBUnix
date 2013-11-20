@@ -19,14 +19,14 @@ void kscanf(const char *str, ...)
                 case 's':
                     flag = 1;
                     while(flag == 1);
-                    memcpy((void *) va_arg(ap, char *) , (void *)buf, counter); 
+                    memcpy((void *) va_arg(ap, char *), (void *)buf, counter); 
                     counter = 0;
                     break;
                 case 'd':
                     flag = 1;
                     while(flag == 1);
                     num = (int32_t)atoi((char *)buf);
-                    memcpy8( (void *) va_arg(ap, int32_t *), (void *) &num, counter);
+                    memcpy8((void *) va_arg(ap, int32_t *), (void *) &num, counter);
                     counter = 0;
                     break;
                 case 'c':

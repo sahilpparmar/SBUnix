@@ -22,9 +22,6 @@ void fun1(void)
     int i = 0;
     while(i < 10){
         kprintf(" %d f1", i++);
-#if !PREMPTIVE_OS
-        schedule();
-#endif
     }
     kprintf("\nOut of fun1()");
     while(1);
@@ -35,9 +32,6 @@ void fun2(void)
     int i = 0;
     while(i < 10){
         kprintf(" %d f2", i++);
-#if !PREMPTIVE_OS
-        schedule();
-#endif
     }
     kprintf("\nOut of fun2()");
     while(1);
@@ -71,12 +65,8 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
     __asm__ __volatile__("movq %0, %%rbp" : :"a"(&stack[0]));
     __asm__ __volatile__("movq %0, %%rsp" : :"a"(&stack[INITIAL_STACK_SIZE]));
 
-    // Allow interrupts
-    sti;
-
 // Context Switching code between fun1 and fun2
 #if 0
-
     task_struct* proc1 = alloc_new_task();
     schedule_process(proc1, (uint64_t)fun1);
 
@@ -90,9 +80,8 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
     create_elf_proc("bin/world");
 #endif
 
-#if !PREMPTIVE_OS
-    init_schedule();
-#endif
+    // Allow interrupts
+    sti;
 
     kprintf("\nEnd of Kernel");
 

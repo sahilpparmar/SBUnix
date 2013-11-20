@@ -75,7 +75,6 @@ void scroll(int32_t lines)
 
 void putchar(char mychar)
 {
-
     if (mychar == '\n') {
         newline();
     } else if (mychar == '\t') {
@@ -85,10 +84,10 @@ void putchar(char mychar)
     } else {
         char *temp;
         uint64_t addr = get_video_addr();
-        int32_t rows, columns;
+        int32_t rows, cols;
 
-        get_cursor_pos(&rows, &columns);
-        if (rows == MAX_ROW) {
+        get_cursor_pos(&rows, &cols);
+        if (rows == MAX_ROW && cols == 0) {
             scroll(1);
             addr = get_video_addr();
         }
