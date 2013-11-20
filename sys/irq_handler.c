@@ -167,6 +167,9 @@ typedef enum lastKeyPressed {
 } lastKeyPressed_t;
 
 static lastKeyPressed_t lastKeyPressed;
+extern volatile int flag, counter;
+extern volatile char buf[];
+
 
 void init_keyboard()
 {
@@ -177,14 +180,9 @@ void init_keyboard()
 static void irq1_handler(registers_t regs)
 {
     uint8_t scancode, val;
-    uint64_t cur_video_addr;
-
-    // Save current video address
-    cur_video_addr = get_video_addr();
 
     // Read from the keyboard's data buffer
     scancode = inb(0x60);
-    
     if (scancode & 0x80) {
         // KeyPressUp Scancodes
         if (scancode == 170 || scancode == 184 || scancode == 157) {
@@ -197,45 +195,51 @@ static void irq1_handler(registers_t regs)
          * ALT   : Prints ~ tilt character followed by the next character pressed
          * CTRL  : Prints ^ character followed by the next character pressed
          */
-
         if (scancode == 42)
             lastKeyPressed = SHIFT;
         else if (scancode == 56)
             lastKeyPressed = ALT;
         else if (scancode == 29)
             lastKeyPressed = CTRL;
-
-        switch (lastKeyPressed) {
-        case NOKEY:
-            set_cursor_pos(24, 50);
-            putchar(' ');
-            val = kbsmall[scancode];
-            break;
-        case CTRL:
-            set_cursor_pos(24, 50);
-            putchar('^');
-            val = kbsmall[scancode];
-            break;
-        case ALT:
-            set_cursor_pos(24, 50);
-            putchar('~');
-            val = kbsmall[scancode];
-            break;
-        case SHIFT:
-            set_cursor_pos(24, 50);
-            putchar(' ');
-            val = kbcaps[scancode];
-            break;
-        default:
-            val = 0;
-            break;
+        else {
+            switch (lastKeyPressed) {
+                case NOKEY:
+                    // set_cursor_pos(24, 50);
+                    //putchar(' ');
+                    val = kbsmall[scancode];
+                    break;
+                case CTRL:
+                    // set_cursor_pos(24, 50);
+                    //putchar('^');
+                    val = kbsmall[scancode];
+                    break;
+                case ALT:
+                    //   set_cursor_pos(24, 50);
+                    //putchar('~');
+                    val = kbsmall[scancode];
+                    break;
+                case SHIFT:
+                    // set_cursor_pos(24, 50);
+                    //putchar(' ');
+                    val = kbcaps[scancode];
+                    break;
+                default:
+                    val = 0;
+                    break;
+            }
+            if (flag == 1) {
+                if (val == '\n') {
+                    buf[counter++] = '\0';
+                    flag = 0;
+                } else if (val == '\b') {
+                    counter--;
+                } else {
+                    buf[counter++] = val;
+                }
+            }
+            putchar(val);
         }
-                
-        set_cursor_pos(24, 51);
-        putchar(val);
     }       
-    // Restore video address
-    set_video_addr(cur_video_addr);
 }
 
 /****************************************************************
