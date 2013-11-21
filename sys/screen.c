@@ -17,6 +17,8 @@
 static uint64_t video_addr;
 static uint8_t color_attr;
 
+void backspace();
+
 uint64_t get_video_addr()
 {
     return video_addr;
@@ -73,22 +75,28 @@ void scroll(int32_t lines)
 
 void putchar(char mychar)
 {
-    char *temp;
-    uint64_t addr = get_video_addr();
-    int32_t rows, columns;
+    if (mychar == '\n') {
+        newline();
+    } else if (mychar == '\t') {
+        newtab();    
+    } else if (mychar == '\b') {
+        backspace();
+    } else {
+        char *temp;
+        uint64_t addr = get_video_addr();
+        int32_t rows, cols;
 
-    get_cursor_pos(&rows, &columns);
-    
-    // This will allow only timer to print at line 25 
-    if (rows == 24 && columns < 10) {
-        scroll(1);
-        addr = get_video_addr();
+        get_cursor_pos(&rows, &cols);
+        if (rows == MAX_ROW && cols == 0) {
+            scroll(1);
+            addr = get_video_addr();
+        }
+
+        temp = (char *)addr;
+        *temp++ = mychar;
+        *temp++ = get_color();
+        set_video_addr((uint64_t)temp);
     }
-
-    temp = (char *)addr;
-    *temp++ = mychar;
-    *temp++ = get_color();
-    set_video_addr((uint64_t)temp);
 }
 
 void clear_screen()
@@ -112,18 +120,43 @@ void init_screen()
 
 void newline()
 {
-    int32_t row = 0, col = 0;
+    int32_t row, col;
+
     get_cursor_pos(&row, &col);
     row += 1;
     col = 0;
     set_cursor_pos(row, col);
+
+    if (row == MAX_ROW) {
+        scroll(1);
+    }
 }
 
 void newtab()
 {
     uint64_t addr;
+    int32_t row, col;
+
     addr = get_video_addr();
     addr += 8;
     set_video_addr(addr);    
+
+    get_cursor_pos(&row, &col);
+    if (row == MAX_ROW) {
+        scroll(1);
+    }
 }
 
+void backspace()
+{
+    uint64_t addr;
+
+    addr = get_video_addr();
+    addr -= 2;
+    set_video_addr(addr);
+    putchar(' ');
+
+    addr = get_video_addr();
+    addr -= 2;
+    set_video_addr(addr);
+}

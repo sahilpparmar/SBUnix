@@ -9,6 +9,9 @@
 
 extern void putchar(char mychar);
 
+volatile int flag, counter;
+volatile char buf[1024];
+
 int32_t puts(char* mystring)
 {
     char *temp = mystring;
@@ -106,6 +109,13 @@ int32_t kprintf(const char *str, ...)
     return len;
 }
 
+// kscanf under construction
+
+
+
+
+
+
 // Copies 1 byte at a time
 void *memcpy(void *destination, void *source, uint64_t num) 
 {
@@ -167,13 +177,26 @@ int32_t pow(int base, int power)
 
 int32_t atoi(char *p)
 {
-    int k = 0;
+    int k = 0, sign =1;
 
-    while (*p) {
-        k = (k<<3)+(k<<1)+(*p)-'0';
+    if (p[0] == '-') {
+        sign = -1;
+        p++;
+    } else if (p[0] == '+') {
+        sign = 1;
         p++;
     }
-    return k;
+    while (*p) {
+        if ( (int)(*p) >= 48 && (int)(*p) <= 57) {
+            k = (k<<3)+(k<<1)+(*p)-'0';
+            p++;
+        } else {
+            return 0;
+        }
+
+    }
+
+    return k*sign;
 }
 
 int32_t oct_to_dec(int n) {

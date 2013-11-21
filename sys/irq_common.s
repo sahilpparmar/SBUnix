@@ -3,52 +3,59 @@
 # 
 
 .macro PUSHA
-    pushq %rax      
-    pushq %rbx      
-    pushq %rcx      
-    pushq %rdx      
-    pushq %rsp      
-    pushq %rbp      
-    pushq %rsi      
-    pushq %rdi      
+    pushq %rdi
+    pushq %rax
+    pushq %rbx
+    pushq %rcx
+    pushq %rdx
+    pushq %rbp
+    pushq %rsi
+    pushq %r8
+    pushq %r9
 .endm
 
 .macro POPA
-    popq %rdi         
-    popq %rsi         
-    popq %rbp         
-    popq %rsp         
-    popq %rdx         
-    popq %rcx         
-    popq %rbx         
-    popq %rax         
+    popq %r9
+    popq %r8
+    popq %rsi
+    popq %rbp
+    popq %rdx
+    popq %rcx
+    popq %rbx
+    popq %rax
+    popq %rdi
 .endm
 
 .text
 
 .extern irq_handler
+.extern timer_handler
 
 .global irq0
 .global irq1
 .global irq_common
 
+irq_common:
+    PUSHA
+    movq %rsp, %rdi
+    callq irq_handler
+    POPA
+    add $0x10, %rsp
+    sti
+    iretq
+
 irq0:
     cli
-    pushq $0x0
-    pushq $0x20
-    jmp irq_common
+    PUSHA
+    movq %rsp, %rdi
+    callq timer_handler
+    POPA
+    sti
+    iretq
  
 irq1:
     cli
     pushq $0x0
     pushq $0x21
     jmp irq_common
-
-irq_common:
-    PUSHA
-    callq irq_handler
-    POPA
-    add $0x10, %rsp
-    sti
-    iretq
 

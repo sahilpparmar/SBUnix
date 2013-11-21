@@ -3,25 +3,27 @@
 # 
 
 .macro PUSHA
-    pushq %rax      
-    pushq %rbx      
-    pushq %rcx      
-    pushq %rdx      
-    pushq %rsp      
-    pushq %rbp      
-    pushq %rsi      
-    pushq %rdi      
+    pushq %rdi
+    pushq %rax
+    pushq %rbx
+    pushq %rcx
+    pushq %rdx
+    pushq %rbp
+    pushq %rsi
+    pushq %r8
+    pushq %r9
 .endm
 
 .macro POPA
-    popq %rdi         
-    popq %rsi         
-    popq %rbp         
-    popq %rsp         
-    popq %rdx         
-    popq %rcx         
-    popq %rbx         
-    popq %rax         
+    popq %r9
+    popq %r8
+    popq %rsi
+    popq %rbp
+    popq %rdx
+    popq %rcx
+    popq %rbx
+    popq %rax
+    popq %rdi
 .endm
 
 .text
@@ -60,6 +62,7 @@ isr14:
 
 isr_common:
     PUSHA
+    movq %rsp, %rdi
     callq isr_handler
     POPA
     add $0x10, %rsp

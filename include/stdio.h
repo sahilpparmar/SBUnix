@@ -7,7 +7,7 @@ void putchar(char mychar);
 int32_t puts(char *str);
 int32_t kprintf(const char *str, ...);
 
-int32_t scanf(const char *format, ...);
+void kscanf(const char *str, ...);
 
 // By default copies 1 byte at a time
 void *memcpy(void *destination, void *source, uint64_t num);

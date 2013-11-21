@@ -75,10 +75,9 @@ extern void isr0();
 extern void isr10();
 extern void isr13();
 extern void isr14();
+extern void syscall_handler();
 
-extern void timer_handler();
 extern void irq0();
-
 extern void irq1();
 
 struct idt_entry_struct
@@ -129,16 +128,10 @@ void init_idt()
     idt_set_gate(10,  (uint64_t)isr10, 0x08, 0x8E);
     idt_set_gate(13,  (uint64_t)isr13, 0x08, 0x8E);
     idt_set_gate(14,  (uint64_t)isr14, 0x08, 0x8E);
+    idt_set_gate(128, (uint64_t)syscall_handler, 0x08, 0xEE);
 
     // IRQs
-    idt_set_gate(32, 
-#if PREMPTIVE_OS
-                      (uint64_t)timer_handler,
-#else
-                      (uint64_t)irq0,
-#endif
-                                     0x08, 0x8E);
-
+    idt_set_gate(32, (uint64_t)irq0, 0x08, 0x8E);
     idt_set_gate(33, (uint64_t)irq1, 0x08, 0x8E);
 
     // Load IDTR
@@ -184,6 +177,11 @@ void init_tss() {
     __asm__ __volatile__("movq %%rsp, %[tss_rsp0];" : [tss_rsp0] "=m" (tss.rsp0));
 
     load_tss();
+}
+
+void set_tss_rsp0(uint64_t rsp)
+{
+    tss.rsp0 = rsp; 
 }
 
 /**********************************PIC****************************************/
