@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <syscall.h>
 #include <sys/proc_mngr.h>
+#include <sys/virt_mm.h>
 
 extern task_struct* CURRENT_TASK;
 
@@ -27,13 +28,27 @@ int sys_fork()
     return 0;
 }
 
+void* sys_brk(int no_of_pages)
+{
+    char *cp;
+    uint64_t addr;
+    addr = get_top_virtaddr();
+    set_top_virtaddr(0x90000);
+    
+    cp = (char *)virt_alloc_pages(no_of_pages);
+    set_top_virtaddr(addr);
+    return (void *)cp;
+}
+
 // Set up the system call table
 void* syscall_tbl[NUM_SYSCALLS] = 
 {
     sys_puts,
     sys_gets,
     sys_mmap,
-    sys_fork
+    sys_fork,
+    sys_brk
+
 };
 
 // The handler for the int 0x80

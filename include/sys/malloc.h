@@ -17,8 +17,8 @@ enum {NEW_MCB=0,NO_MCB,REUSE_MCB};
 enum {FREE,IN_USE};
 
 //void initMem(char *ptr, int size_in_bytes);
-void *myalloc(int elem_size);
-void myfree(void *p);
+void *malloc(int elem_size);
+void free(void *p);
 //void init_malloc(uint64_t addr);
 void make_head(char *addr, int size);
 void *alloc_new(int aligned_size);

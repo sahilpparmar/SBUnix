@@ -13,7 +13,7 @@ void make_head(char *addr, int size)
     head->size         = size;
 }
 
-void *myalloc(int elem_size)
+void *malloc(int elem_size)
 {
     MCB_P p_mcb;
     int flag, sz, temp = 0, aligned_size;
@@ -68,7 +68,7 @@ void *myalloc(int elem_size)
 
 }
 
-void myfree(void *p)
+void free(void *p)
 {
     MCB_P ptr = (MCB_P)p;
     ptr--;

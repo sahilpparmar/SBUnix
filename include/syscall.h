@@ -41,6 +41,7 @@ enum {
     GETS,
     MMAP,
     FORK,
+    BRK, 
     NUM_SYSCALLS
 };
 

@@ -4,5 +4,8 @@
 int main(int argc, char* argv[]);
 void exit(int status);
 int printf(const char *format, ...);
+void free(void *p);
+void *malloc(int elem_size);
+
 
 #endif
