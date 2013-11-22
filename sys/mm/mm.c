@@ -126,6 +126,8 @@ uint64_t load_elf(Elf64_Ehdr* header, task_struct *proc)
             mms->vma_count++;
             mms->total_vm += size;
 
+            //kprintf("\nstart:%p end:%p size:%p", start_vaddr, end_vaddr, size);
+
             if(max_addr < end_vaddr)
                 max_addr = end_vaddr;
             
@@ -142,11 +144,13 @@ uint64_t load_elf(Elf64_Ehdr* header, task_struct *proc)
                 iter->vm_next = node;
             }
 
-            //kprintf("\nVaddr = %p, ELF = %p, size = %p",(void*) start_vaddr, (void*) header + program_header->p_offset, size);
-            memcpy((void*) start_vaddr, (void*) header + program_header->p_offset, size);
-                 
+            //kprntf("\nVaddr = %p, ELF = %p, size = %p",(void*) start_vaddr, (void*) header + program_header->p_offset, size);
+            memcpy((void*) start_vaddr, (void*) header + program_header->p_offset, program_header->p_filesz);
 
-
+            //pad the bss section with zero
+            //Only in case of segment containing bss, filesize and memsize will be different 
+            memset((void *)start_vaddr + program_header->p_filesz, 0, size - program_header->p_filesz);
+            
             // Load parent CR3
             LOAD_CR3(cur_pml4_t);
         }
@@ -166,6 +170,7 @@ uint64_t load_elf(Elf64_Ehdr* header, task_struct *proc)
         mms->vma_count++;
         mms->start_brk = start_vaddr;
         mms->brk       = end_vaddr; 
+        //kprintf("\tHeap Start:%p", mms->brk);
         
         for (iter = mms->vma_list; iter->vm_next != NULL; iter = iter->vm_next) 
         ;

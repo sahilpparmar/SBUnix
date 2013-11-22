@@ -5,7 +5,7 @@ void _start(void) {
     char* argv[10];
     int res;
 
-    init_malloc();
+    //init_malloc();
     res = main(argc, argv);
     exit(res);
 }

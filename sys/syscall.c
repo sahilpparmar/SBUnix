@@ -48,7 +48,6 @@ uint64_t sys_brk(uint64_t no_of_pages)
     set_top_virtaddr(get_brk_top(CURRENT_TASK));
     cp = (char *)virt_alloc_pages(no_of_pages);
      
-    //kprintf("\n current heap:%p", cp);
     increment_brk(CURRENT_TASK, (uint64_t)((void *)cp + PAGESIZE * no_of_pages));
 
     set_top_virtaddr(addr);
