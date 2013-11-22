@@ -75,16 +75,15 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
 #endif
 
 // Context Switching code between tarfs processes
-#if 0
+#if 0 
     create_elf_proc("bin/hello");
-    create_elf_proc("bin/world");
+    //create_elf_proc("bin/world");
 #endif
 
     // Allow interrupts
     sti;
 
     kprintf("\nEnd of Kernel");
-
     while(1);
 }
 

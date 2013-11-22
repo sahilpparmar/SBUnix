@@ -2,6 +2,7 @@
 #define _SYSCALL_H
 
 #include <defs.h>
+#include <stdlib.h>
 
 #define SYSCALL_PROTO(n) static __inline uint64_t __syscall##n
 
@@ -15,7 +16,7 @@ SYSCALL_PROTO(0)(uint64_t n)
 
 SYSCALL_PROTO(1)(uint64_t n, uint64_t a1)
 {
-    uint64_t ret;
+    uint64_t ret = 0;
     __asm__ __volatile__("movq %[s], %%rdx;" : : [s]"m"(a1));
     __asm__ __volatile__("movq %[retv], %%rax;" : : [retv]"a"(n));
     __asm__ __volatile__("int $0x80;" : "=a" (ret));

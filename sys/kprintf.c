@@ -89,17 +89,14 @@ int32_t kprintf(const char *str, ...)
                 case 's':
                     len += puts(va_arg(ap, char*));
                     break;
+                case '\0':
+                    ptr--;
+                    break;
                 default:
                     putchar(*ptr);
                     len++;
                     break;
             }
-        } else if (*ptr == '\n') {
-            newline();
-            len++;
-        } else if (*ptr == '\t') {
-            newtab();    
-            len++;
         } else {
             putchar(*ptr);
             len++;

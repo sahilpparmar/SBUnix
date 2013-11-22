@@ -4,5 +4,5 @@
 int main(int argc, char* argv[]);
 void exit(int status);
 int printf(const char *format, ...);
-
+void scanf(const char *format, ...);
 #endif
