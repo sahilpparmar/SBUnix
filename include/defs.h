@@ -37,4 +37,6 @@ typedef __int8_t        int8_t;
 typedef __uint8_t       bool;
 typedef __int8_t        pid_t;
 
+typedef __uint8_t BYTE; 
+
 #endif
