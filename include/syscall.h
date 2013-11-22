@@ -16,7 +16,7 @@ SYSCALL_PROTO(0)(uint64_t n)
 SYSCALL_PROTO(1)(uint64_t n, uint64_t a1)
 {
     uint64_t ret;
-    __asm__ __volatile__("movq %[s], %%rdx;" : : [s]"m"(a1));
+    __asm__ __volatile__("movq %[s], %%rdi;" : : [s]"m"(a1));
     __asm__ __volatile__("movq %[retv], %%rax;" : : [retv]"a"(n));
     __asm__ __volatile__("int $0x80;" : "=a" (ret));
     return ret;
@@ -37,12 +37,12 @@ SYSCALL_PROTO(4)(uint64_t n, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4)
     return 0;
 }
 
-enum {
+enum syscall_num {
     PUTS,
     GETS,
-    MMAP,
-    FORK,
     BRK, 
+    FORK,
+    MMAP,
     NUM_SYSCALLS
 };
 

@@ -6,6 +6,6 @@ void exit(int status);
 int printf(const char *format, ...);
 void free(void *p);
 void *malloc(int elem_size);
-
+void init_malloc();
 
 #endif

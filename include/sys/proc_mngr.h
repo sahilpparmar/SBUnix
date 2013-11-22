@@ -1,7 +1,7 @@
 #include <sys/mm_types.h>
 #include <sys/types.h>
 
-#define KERNEL_STACK_SIZE 128
+#define KERNEL_STACK_SIZE 512
 
 typedef struct task_struct task_struct;
 
@@ -21,4 +21,5 @@ task_struct* alloc_new_task();
 void create_elf_proc(char *filename);
 void schedule_process(task_struct* new_task, uint64_t func_addr);
 void set_tss_rsp0(uint64_t);
-
+uint64_t get_brk_top(task_struct *proc);
+void increment_brk(task_struct *proc, uint64_t addr);

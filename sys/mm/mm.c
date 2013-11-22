@@ -10,12 +10,34 @@
 // Start from pid = 1
 uint64_t next_pid = 1;
 
+uint64_t get_brk_top(task_struct *proc)
+{
+    return proc->mm->brk;
+}
+
+void increment_brk(task_struct *proc, uint64_t addr)
+{   
+    //kprintf("\n new heapend: %p", addr);
+    mm_struct *mms = proc->mm;
+    vma_struct *iter;
+    
+    for (iter = mms->vma_list; iter != NULL; iter = iter->vm_next) {
+        //kprintf("\n vm_start %p\t start_brk %p\t end_brk %p", iter->vm_start, mms->start_brk, mms->brk);
+
+        if(iter->vm_start == mms->start_brk) { //this is the vma pointing to heap
+            iter->vm_end = addr;
+            mms->brk     = addr; 
+            break;
+        }
+    }
+}
+
 static vma_struct* alloc_new_vma(uint64_t start_addr, uint64_t end_addr)
 {
     vma_struct *vma = (struct vm_area_struct *) kmalloc(sizeof(vma_struct));
-    vma->vm_start = start_addr;
-    vma->vm_end = end_addr; 
-    vma->vm_next = NULL;
+    vma->vm_start   = start_addr;
+    vma->vm_end     = end_addr; 
+    vma->vm_next    = NULL;
     return vma;
 }
 
@@ -82,7 +104,7 @@ uint64_t load_elf(Elf64_Ehdr* header, task_struct *proc)
     Elf64_Phdr* program_header;
     mm_struct *mms = proc->mm;
     vma_struct *node, *iter;
-    uint64_t start_vaddr, end_vaddr, cur_pml4_t;
+    uint64_t start_vaddr, end_vaddr, cur_pml4_t, max_addr = 0;
     int i, size;
 
     // Save current PML4 table
@@ -97,13 +119,16 @@ uint64_t load_elf(Elf64_Ehdr* header, task_struct *proc)
         if ((int)program_header->p_type == 1) {           // this is loadable section
 
             start_vaddr = program_header->p_vaddr;
-            size = program_header->p_memsz;
+            size        = program_header->p_memsz;
  
             end_vaddr = start_vaddr + size;    
-            node = alloc_new_vma(start_vaddr, end_vaddr); 
+            node      = alloc_new_vma(start_vaddr, end_vaddr); 
             mms->vma_count++;
             mms->total_vm += size;
 
+            if(max_addr < end_vaddr)
+                max_addr = end_vaddr;
+            
             // Load ELF sections into new Virtual Memory Area
             LOAD_CR3(mms->pml4_t);
 
@@ -119,6 +144,8 @@ uint64_t load_elf(Elf64_Ehdr* header, task_struct *proc)
 
             //kprintf("\nVaddr = %p, ELF = %p, size = %p",(void*) start_vaddr, (void*) header + program_header->p_offset, size);
             memcpy((void*) start_vaddr, (void*) header + program_header->p_offset, size);
+                 
+
 
             // Load parent CR3
             LOAD_CR3(cur_pml4_t);
@@ -126,6 +153,25 @@ uint64_t load_elf(Elf64_Ehdr* header, task_struct *proc)
         // Go to next program header
         program_header = program_header + 1;
     }
+ 
+                
+        /* allocate a vma for the heap
+         * traverse the vmalist to reach end vma 
+         * */
+        /*Align address on 4k boundary*/ 
+        start_vaddr = ((((max_addr - 1) >> 12) + 1) << 12);
+        end_vaddr   = start_vaddr; 
+        node        = alloc_new_vma(start_vaddr, end_vaddr); 
+        
+        mms->vma_count++;
+        mms->start_brk = start_vaddr;
+        mms->brk       = end_vaddr; 
+        
+        for (iter = mms->vma_list; iter->vm_next != NULL; iter = iter->vm_next) 
+        ;
+        iter->vm_next = node; 
+
+
     return header->e_entry;
 }
 
