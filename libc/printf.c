@@ -1,7 +1,7 @@
 #include <syscall.h>
 #include <stdarg.h>
-
-
+#include <stdlib.h>
+#include <defs.h>
 // Accessory Functions
 
 int strlen(const char *str)
@@ -131,10 +131,13 @@ char *itoa(uint64_t val, char *str, int32_t base)
 
 static char write_buf[1024];
 
-int uputs(char *str)
+int write(int n, char *str, int len)
 {
-    return __syscall1(PUTS, (uint64_t)str);
+        return __syscall3(WRITE, n, (uint64_t)str, len);
+    
 }
+
+
 
 int32_t printf(const char *str, ...)
 {
@@ -208,10 +211,11 @@ int32_t printf(const char *str, ...)
          } else {
             memcpy((void *)(write_buf + len), (void *) ptr ,1 );
             len += 1;
-        }
+       }
     }
     va_end(ap); 
     write_buf[len] = '\0';
-    uputs(write_buf);
+    //uputs(write_buf);
+    write(stdout, write_buf, strlen(write_buf));
     return len;
 }

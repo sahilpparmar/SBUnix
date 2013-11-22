@@ -7,6 +7,10 @@
 
 #define DEBUG_SCHEDULING 1
 
+#define stdin 0
+#define stdout 1
+#define stderr 2
+
 // Unsigned data types
 typedef unsigned long   __uint64_t;
 typedef unsigned int    __uint32_t;

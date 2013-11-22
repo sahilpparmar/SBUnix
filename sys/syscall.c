@@ -10,13 +10,7 @@ extern task_struct* CURRENT_TASK;
 volatile int flag, counter;
 volatile char buf[1024];
 
-int sys_puts(char* s)
-{
-    puts(s);
-    return 0;
-}
-
-int sys_gets(uint64_t addr)
+int gets(uint64_t addr)
 {
     char *user_buf = (char*) addr;
     int count;
@@ -37,11 +31,30 @@ int sys_mmap(uint32_t size)
     return ret_addr;
 }
 
+int sys_read(int n, uint64_t addr, int len)
+{
+    //kprintf("here13");
+    int l = 0;
+    if(n == 0) {
+        l = gets(addr);
+    }
+    return l;
+}
+
+
+int sys_write(int n, uint64_t addr, int len)
+{
+    int l = 0;
+    if(n == 1 || n == 2)
+        l = puts((char*) addr);
+    return l;
+}
+
 // Set up the system call table
 void* syscall_tbl[NUM_SYSCALLS] = 
 {
-    sys_puts,
-    sys_gets,
+    sys_read,
+    sys_write,
     sys_mmap,
     sys_fork
 };

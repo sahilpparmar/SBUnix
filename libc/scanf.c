@@ -6,13 +6,15 @@
 
 char read_buf[1024];
 
-int ugets(char *str)
+int read(int n, char *str, int len)
 {
-    return __syscall1(GETS, (uint64_t)str);
+    return __syscall3(READ, n, (uint64_t)str, len);
 }
 
 void scanf(const char *str, ...)
 {
+    int len;
+    int32_t num;
     va_list ap;
     const char *ptr = NULL;
     va_start(ap, str);
@@ -20,19 +22,16 @@ void scanf(const char *str, ...)
         if (*ptr == '%') {
             switch (*++ptr) {
                 case 's':
-                    /*flag = 1;
-                    while(flag == 1);
-                    memcpy((void *) va_arg(ap, char *) , (void *)buf, counter); 
-                    counter = 0;*/
+                    len = read(stdin, read_buf, 0);
+                    memcpy((void *) va_arg(ap, char *) , (void *)read_buf, len); 
                     break;
                 case 'd':
-                    /*flag = 1;
-                    while(flag == 1);
-                    num = (int32_t)atoi((char *)buf);
-                    memcpy8( (void *) va_arg(ap, int32_t *), (void *) &num, counter);
-                    counter = 0;*/
+                    len = read(stdin, read_buf, 0);
+                    num = atoi(read_buf);
+                    memcpy8( (void *) va_arg(ap, int32_t *), (void *) &num, len);
                     break;
                 case 'c':
+                    len = read(stdin, read_buf, 0);
                     memcpy( (void *) va_arg(ap, char *), (void *)read_buf, 1);
                     break;
                 default:
