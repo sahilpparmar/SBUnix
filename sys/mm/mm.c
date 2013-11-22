@@ -194,6 +194,6 @@ void create_elf_proc(char *filename)
 
     entrypoint = load_elf((Elf64_Ehdr*) header, new_proc);
 
-    schedule_process(new_proc, entrypoint);
+    schedule_process(new_proc, entrypoint, KERNEL_STACK_SIZE);
 }
 

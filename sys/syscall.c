@@ -3,30 +3,40 @@
 #include <sys/proc_mngr.h>
 #include <sys/virt_mm.h>
 #include <io_common.h>
+#include <string.h>
 
 extern task_struct* CURRENT_TASK;
 
-// These will get invoked in kernel mode. */
+// These will get invoked in kernel mode
+
+volatile int flag, counter;
+volatile char buf[1024];
+
 int sys_puts(char* s)
 {
     puts(s);
     return 0;
 }
 
-char* sys_gets()
+int sys_gets(uint64_t addr)
 {
-    return 0;
+    char *user_buf = (char*) addr;
+    int count;
+
+    flag = 1;
+    sti;
+    while(flag == 1);
+
+    memcpy((void *)user_buf, (void *)buf, counter);
+    count = counter;
+    counter = 0;
+    return count;
 }
 
 int sys_mmap(uint64_t size)
 {
     uint64_t ret_addr = NULL;
     return ret_addr;
-}
-
-int sys_fork()
-{
-    return 0;
 }
 
 uint64_t sys_brk(uint64_t no_of_pages)

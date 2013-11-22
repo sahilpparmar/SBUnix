@@ -129,7 +129,7 @@ char *itoa(uint64_t val, char *str, int32_t base)
 
 //Accessory Functions
 
-char buffer[1024];
+static char write_buf[1024];
 
 int uputs(char *str)
 {
@@ -163,7 +163,7 @@ int32_t printf(const char *str, ...)
                     if (isNegative) {
                         *--dstr = '-';
                     }
-                    memcpy((void *) (buffer + len), (void *) dstr, strlen(dstr)+1);
+                    memcpy((void *) (write_buf + len), (void *) dstr, strlen(dstr)+1);
                     len += strlen(dstr);
                     break;
                 }
@@ -173,43 +173,45 @@ int32_t printf(const char *str, ...)
                     char *pstr= itoa(va_arg(ap, uint64_t), istr+99, 16);
                     *--pstr = 'x';
                     *--pstr = '0';
-                    memcpy((void *)(buffer + len), (void *) pstr, strlen(pstr));
+                    memcpy((void *)(write_buf + len), (void *) pstr, strlen(pstr));
                     len += strlen(pstr);
                     break;
                 }
                 case 'x':
-                    {//copy to buffer
+                    {//copy to write_buf
                     char *xtr;
                     xtr = itoa(va_arg(ap, uint64_t), istr+99, 16);
-                    memcpy((void *)(buffer + len), (void *)xtr , strlen(xtr));
+                    memcpy((void *)(write_buf + len), (void *)xtr , strlen(xtr));
                     len += strlen(xtr);
                     break;}
                 case 'c':
-                    {//copy to buffer
-                    char *ctr;
-                    ctr = va_arg(ap, char*);
-                    memcpy((void *)(buffer + len), (void *) ctr ,1 );
+                    {//copy to write_buf
+                    write_buf[len] = va_arg(ap, uint32_t);
                     len += 1;
                     break;}
                 case 's':
                     {
                     char *str;
                     str = va_arg(ap, char *);
-                    memcpy((void *)(buffer + len), (void *)str , strlen(str));
+                    memcpy((void *)(write_buf + len), (void *)str , strlen(str));
                     len += strlen(str);
                     break;}
+                case '\0':
+                    ptr--;
+                    break;
                 default:
                     {
-                    memcpy((void *)(buffer + len), (void *) ptr ,1 );
+                    memcpy((void *)(write_buf + len), (void *) ptr ,1 );
                     len += 1;
                     break;}
             }
          } else {
-            memcpy((void *)(buffer + len), (void *) ptr ,1 );
+            memcpy((void *)(write_buf + len), (void *) ptr ,1 );
             len += 1;
         }
     }
     va_end(ap); 
-    uputs(buffer);
+    write_buf[len] = '\0';
+    uputs(write_buf);
     return len;
 }

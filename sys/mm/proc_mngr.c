@@ -3,7 +3,10 @@
 #include <stdio.h>
 #include <screen.h>
 #include <io_common.h>
+#include <sys/paging.h>
+#include <sys/types.h>
 
+#define PAGING_PRESENT_WRITABLE PAGING_PRESENT | PAGING_WRITABLE | PAGING_USER
 // The process lists. The task at the head of the READY_LIST should always be executed next.
 task_struct* READY_LIST = NULL;
 task_struct* CURRENT_TASK = NULL;
@@ -13,7 +16,7 @@ task_struct* next = NULL;
 // Whether scheduling has been initiated
 uint8_t IsInitScheduler;
 
-static void add_to_ready_list(task_struct* new_task)
+void add_to_ready_list(task_struct* new_task)
 {
     task_struct* ready_list_ptr = READY_LIST;
     // kprintf("\nThe READY_LIST: %p", READY_LIST);
@@ -154,22 +157,22 @@ void timer_handler()
 
 extern void irq0();
 
-void schedule_process(task_struct* new_task, uint64_t func_addr)
+void schedule_process(task_struct* new_task, uint64_t func_addr, uint64_t stack_ind)
 {
     // Set up kernel stack => ss, rsp, rflags, cs, rip
-    new_task->kernel_stack[KERNEL_STACK_SIZE-1] = 0x10;
-    new_task->kernel_stack[KERNEL_STACK_SIZE-2] = (uint64_t)&new_task->kernel_stack[KERNEL_STACK_SIZE-1];
-    new_task->kernel_stack[KERNEL_STACK_SIZE-3] = 0x200202UL;
-    new_task->kernel_stack[KERNEL_STACK_SIZE-4] = 0x08;
-    new_task->kernel_stack[KERNEL_STACK_SIZE-5] = func_addr;
+    new_task->kernel_stack[stack_ind-1] = 0x10;
+    new_task->kernel_stack[stack_ind-2] = (uint64_t)&new_task->kernel_stack[stack_ind-1];
+    new_task->kernel_stack[stack_ind-3] = 0x200202UL;
+    new_task->kernel_stack[stack_ind-4] = 0x08;
+    new_task->kernel_stack[stack_ind-5] = func_addr;
 
-    // Leave 9 spaces for POPA => KERNEL_STACK_SIZE-6 to KERNEL_STACK_SIZE-14
+    // Leave 9 spaces for POPA => stack_ind-6 to stack_ind-14
     
     // Set return address to POPA in irq0()
-    new_task->kernel_stack[KERNEL_STACK_SIZE-15] = (uint64_t)irq0 + 0x14;
+    new_task->kernel_stack[stack_ind-15] = (uint64_t)irq0 + 0x14;
 
-    // Set rsp to KERNEL_STACK_SIZE-16
-    new_task->rsp_register = (uint64_t)&new_task->kernel_stack[KERNEL_STACK_SIZE-16];
+    // Set rsp to stack_ind-16
+    new_task->rsp_register = (uint64_t)&new_task->kernel_stack[stack_ind-16];
 
     new_task->rip_register = func_addr;
     new_task->next = NULL;
@@ -183,3 +186,36 @@ void schedule_process(task_struct* new_task, uint64_t func_addr)
     add_to_ready_list(new_task);
 }
 
+void copy_vma(task_struct* child_task, task_struct* parent_task)
+{
+    uint64_t start, end, vaddr, paddr;
+    uint64_t *pte_entry;
+    int no_of_pages = 0, count = 0;
+    vma_struct *parent_vma = parent_task->mm->vma_list;
+    
+
+    while (parent_vma) {
+        start = parent_vma->vm_start;
+        end = parent_vma->vm_end;  
+        vaddr = PAGE_ALIGN(start); 
+        
+        // Reset vma start address to 4k page align
+        no_of_pages = (end >> 12) - (start >> 12) + 1;
+        
+        for (count = 0; count < no_of_pages; count++) {
+        
+            LOAD_CR3(parent_task->mm->pml4_t);
+            pte_entry = get_pte_entry(vaddr);
+        
+            paddr = PAGE_ALIGN(*pte_entry);
+    kprintf("\tPaddr:%p", paddr);
+            LOAD_CR3(child_task->mm->pml4_t);
+            
+            map_virt_phys_addr(vaddr, paddr, PAGING_PRESENT_WRITABLE | PAGING_COW);
+            vaddr = vaddr + PAGESIZE;
+        
+        }
+        parent_vma = parent_vma->vm_next;
+    }
+    LOAD_CR3(parent_task->mm->pml4_t);
+}

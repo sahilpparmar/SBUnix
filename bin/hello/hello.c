@@ -6,10 +6,7 @@ char blank[10] = "     ";
 
 int main(int argc, char* argv[])
 {
-    malloc(100);
-
-    printf(" HELLO");
-
+    printf(" %s", hello);
     while(1);
     return 0;
 }
