@@ -114,16 +114,18 @@ void timer_handler()
             IsInitScheduler = TRUE;
 
 #if DEBUG_SCHEDULING
-            kprintf("\nScheduler Initiated with PID: %d", prev->proc_id);
+            kprintf("\nScheduler Initiated with PID: %d", prev->pid);
 #endif
 
             LOAD_CR3(prev->mm->pml4_t);
 
-            // set_tss_rsp0(prev->rsp_register);
-            
             // Switch the kernel stack to that of the first process
             __asm__ __volatile__("movq %[prev_rsp], %%rsp" : : [prev_rsp] "m" (prev->rsp_register));
-            //switch_to_ring3;
+
+            if (prev->IsUserProcess) {
+                set_tss_rsp0((uint64_t)&prev->kernel_stack[KERNEL_STACK_SIZE-1]);
+                switch_to_ring3;
+            }
 
         } else {
             uint64_t cur_rsp;
@@ -136,9 +138,12 @@ void timer_handler()
 
             LOAD_CR3(next->mm->pml4_t);
 
-            // set_tss_rsp0(next->rsp_register);
             __asm__ __volatile__("movq %[next_rsp], %%rsp" : : [next_rsp] "m" (next->rsp_register));
-            //switch_to_ring3;
+
+            if (next->IsUserProcess) {
+                set_tss_rsp0((uint64_t)&next->kernel_stack[KERNEL_STACK_SIZE-1]);
+                switch_to_ring3;
+            }
 
             CURRENT_TASK = READY_LIST;
             
@@ -148,7 +153,7 @@ void timer_handler()
             READY_LIST = READY_LIST->next;
 
 #if DEBUG_SCHEDULING
-            //kprintf("\nPID:%d", next->proc_id);
+            //kprintf(" %d", next->pid);
 #endif
         }
     }
@@ -157,32 +162,42 @@ void timer_handler()
 
 extern void irq0();
 
-void schedule_process(task_struct* new_task, uint64_t func_addr, uint64_t stack_ind)
+void schedule_process(task_struct* new_task, uint64_t entry_point, uint64_t stack_ind)
 {
-    // Set up kernel stack => ss, rsp, rflags, cs, rip
-    new_task->kernel_stack[stack_ind-1] = 0x10;
-    new_task->kernel_stack[stack_ind-2] = (uint64_t)&new_task->kernel_stack[stack_ind-1];
+    // 1) Set up kernel stack => ss, rsp, rflags, cs, rip
+    if (new_task->IsUserProcess) {
+        new_task->kernel_stack[stack_ind-1] = 0x23;
+        new_task->kernel_stack[stack_ind-2] = (uint64_t)new_task->mm->start_stack;
+        new_task->kernel_stack[stack_ind-4] = 0x1b;
+#if DEBUG_SCHEDULING
+        kprintf("\tEntry Point:%p", entry_point);
+        kprintf("\tUserStackTop:%p", new_task->mm->start_stack);
+#endif
+    } else {
+        new_task->kernel_stack[stack_ind-1] = 0x10;
+        new_task->kernel_stack[stack_ind-2] = (uint64_t)&new_task->kernel_stack[stack_ind-1];
+        new_task->kernel_stack[stack_ind-4] = 0x08;
+#if DEBUG_SCHEDULING
+        kprintf("\tEntry Point:%p", entry_point);
+        kprintf("\tKernelStackTop:%p", &new_task->kernel_stack[stack_ind-1]);
+#endif
+    }
     new_task->kernel_stack[stack_ind-3] = 0x200202UL;
-    new_task->kernel_stack[stack_ind-4] = 0x08;
-    new_task->kernel_stack[stack_ind-5] = func_addr;
+    new_task->kernel_stack[stack_ind-5] = entry_point;
 
-    // Leave 9 spaces for POPA => stack_ind-6 to stack_ind-14
-    
-    // Set return address to POPA in irq0()
+    // 2) Leave 9 spaces for POPA => stack_ind-6 to stack_ind-14
+
+    // 3) Set return address to POPA in irq0()
     new_task->kernel_stack[stack_ind-15] = (uint64_t)irq0 + 0x14;
 
-    // Set rsp to stack_ind-16
+    // 4) Set rsp to stack_ind-16
     new_task->rsp_register = (uint64_t)&new_task->kernel_stack[stack_ind-16];
 
-    new_task->rip_register = func_addr;
+    new_task->rip_register = entry_point;
     new_task->next = NULL;
     new_task->last = NULL;
 
-#if DEBUG_SCHEDULING
-    kprintf("\tEntry Point:%p", func_addr);
-#endif
-
-    // Add to the READY_LIST 
+    // 5) Add to the READY_LIST 
     add_to_ready_list(new_task);
 }
 
@@ -219,3 +234,4 @@ void copy_vma(task_struct* child_task, task_struct* parent_task)
     }
     LOAD_CR3(parent_task->mm->pml4_t);
 }
+

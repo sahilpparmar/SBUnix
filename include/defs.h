@@ -33,6 +33,8 @@ typedef __int32_t       int32_t;
 typedef __int16_t       int16_t;
 typedef __int8_t        int8_t;
 
+// MISC data types
 typedef __uint8_t       bool;
+typedef __int8_t        pid_t;
 
 #endif

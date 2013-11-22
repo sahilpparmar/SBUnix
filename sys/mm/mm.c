@@ -1,25 +1,44 @@
 #include <stdio.h>
 #include <sys/proc_mngr.h>
-#include <sys/mm_types.h>
 #include <sys/paging.h>
 #include <sys/virt_mm.h>
 #include <sys/tarfs.h>
 #include <sys/elf.h>
 #include <sys/kmalloc.h>
 
-// Start from pid = 1
-uint64_t next_pid = 1;
+#define USER_STACK_ADDR 0xF0000000
+
+uint64_t next_pid = 0;
+
+void increment_brk(task_struct *proc, uint64_t bytes)
+{   
+    //kprintf("\n new heapend: %p", addr);
+    mm_struct *mms = proc->mm;
+    vma_struct *iter;
+    
+    for (iter = mms->vma_list; iter != NULL; iter = iter->vm_next) {
+        //kprintf("\n vm_start %p\t start_brk %p\t end_brk %p", iter->vm_start, mms->start_brk, mms->end_brk);
+
+        // this vma is pointing to heap
+        if (iter->vm_start == mms->start_brk) {
+            iter->vm_end  += bytes;
+            mms->end_brk  += bytes; 
+            mms->total_vm += bytes;
+            break;
+        }
+    }
+}
 
 static vma_struct* alloc_new_vma(uint64_t start_addr, uint64_t end_addr)
 {
-    vma_struct *vma = (struct vm_area_struct *) kmalloc(sizeof(vma_struct));
-    vma->vm_start = start_addr;
-    vma->vm_end = end_addr; 
-    vma->vm_next = NULL;
+    vma_struct *vma = (vma_struct*) kmalloc(sizeof(vma_struct));
+    vma->vm_start   = start_addr;
+    vma->vm_end     = end_addr; 
+    vma->vm_next    = NULL;
     return vma;
 }
 
-task_struct* alloc_new_task()
+task_struct* alloc_new_task(bool IsUserProcess)
 {
     mm_struct* mms;
     task_struct* new_proc;
@@ -44,11 +63,13 @@ task_struct* alloc_new_task()
 
     // Allocate a new task struct
     new_proc = (task_struct*) kmalloc(sizeof(task_struct));
-    new_proc->proc_id = next_pid++;
+    new_proc->pid = next_pid++;
+    new_proc->ppid = 0;
+    new_proc->IsUserProcess = IsUserProcess;
     new_proc->mm = mms;
 
 #if DEBUG_SCHEDULING
-    kprintf("\nPID:%d\tCR3: %p", new_proc->proc_id, mms->pml4_t);
+    kprintf("\nPID:%d\tCR3: %p", new_proc->pid, mms->pml4_t);
 #endif
 
     return new_proc;
@@ -82,7 +103,7 @@ uint64_t load_elf(Elf64_Ehdr* header, task_struct *proc)
     Elf64_Phdr* program_header;
     mm_struct *mms = proc->mm;
     vma_struct *node, *iter;
-    uint64_t start_vaddr, end_vaddr, cur_pml4_t;
+    uint64_t start_vaddr, end_vaddr, cur_pml4_t, max_addr = 0;
     int i, size;
 
     // Save current PML4 table
@@ -97,13 +118,19 @@ uint64_t load_elf(Elf64_Ehdr* header, task_struct *proc)
         if ((int)program_header->p_type == 1) {           // this is loadable section
 
             start_vaddr = program_header->p_vaddr;
-            size = program_header->p_memsz;
+            size        = program_header->p_memsz;
  
             end_vaddr = start_vaddr + size;    
-            node = alloc_new_vma(start_vaddr, end_vaddr); 
+            node      = alloc_new_vma(start_vaddr, end_vaddr); 
             mms->vma_count++;
             mms->total_vm += size;
 
+            //kprintf("\nstart:%p end:%p size:%p", start_vaddr, end_vaddr, size);
+
+            if (max_addr < end_vaddr) {
+                max_addr = end_vaddr;
+            }
+            
             // Load ELF sections into new Virtual Memory Area
             LOAD_CR3(mms->pml4_t);
 
@@ -112,42 +139,76 @@ uint64_t load_elf(Elf64_Ehdr* header, task_struct *proc)
             if (mms->vma_list == NULL) {
                 mms->vma_list = node;
             } else {
-                for (iter = mms->vma_list; iter->vm_next != NULL; iter = iter->vm_next) 
-                ;
+                for (iter = mms->vma_list; iter->vm_next != NULL; iter = iter->vm_next);
                 iter->vm_next = node;
             }
 
             //kprintf("\nVaddr = %p, ELF = %p, size = %p",(void*) start_vaddr, (void*) header + program_header->p_offset, size);
-            memcpy((void*) start_vaddr, (void*) header + program_header->p_offset, size);
+            memcpy((void*) start_vaddr, (void*) header + program_header->p_offset, program_header->p_filesz);
 
-            // Load parent CR3
+            // Set .bss section with zero
+            // Note that, only in case of segment containing .bss will filesize and memsize differ 
+            memset((void *)start_vaddr + program_header->p_filesz, 0, size - program_header->p_filesz);
+            
+            // Restore parent CR3
             LOAD_CR3(cur_pml4_t);
         }
         // Go to next program header
         program_header = program_header + 1;
     }
+ 
+    // Traverse the vmalist to reach end vma and allocate a vma for the heap at 4k align
+    for (iter = mms->vma_list; iter->vm_next != NULL; iter = iter->vm_next);
+    start_vaddr = end_vaddr = ((((max_addr - 1) >> 12) + 1) << 12);
+    iter->vm_next = alloc_new_vma(start_vaddr, end_vaddr); 
+
+    mms->vma_count++;
+    mms->start_brk = start_vaddr;
+    mms->end_brk   = end_vaddr; 
+    //kprintf("\tHeap Start:%p", mms->start_brk);
+
+    // Stack VMA of one page (TODO: Need to allocate a dynamically growing stack)
+    for (iter = mms->vma_list; iter->vm_next != NULL; iter = iter->vm_next);
+    start_vaddr = USER_STACK_ADDR;
+    end_vaddr = USER_STACK_ADDR + PAGESIZE;
+    iter->vm_next = alloc_new_vma(start_vaddr, end_vaddr);
+
+    // Map a physical page
+    LOAD_CR3(mms->pml4_t);
+    mmap(start_vaddr, PAGESIZE);
+    LOAD_CR3(cur_pml4_t);
+
+    mms->vma_count++;
+    mms->total_vm += PAGESIZE;
+    mms->start_stack = end_vaddr - 8;
+
     return header->e_entry;
 }
 
-void create_elf_proc(char *filename)
+pid_t create_elf_proc(char *filename)
 {
     HEADER *header;
+    Elf64_Ehdr* elf_header;
     task_struct* new_proc;
     uint64_t entrypoint;
 
     // lookup for the file in tarfs
     header = (HEADER*) lookup(filename); 
     
-    //TODO: Also check for ELF Magic bits
     if (header == NULL) {
-        return;
+        return -1;
     }
 
-    new_proc = alloc_new_task();
-    //TODO: Need to properly initialize kmalloc and virt_alloc_pages for user process
-
-    entrypoint = load_elf((Elf64_Ehdr*) header, new_proc);
-
-    schedule_process(new_proc, entrypoint, KERNEL_STACK_SIZE);
+    // Check if file is an ELF executable by checking the magic bits
+    elf_header = (Elf64_Ehdr *)header;
+    
+    if (elf_header->e_ident[1] == 'E' && elf_header->e_ident[2] == 'L' && elf_header->e_ident[3] == 'F') {                
+        new_proc = alloc_new_task(TRUE);
+        entrypoint = load_elf(elf_header, new_proc);
+        schedule_process(new_proc, entrypoint, KERNEL_STACK_SIZE);
+        
+        return new_proc->pid;
+    }
+    return -1;
 }
 

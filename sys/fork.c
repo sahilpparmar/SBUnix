@@ -8,8 +8,6 @@
 #include <sys/kmalloc.h>
 #include <stdlib.h>
 
-extern task_struct* CURRENT_TASK;
-
 extern int read_rip();
 
 int sys_fork()
@@ -22,7 +20,7 @@ int sys_fork()
     task_struct *parent_task = CURRENT_TASK; 
 
     // Create a new process.
-    task_struct* new_task = alloc_new_task();
+    task_struct* new_task = alloc_new_task(TRUE);
 
     // Set Copy on Write for all level page tables
     copy_vma(new_task, parent_task);
@@ -56,7 +54,7 @@ int sys_fork()
         
         // All finished: Reenable interrupts.
         __asm__ __volatile__("sti");
-        return new_task->proc_id;
+        return new_task->pid;
     }
     else
     {
@@ -64,7 +62,7 @@ int sys_fork()
         __asm__ __volatile__("sti");
         return 0;
     }
-    //kprintf(" Fork called %d", current_task->proc_id);
+    //kprintf(" Fork called %d", current_task->pid);
     //return 1;
 }
 

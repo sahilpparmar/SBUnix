@@ -17,26 +17,12 @@ char stack[INITIAL_STACK_SIZE];
 uint32_t* loader_stack;
 extern char kernmem, physbase;
 
-void fun1(void)
+void idle_process(void)
 {
-    int i = 0;
-    while(i < 10) {
-        kprintf(" %d f1", i++);
-    }
-    kprintf("\nOut of fun1()");
+    kprintf("\nInside Idle Process %d", sys_getpid());
     while(1);
 }
 
-void fun2(void)
-{
-    int i = 0;
-    while(i < 10) {
-        kprintf(" %d f2", i++);
-    }
-    kprintf("\nOut of fun2()");
-    while(1);
-}
-        
 void start(uint32_t* modulep, void* physbase, void* physfree)
 {
     uint64_t phys_size = 0x0, phys_base = 0x0;
@@ -65,14 +51,9 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
     __asm__ __volatile__("movq %0, %%rbp" : :"a"(&stack[0]));
     __asm__ __volatile__("movq %0, %%rsp" : :"a"(&stack[INITIAL_STACK_SIZE]));
 
-// Context Switching code between fun1 and fun2
-#if 0
-    task_struct* proc1 = alloc_new_task();
-    schedule_process(proc1, (uint64_t)fun1, KERNEL_STACK_SIZE);
-
-    task_struct* proc2 = alloc_new_task();
-    schedule_process(proc2, (uint64_t)fun2, KERNEL_STACK_SIZE);
-#endif
+    // Schedule an Idle Kernel Process 
+    task_struct* idle_proc = alloc_new_task(FALSE);
+    schedule_process(idle_proc, (uint64_t)idle_process, KERNEL_STACK_SIZE);
 
 // Context Switching code between tarfs processes
 #if 0

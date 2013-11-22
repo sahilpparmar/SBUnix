@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <syscall.h>
 #include <sys/proc_mngr.h>
+#include <sys/virt_mm.h>
+#include <io_common.h>
 #include <string.h>
 
 extern task_struct* CURRENT_TASK;
@@ -25,7 +27,7 @@ int gets(uint64_t addr)
     return count;
 }
 
-int sys_mmap(uint32_t size)
+int sys_mmap(uint64_t size)
 {
     uint64_t ret_addr = NULL;
     return ret_addr;
@@ -50,13 +52,42 @@ int sys_write(int n, uint64_t addr, int len)
     return l;
 }
 
+uint64_t sys_brk(uint64_t no_of_pages)
+{
+    uint64_t new_vaddr;
+    uint64_t cur_top_vaddr = get_top_virtaddr();
+    
+    set_top_virtaddr(CURRENT_TASK->mm->end_brk);
+    new_vaddr = (uint64_t)virt_alloc_pages(no_of_pages);
+     
+    //kprintf("\n New Heap Page Alloc:%p", new_vaddr);
+    increment_brk(CURRENT_TASK, PAGESIZE * no_of_pages);
+
+    // Restore old top Vaddr
+    set_top_virtaddr(cur_top_vaddr);
+    return new_vaddr;
+}
+
+pid_t sys_getpid()
+{
+    return CURRENT_TASK->pid;
+}
+
+pid_t sys_getppid()
+{
+    return CURRENT_TASK->ppid;
+}
+
 // Set up the system call table
 void* syscall_tbl[NUM_SYSCALLS] = 
 {
     sys_read,
     sys_write,
+    sys_brk,
+    sys_fork,
     sys_mmap,
-    sys_fork
+    sys_getpid,
+    sys_getppid
 };
 
 // The handler for the int 0x80
