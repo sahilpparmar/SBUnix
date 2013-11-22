@@ -1,5 +1,6 @@
 #ifndef _STDLIB_H
 #define _STDLIB_H
+#include <defs.h>
 
 int main(int argc, char* argv[]);
 void exit(int status);
@@ -11,5 +12,8 @@ void *malloc(int elem_size);
 void free(void *p);
 
 int fork();
+
+pid_t getpid();
+pid_t getppid();
 
 #endif

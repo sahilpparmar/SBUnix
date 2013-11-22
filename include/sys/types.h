@@ -1,8 +1,6 @@
 #ifndef _LINUX_TYPES_H
 #define _LINUX_TYPES_H
 
-typedef int pid_t;
-
 #define cli __asm__ __volatile__("cli");
 #define sti __asm__ __volatile__("sti");
 

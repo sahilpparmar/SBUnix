@@ -41,17 +41,28 @@ int sys_mmap(uint64_t size)
 
 uint64_t sys_brk(uint64_t no_of_pages)
 {
-    char *cp;
-    uint64_t addr;
-    addr = get_top_virtaddr();
+    uint64_t new_vaddr;
+    uint64_t cur_top_vaddr = get_top_virtaddr();
     
-    set_top_virtaddr(get_brk_top(CURRENT_TASK));
-    cp = (char *)virt_alloc_pages(no_of_pages);
+    set_top_virtaddr(CURRENT_TASK->mm->end_brk);
+    new_vaddr = (uint64_t)virt_alloc_pages(no_of_pages);
      
-    increment_brk(CURRENT_TASK, (uint64_t)((void *)cp + PAGESIZE * no_of_pages));
+    //kprintf("\n New Heap Page Alloc:%p", new_vaddr);
+    increment_brk(CURRENT_TASK, PAGESIZE * no_of_pages);
 
-    set_top_virtaddr(addr);
-    return (uint64_t)cp;
+    // Restore old top Vaddr
+    set_top_virtaddr(cur_top_vaddr);
+    return new_vaddr;
+}
+
+pid_t sys_getpid()
+{
+    return CURRENT_TASK->pid;
+}
+
+pid_t sys_getppid()
+{
+    return CURRENT_TASK->ppid;
 }
 
 // Set up the system call table
@@ -61,7 +72,9 @@ void* syscall_tbl[NUM_SYSCALLS] =
     sys_gets,
     sys_brk,
     sys_fork,
-    sys_mmap
+    sys_mmap,
+    sys_getpid,
+    sys_getppid
 };
 
 // The handler for the int 0x80

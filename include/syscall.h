@@ -62,6 +62,8 @@ enum syscall_num {
     BRK, 
     FORK,
     MMAP,
+    GETPID,
+    GETPPID,
     NUM_SYSCALLS
 };
 

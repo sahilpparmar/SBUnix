@@ -13,7 +13,6 @@
 
 // For accessing Page table addresses, we need to first convert PhyADDR to VirADDR
 // So need to add below kernel base address
-#define KERNEL_START_VADDR 0xFFFFFFFF80000000
 #define VADDR(PADDR) ((KERNEL_START_VADDR) + PAGE_ALIGN(PADDR))
 #define PADDR(VADDR) (PAGE_ALIGN(VADDR) - (KERNEL_START_VADDR))
 
