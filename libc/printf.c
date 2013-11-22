@@ -12,8 +12,6 @@ int strlen(const char *str)
     return len;
 }
 
-
-
 // Copies 1 byte at a time
 void *memcpy(void *destination, void *source, uint64_t num) 
 {
@@ -163,47 +161,51 @@ int32_t printf(const char *str, ...)
                     if (isNegative) {
                         *--dstr = '-';
                     }
-                    memcpy((void *) (write_buf + len), (void *) dstr, strlen(dstr)+1);
+                    memcpy((void *)(write_buf + len), (void *)dstr, strlen(dstr));
                     len += strlen(dstr);
                     break;
                 }
                 case 'p':
                 {
                     // Prepend "0x"
-                    char *pstr= itoa(va_arg(ap, uint64_t), istr+99, 16);
+                    char *pstr = itoa(va_arg(ap, uint64_t), istr+99, 16);
                     *--pstr = 'x';
                     *--pstr = '0';
-                    memcpy((void *)(write_buf + len), (void *) pstr, strlen(pstr));
+                    memcpy((void *)(write_buf + len), (void *)pstr, strlen(pstr));
                     len += strlen(pstr);
                     break;
                 }
                 case 'x':
-                    {//copy to write_buf
+                {
                     char *xtr;
                     xtr = itoa(va_arg(ap, uint64_t), istr+99, 16);
                     memcpy((void *)(write_buf + len), (void *)xtr , strlen(xtr));
                     len += strlen(xtr);
-                    break;}
+                    break;
+                }
                 case 'c':
-                    {//copy to write_buf
+                {
                     write_buf[len] = va_arg(ap, uint32_t);
                     len += 1;
-                    break;}
+                    break;
+                }
                 case 's':
-                    {
+                {
                     char *str;
                     str = va_arg(ap, char *);
                     memcpy((void *)(write_buf + len), (void *)str , strlen(str));
                     len += strlen(str);
-                    break;}
+                    break;
+                }
                 case '\0':
                     ptr--;
                     break;
                 default:
-                    {
+                {
                     memcpy((void *)(write_buf + len), (void *) ptr ,1 );
                     len += 1;
-                    break;}
+                    break;
+                }
             }
          } else {
             memcpy((void *)(write_buf + len), (void *) ptr ,1 );
@@ -215,3 +217,4 @@ int32_t printf(const char *str, ...)
     uputs(write_buf);
     return len;
 }
+
