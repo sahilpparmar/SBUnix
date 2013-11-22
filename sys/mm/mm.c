@@ -189,16 +189,22 @@ void create_elf_proc(char *filename)
     // lookup for the file in tarfs
     header = (HEADER*) lookup(filename); 
     
-    //TODO: Also check for ELF Magic bits
     if (header == NULL) {
         return;
     }
+    
+    //check if file is elf by using magic bits
+    Elf64_Ehdr* elf_header = (Elf64_Ehdr *)header;
+    
+    if(elf_header->e_ident[1] == 'E' && elf_header->e_ident[2] == 'L' && elf_header->e_ident[3] == 'F')
+    {                
 
-    new_proc = alloc_new_task();
-    //TODO: Need to properly initialize kmalloc and virt_alloc_pages for user process
+        new_proc = alloc_new_task();
+        entrypoint = load_elf((Elf64_Ehdr*) header, new_proc);
+        schedule_process(new_proc, entrypoint, KERNEL_STACK_SIZE);
+    }
 
-    entrypoint = load_elf((Elf64_Ehdr*) header, new_proc);
+    /*TODO: This function should return pid*/
 
-    schedule_process(new_proc, entrypoint, KERNEL_STACK_SIZE);
 }
 
