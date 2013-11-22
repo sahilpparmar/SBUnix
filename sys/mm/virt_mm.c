@@ -5,6 +5,8 @@
 #include <sys/types.h>
 #include <sys/paging.h>
 
+#define PAGING_PRESENT_WRITABLE PAGING_PRESENT | PAGING_WRITABLE | PAGING_USER
+
 uint64_t topVirtAddr;
 
 uint64_t get_top_virtaddr()
@@ -32,7 +34,7 @@ void* virt_alloc_pages(uint32_t no_of_vpages)
 
     for(i = 0; i < no_of_vpages; ++i) {
         physaddr = (uint64_t*) phys_alloc_block();
-        map_virt_phys_addr(topVirtAddr, (uint64_t)physaddr);
+        map_virt_phys_addr(topVirtAddr, (uint64_t)physaddr, PAGING_PRESENT_WRITABLE);
         topVirtAddr += PAGESIZE;     
     }
 

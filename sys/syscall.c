@@ -63,7 +63,7 @@ int sys_mmap(uint32_t size)
     return ret_addr;
 }
 
-int sys_fork()
+int sys_forkw()
 {
     return 0;
 }
@@ -93,4 +93,6 @@ void syscall_handler(void)
 
     __asm__ __volatile__("iretq;");
 }
+
+
 

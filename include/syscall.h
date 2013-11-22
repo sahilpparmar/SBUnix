@@ -10,6 +10,7 @@
 SYSCALL_PROTO(0)(uint64_t n)
 {
     uint64_t ret;
+    __asm__ __volatile__("movq %[retv], %%rax;" : : [retv]"a"(n));
     __asm__ __volatile__("int $0x80" : "=a" (ret) : "0" (n));
     return ret;
 }
@@ -47,3 +48,4 @@ enum {
 };
 
 #endif
+

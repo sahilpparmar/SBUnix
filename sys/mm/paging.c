@@ -208,7 +208,7 @@ static uint64_t* get_pml4_entry(uint64_t vaddr)
     return addr;
 }
 
-void map_virt_phys_addr(uint64_t vaddr, uint64_t paddr)
+void map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t flags)
 {
     uint64_t *pml4_entry, *pdpe_entry, *pde_entry, *pte_entry;
     uint64_t entry; 
@@ -237,28 +237,28 @@ void map_virt_phys_addr(uint64_t vaddr, uint64_t paddr)
                     phys_free_block(paddr);
                 } else {
                     // kprintf("\tNew Physical page mapped %p", paddr);
-                    *pte_entry = paddr | PAGING_PRESENT_WRITABLE;
+                    *pte_entry = paddr | flags;
                 }
 
             } else {
                 // kprintf("\tInside pte creation");
-                *pde_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
-                *pte_entry = paddr | PAGING_PRESENT_WRITABLE;
+                *pde_entry = phys_alloc_block() | flags;
+                *pte_entry = paddr | flags;
             }
 
         } else {
             // kprintf("\tInside pde and pte creation");
-            *pdpe_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
-            *pde_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
-            *pte_entry = paddr | PAGING_PRESENT_WRITABLE;
+            *pdpe_entry = phys_alloc_block() | flags;
+            *pde_entry = phys_alloc_block() | flags;
+            *pte_entry = paddr | flags;
         }
 
     } else {
         // kprintf("\tInside pdpe, pde and pte creation");
-        *pml4_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
-        *pdpe_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
-        *pde_entry = phys_alloc_block() | PAGING_PRESENT_WRITABLE;
-        *pte_entry = paddr | PAGING_PRESENT_WRITABLE;
+        *pml4_entry = phys_alloc_block() | flags;
+        *pdpe_entry = phys_alloc_block() | flags;
+        *pde_entry = phys_alloc_block() | flags;
+        *pte_entry = paddr | flags;
     }
 
     // kprintf("\nEntries: PML4: %p, PDPE: %p, PDE: %p, PTE: %p ", pml4_entry, pdpe_entry, pde_entry, pte_entry);
@@ -273,7 +273,7 @@ uint64_t create_new_pml4()
     set_top_virtaddr(virtAddr + PAGESIZE);
     physAddr = phys_alloc_block();
 
-    map_virt_phys_addr(virtAddr, physAddr);
+    map_virt_phys_addr(virtAddr, physAddr, PAGING_PRESENT_WRITABLE);
     new_pml4_t = (uint64_t *) virtAddr;    
       
     // Reserve mapping for kernel page tables
