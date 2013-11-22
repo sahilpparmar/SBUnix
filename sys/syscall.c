@@ -2,40 +2,13 @@
 #include <syscall.h>
 #include <sys/proc_mngr.h>
 #include <string.h>
+
 extern task_struct* CURRENT_TASK;
 
-// These will get invoked in kernel mode. */
-
-// [START] Accessory functions put in for testing scanf
-
+// These will get invoked in kernel mode
 
 volatile int flag, counter;
 volatile char buf[1024];
-/*
-int strlen(const char *str)
-{
-    int len=0;
-    while (*str++ != '\0')
-        len += 1;
-    return len;
-}
-
-
-
-// Copies 1 byte at a time
-void *memcpy(void *destination, void *source, uint64_t num) 
-{
-    uint8_t *dest = (uint8_t *)destination;
-    uint8_t *src = (uint8_t *)source;
-
-    while(num--) {
-        *dest++ = *src++; 
-    }
-
-    return destination;
-}
-*/
-// [END] Accessory functions put in for testing scanf
 
 int sys_puts(char* s)
 {
@@ -47,10 +20,11 @@ int sys_gets(uint64_t addr)
 {
     char *user_buf = (char*) addr;
     int count;
+
     flag = 1;
-    kprintf("\nEnter char:");
     sti;
     while(flag == 1);
+
     memcpy((void *)user_buf, (void *)buf, counter);
     count = counter;
     counter = 0;
@@ -61,11 +35,6 @@ int sys_mmap(uint32_t size)
 {
     uint64_t ret_addr = NULL;
     return ret_addr;
-}
-
-int sys_forkw()
-{
-    return 0;
 }
 
 // Set up the system call table
@@ -93,6 +62,4 @@ void syscall_handler(void)
 
     __asm__ __volatile__("iretq;");
 }
-
-
 

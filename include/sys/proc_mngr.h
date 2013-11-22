@@ -18,8 +18,6 @@ struct task_struct
     task_struct* sibling;   // Keep track of other children on fork
 };
 
-extern task_struct* CURRENT_TASK;
-
 void* mmap(uint64_t virt_addr, int bytes);
 task_struct* alloc_new_task();
 void create_elf_proc(char *filename);

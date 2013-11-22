@@ -20,7 +20,7 @@ extern char kernmem, physbase;
 void fun1(void)
 {
     int i = 0;
-    while(i < 10){
+    while(i < 10) {
         kprintf(" %d f1", i++);
     }
     kprintf("\nOut of fun1()");
@@ -30,7 +30,7 @@ void fun1(void)
 void fun2(void)
 {
     int i = 0;
-    while(i < 10){
+    while(i < 10) {
         kprintf(" %d f2", i++);
     }
     kprintf("\nOut of fun2()");
@@ -68,16 +68,16 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
 // Context Switching code between fun1 and fun2
 #if 0
     task_struct* proc1 = alloc_new_task();
-    schedule_process(proc1, (uint64_t)fun1);
+    schedule_process(proc1, (uint64_t)fun1, KERNEL_STACK_SIZE);
 
     task_struct* proc2 = alloc_new_task();
-    schedule_process(proc2, (uint64_t)fun2);
+    schedule_process(proc2, (uint64_t)fun2, KERNEL_STACK_SIZE);
 #endif
 
 // Context Switching code between tarfs processes
-#if 0 
+#if 0
     create_elf_proc("bin/hello");
-    //create_elf_proc("bin/world");
+    create_elf_proc("bin/world");
 #endif
 
     // Allow interrupts

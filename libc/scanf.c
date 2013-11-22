@@ -8,7 +8,6 @@ char read_buf[1024];
 
 int ugets(char *str)
 {
-    //return 1;
     return __syscall1(GETS, (uint64_t)str);
 }
 

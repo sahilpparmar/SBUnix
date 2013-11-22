@@ -8,20 +8,7 @@
 #include <sys/kmalloc.h>
 #include <stdlib.h>
 
-task_struct* CURRENT_TASK = NULL;
-
-void fun3(void)
-{
-    int i = 0;
-    while(i < 10){
-        kprintf(" %d f3", i++);
-    }
-//    fork();
-    kprintf("\nOut of fun3()");
-
-    while(1);
-}
-
+extern task_struct* CURRENT_TASK;
 
 extern int read_rip();
 

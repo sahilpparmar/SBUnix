@@ -9,7 +9,7 @@
 #define PAGING_PRESENT_WRITABLE PAGING_PRESENT | PAGING_WRITABLE | PAGING_USER
 // The process lists. The task at the head of the READY_LIST should always be executed next.
 task_struct* READY_LIST = NULL;
-//task_struct* CURRENT_TASK = NULL;
+task_struct* CURRENT_TASK = NULL;
 task_struct* prev = NULL;
 task_struct* next = NULL;
 
