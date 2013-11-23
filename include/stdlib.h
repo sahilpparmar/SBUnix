@@ -11,9 +11,8 @@ void scanf(const char *format, ...);
 void *malloc(int elem_size);
 void free(void *p);
 
-int fork();
-
 pid_t getpid();
 pid_t getppid();
+pid_t fork();
 
 #endif

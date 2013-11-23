@@ -29,7 +29,7 @@ void increment_brk(task_struct *proc, uint64_t bytes)
     }
 }
 
-static vma_struct* alloc_new_vma(uint64_t start_addr, uint64_t end_addr)
+vma_struct* alloc_new_vma(uint64_t start_addr, uint64_t end_addr)
 {
     vma_struct *vma = (vma_struct*) kmalloc(sizeof(vma_struct));
     vma->vm_start   = start_addr;
@@ -45,28 +45,24 @@ task_struct* alloc_new_task(bool IsUserProcess)
 
     // Allocate a new mm_struct
     mms = (mm_struct *) kmalloc(sizeof(mm_struct));
-
-    mms->pml4_t = create_new_pml4();
-
-    // Initialize to NULL
-    mms->vma_list = NULL;
-    mms->vma_cache = NULL;
-    mms->mmap_base = NULL;
-    mms->task_size = NULL;
-    mms->cached_hole_size = NULL;
-    mms->free_area_cache = NULL;
-    mms->vma_count = NULL;
+    mms->pml4_t     = create_new_pml4();
+    mms->vma_list   = NULL;
+    mms->vma_count  = NULL;
     mms->hiwater_vm = NULL;
-    mms->total_vm = NULL;
-    mms->stack_vm = NULL;
-    mms->flags = NULL;
+    mms->total_vm   = NULL;
+    mms->stack_vm   = NULL;
 
     // Allocate a new task struct
     new_proc = (task_struct*) kmalloc(sizeof(task_struct));
-    new_proc->pid = next_pid++;
-    new_proc->ppid = 0;
+    new_proc->pid           = next_pid++;
+    new_proc->ppid          = 0;
     new_proc->IsUserProcess = IsUserProcess;
-    new_proc->mm = mms;
+    new_proc->mm            = mms;
+    new_proc->next          = NULL;
+    new_proc->last          = NULL;
+    new_proc->parent        = NULL;
+    new_proc->children      = NULL;
+    new_proc->sibling       = NULL;
 
 #if DEBUG_SCHEDULING
     kprintf("\nPID:%d\tCR3: %p", new_proc->pid, mms->pml4_t);
@@ -179,6 +175,7 @@ uint64_t load_elf(Elf64_Ehdr* header, task_struct *proc)
     LOAD_CR3(cur_pml4_t);
 
     mms->vma_count++;
+    mms->stack_vm  = PAGESIZE;
     mms->total_vm += PAGESIZE;
     mms->start_stack = end_vaddr - 8;
 
@@ -205,7 +202,7 @@ pid_t create_elf_proc(char *filename)
     if (elf_header->e_ident[1] == 'E' && elf_header->e_ident[2] == 'L' && elf_header->e_ident[3] == 'F') {                
         new_proc = alloc_new_task(TRUE);
         entrypoint = load_elf(elf_header, new_proc);
-        schedule_process(new_proc, entrypoint, KERNEL_STACK_SIZE);
+        schedule_process(new_proc, entrypoint, (uint64_t)new_proc->mm->start_stack);
         
         return new_proc->pid;
     }

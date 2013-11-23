@@ -17,8 +17,6 @@
 static uint64_t video_addr;
 static uint8_t color_attr;
 
-void backspace();
-
 uint64_t get_video_addr()
 {
     return video_addr;
