@@ -12,6 +12,7 @@ void *malloc(int elem_size);
 void free(void *p);
 
 int fork();
+void listprocess();
 
 pid_t getpid();
 pid_t getppid();

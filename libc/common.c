@@ -11,3 +11,7 @@ pid_t getppid()
     return __syscall0(GETPPID);
 }
 
+void listprocess()
+{
+    __syscall0(LISTPROCESS);
+}
