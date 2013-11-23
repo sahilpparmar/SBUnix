@@ -4,7 +4,7 @@
 #include <sys/types.h>
 
 #define KERNEL_STACK_SIZE 128
-#define DEBUG_SCHEDULING 1
+#define DEBUG_SCHEDULING 0
 
 typedef struct vm_area_struct vma_struct;
 typedef struct mm_struct mm_struct;

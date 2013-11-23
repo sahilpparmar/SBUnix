@@ -14,5 +14,6 @@ void free(void *p);
 pid_t getpid();
 pid_t getppid();
 pid_t fork();
+void listprocess();
 
 #endif

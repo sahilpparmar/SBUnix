@@ -16,3 +16,8 @@ pid_t fork()
     return __syscall0(FORK);
 }
 
+void listprocess()
+{
+    __syscall0(LISTPROCESS);
+}
+

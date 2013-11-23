@@ -78,6 +78,19 @@ pid_t sys_getppid()
     return CURRENT_TASK->ppid;
 }
 
+void sys_listprocess()
+{
+    int i = 0;
+    task_struct *cur = CURRENT_TASK;
+
+    kprintf("\n ===== LIST OF CURRENT PROCESSES ====== \n  #  | PID \n ----| ----- ");
+    while(cur)
+    {
+        kprintf("\n  %d  |  %d  ", ++i, cur->pid);
+        cur = cur->next;
+    }
+}    
+
 // Set up the system call table
 void* syscall_tbl[NUM_SYSCALLS] = 
 {
@@ -87,7 +100,8 @@ void* syscall_tbl[NUM_SYSCALLS] =
     sys_fork,
     sys_mmap,
     sys_getpid,
-    sys_getppid
+    sys_getppid,
+    sys_listprocess,
 };
 
 // The handler for the int 0x80

@@ -56,10 +56,11 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
     schedule_process(idle_proc, (uint64_t)idle_process, (uint64_t)&idle_proc->kernel_stack[KERNEL_STACK_SIZE-1]);
 
 // Context Switching code between tarfs processes
-#if 0
+#if 1
     create_elf_proc("bin/hello");
     create_elf_proc("bin/fork");
     create_elf_proc("bin/world");
+    create_elf_proc("bin/ps");
 #endif
 
     // Allow interrupts

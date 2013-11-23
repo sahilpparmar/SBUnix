@@ -64,6 +64,7 @@ enum syscall_num {
     MMAP,
     GETPID,
     GETPPID,
+    LISTPROCESS,
     NUM_SYSCALLS
 };
 
