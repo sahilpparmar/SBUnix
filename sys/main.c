@@ -55,7 +55,7 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
     task_struct* idle_proc = alloc_new_task(FALSE);
     schedule_process(idle_proc, (uint64_t)idle_process, KERNEL_STACK_SIZE);
 // Context Switching code between tarfs processes
-#if 1
+#if 0
     create_elf_proc("bin/hello");
     create_elf_proc("bin/world");
     create_elf_proc("bin/ps");
