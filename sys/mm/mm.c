@@ -5,6 +5,7 @@
 #include <sys/tarfs.h>
 #include <sys/elf.h>
 #include <sys/kmalloc.h>
+#include <string.h>
 
 #define USER_STACK_ADDR 0xF0000000
 
@@ -201,6 +202,7 @@ pid_t create_elf_proc(char *filename)
     
     if (elf_header->e_ident[1] == 'E' && elf_header->e_ident[2] == 'L' && elf_header->e_ident[3] == 'F') {                
         new_proc = alloc_new_task(TRUE);
+        kstrcpy(new_proc->comm, filename);
         entrypoint = load_elf(elf_header, new_proc);
         schedule_process(new_proc, entrypoint, (uint64_t)new_proc->mm->start_stack);
         

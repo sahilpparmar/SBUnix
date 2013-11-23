@@ -9,6 +9,7 @@
 #include <sys/virt_mm.h>
 #include <sys/kmalloc.h>
 #include <sys/proc_mngr.h>
+#include <string.h>
 
 #define K_MEM_PAGES 518
 #define INITIAL_STACK_SIZE 4096
@@ -53,6 +54,7 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
 
     // Schedule an Idle Kernel Process 
     task_struct* idle_proc = alloc_new_task(FALSE);
+    kstrcpy(idle_proc->comm,"IDLE Process");
     schedule_process(idle_proc, (uint64_t)idle_process, (uint64_t)&idle_proc->kernel_stack[KERNEL_STACK_SIZE-1]);
 
 // Context Switching code between tarfs processes
@@ -65,7 +67,7 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
 
     // Allow interrupts
     sti;
-
+    
     kprintf("\nEnd of Kernel");
     while(1);
 }

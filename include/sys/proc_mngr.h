@@ -39,6 +39,7 @@ struct task_struct
     uint64_t rip_register;
     uint64_t rsp_register;
     mm_struct* mm; 
+    char comm[16];
     task_struct* next;      // The next process in the process list
     task_struct* last;      // The process that ran last
     task_struct* parent;    // Keep track of parent process on fork

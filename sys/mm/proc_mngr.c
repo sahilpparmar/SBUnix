@@ -7,6 +7,7 @@
 #include <io_common.h>
 #include <sys/paging.h>
 #include <sys/types.h>
+#include <string.h>
 
 #define PAGING_PRESENT_WRITABLE PAGING_PRESENT | PAGING_WRITABLE | PAGING_USER
 // The process lists. The task at the head of the READY_LIST should always be executed next.
@@ -212,7 +213,8 @@ task_struct* copy_task_struct(task_struct* parent_task)
     child_task->ppid   = parent_task->pid;
     child_task->parent = parent_task;
     parent_task->children = child_task;
-
+    kstrcpy(child_task->comm, "[CHILD PROCESS]");
+    
     while (parent_vma_l) {
         uint64_t start, end;
 

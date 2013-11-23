@@ -83,10 +83,10 @@ void sys_listprocess()
     int i = 0;
     task_struct *cur = CURRENT_TASK;
 
-    kprintf("\n ===== LIST OF CURRENT PROCESSES ====== \n  #  | PID \n ----| ----- ");
+    kprintf("\n ===== LIST OF CURRENT PROCESSES ====== \n  #  |  PID  |  PPID  |  Process Name \n ----| ----- | ------ | --------------- ");
     while(cur)
     {
-        kprintf("\n  %d  |  %d  ", ++i, cur->pid);
+        kprintf("\n  %d  |   %d   |    %d   |  %s  ", ++i, cur->pid, cur->ppid, cur->comm);
         cur = cur->next;
     }
 }    
