@@ -1,10 +1,13 @@
 #include <sys/kmalloc.h>
+#include <sys/virt_mm.h>
+#include <sys/phys_mm.h>
 #include <sys/proc_mngr.h>
 #include <stdio.h>
 #include <screen.h>
 #include <io_common.h>
 #include <sys/paging.h>
 #include <sys/types.h>
+#include <string.h>
 
 #define PAGING_PRESENT_WRITABLE PAGING_PRESENT | PAGING_WRITABLE | PAGING_USER
 // The process lists. The task at the head of the READY_LIST should always be executed next.
@@ -162,76 +165,140 @@ void timer_handler()
 
 extern void irq0();
 
-void schedule_process(task_struct* new_task, uint64_t entry_point, uint64_t stack_ind)
+void schedule_process(task_struct* new_task, uint64_t entry_point, uint64_t stack_top)
 {
     // 1) Set up kernel stack => ss, rsp, rflags, cs, rip
     if (new_task->IsUserProcess) {
-        new_task->kernel_stack[stack_ind-1] = 0x23;
-        new_task->kernel_stack[stack_ind-2] = (uint64_t)new_task->mm->start_stack;
-        new_task->kernel_stack[stack_ind-4] = 0x1b;
-#if DEBUG_SCHEDULING
-        kprintf("\tEntry Point:%p", entry_point);
-        kprintf("\tUserStackTop:%p", new_task->mm->start_stack);
-#endif
+        new_task->kernel_stack[KERNEL_STACK_SIZE-1] = 0x23;
+        new_task->kernel_stack[KERNEL_STACK_SIZE-4] = 0x1b;
     } else {
-        new_task->kernel_stack[stack_ind-1] = 0x10;
-        new_task->kernel_stack[stack_ind-2] = (uint64_t)&new_task->kernel_stack[stack_ind-1];
-        new_task->kernel_stack[stack_ind-4] = 0x08;
-#if DEBUG_SCHEDULING
-        kprintf("\tEntry Point:%p", entry_point);
-        kprintf("\tKernelStackTop:%p", &new_task->kernel_stack[stack_ind-1]);
-#endif
+        new_task->kernel_stack[KERNEL_STACK_SIZE-1] = 0x10;
+        new_task->kernel_stack[KERNEL_STACK_SIZE-4] = 0x08;
     }
-    new_task->kernel_stack[stack_ind-3] = 0x200202UL;
-    new_task->kernel_stack[stack_ind-5] = entry_point;
+    new_task->kernel_stack[KERNEL_STACK_SIZE-2] = stack_top;
+    new_task->kernel_stack[KERNEL_STACK_SIZE-3] = 0x200202UL;
+    new_task->kernel_stack[KERNEL_STACK_SIZE-5] = entry_point;
+    new_task->rip_register = entry_point;
 
-    // 2) Leave 9 spaces for POPA => stack_ind-6 to stack_ind-14
+#if DEBUG_SCHEDULING
+    kprintf("\tEntry Point:%p", entry_point);
+    kprintf("\tStackTop:%p", stack_top);
+#endif
+
+    // 2) Leave 9 spaces for POPA => KERNEL_STACK_SIZE-6 to KERNEL_STACK_SIZE-14
 
     // 3) Set return address to POPA in irq0()
-    new_task->kernel_stack[stack_ind-15] = (uint64_t)irq0 + 0x14;
+    new_task->kernel_stack[KERNEL_STACK_SIZE-15] = (uint64_t)irq0 + 0x14;
 
-    // 4) Set rsp to stack_ind-16
-    new_task->rsp_register = (uint64_t)&new_task->kernel_stack[stack_ind-16];
-
-    new_task->rip_register = entry_point;
-    new_task->next = NULL;
-    new_task->last = NULL;
+    // 4) Set rsp to KERNEL_STACK_SIZE-16
+    new_task->rsp_register = (uint64_t)&new_task->kernel_stack[KERNEL_STACK_SIZE-16];
 
     // 5) Add to the READY_LIST 
     add_to_ready_list(new_task);
 }
 
-void copy_vma(task_struct* child_task, task_struct* parent_task)
+task_struct* copy_task_struct(task_struct* parent_task)
 {
-    uint64_t start, end, vaddr, paddr;
-    uint64_t *pte_entry;
-    int no_of_pages = 0, count = 0;
-    vma_struct *parent_vma = parent_task->mm->vma_list;
-    
+    task_struct* child_task = alloc_new_task(TRUE);
+    uint64_t parent_pml4_t = parent_task->mm->pml4_t;
+    uint64_t child_pml4_t = child_task->mm->pml4_t;
+    vma_struct *parent_vma_l = parent_task->mm->vma_list;
+    vma_struct *child_vma_l = NULL;
 
-    while (parent_vma) {
-        start = parent_vma->vm_start;
-        end = parent_vma->vm_end;  
-        vaddr = PAGE_ALIGN(start); 
-        
-        // Reset vma start address to 4k page align
-        no_of_pages = (end >> 12) - (start >> 12) + 1;
-        
-        for (count = 0; count < no_of_pages; count++) {
-        
-            LOAD_CR3(parent_task->mm->pml4_t);
-            pte_entry = get_pte_entry(vaddr);
-        
-            paddr = PAGE_ALIGN(*pte_entry);
-    kprintf("\tPaddr:%p", paddr);
-            LOAD_CR3(child_task->mm->pml4_t);
-            
-            map_virt_phys_addr(vaddr, paddr, PAGING_PRESENT_WRITABLE | PAGING_COW);
-            vaddr = vaddr + PAGESIZE;
-        
+    // Copy contains of parent mm_struct, except pml4_t and vma_list
+    memcpy((void*)child_task->mm, (void*)parent_task->mm, sizeof(mm_struct));
+    child_task->mm->pml4_t = child_pml4_t;
+    child_task->mm->vma_list = NULL; 
+
+    child_task->ppid   = parent_task->pid;
+    child_task->parent = parent_task;
+    parent_task->children = child_task;
+    kstrcpy(child_task->comm, "[CHILD PROCESS]");
+    
+    while (parent_vma_l) {
+        uint64_t start, end;
+
+        start = parent_vma_l->vm_start;
+        end   = parent_vma_l->vm_end;  
+
+        if (child_task->mm->vma_list == NULL) {
+            child_task->mm->vma_list = alloc_new_vma(start, end);
+            child_vma_l = child_task->mm->vma_list;
+        } else {
+            child_vma_l->vm_next = alloc_new_vma(start, end);
+            child_vma_l = child_vma_l->vm_next;
         }
-        parent_vma = parent_vma->vm_next;
+
+        // Allocate page tables if physical memory is allocated
+        if (end - start) {
+            uint64_t vaddr = PAGE_ALIGN(start); 
+            uint64_t pte_entry, paddr, page_flags;
+
+            // Allocate separate physical memory for only stack VMA
+            if (start < child_task->mm->start_stack && child_task->mm->start_stack < end) {
+                uint64_t k_vaddr = get_top_virtaddr();
+                uint64_t *k_pte_entry;
+
+                while (vaddr < end) {
+                    LOAD_CR3(parent_pml4_t);
+
+                    // Allocate a new page in kernel
+                    paddr = phys_alloc_block();
+                    map_virt_phys_addr(k_vaddr, paddr, PAGING_PRESENT_WRITABLE);
+
+                    // Copy parent page in kernel space
+                    memcpy((void*)k_vaddr, (void*)vaddr, PAGESIZE);
+
+                    // Map paddr with child vaddr
+                    LOAD_CR3(child_pml4_t);
+                    map_virt_phys_addr(vaddr, paddr, PAGING_PRESENT_WRITABLE);
+
+                    // Unmap k_vaddr
+                    k_pte_entry = get_pte_entry(k_vaddr);
+                    *k_pte_entry = 0UL;
+
+                    vaddr = vaddr + PAGESIZE;
+                }
+            } else {
+                while (vaddr < end) {
+
+                    //TODO: Need to check if page is "present" and set COW bit to parent page tables
+                    LOAD_CR3(parent_pml4_t);
+
+                    pte_entry  = *get_pte_entry(vaddr);
+                    page_flags = pte_entry & 0xFFF;
+                    paddr      = PAGE_ALIGN(pte_entry);
+
+                    LOAD_CR3(child_pml4_t);
+                    map_virt_phys_addr(vaddr, paddr, page_flags | PAGING_COW);
+
+                    vaddr = vaddr + PAGESIZE;
+                }
+            }
+        }
+        parent_vma_l = parent_vma_l->vm_next;
     }
-    LOAD_CR3(parent_task->mm->pml4_t);
+    LOAD_CR3(parent_pml4_t);
+
+    return child_task;
+}
+
+int sys_fork()
+{
+    // We are modifying kernel structures, and so cannot be interrupted.
+    cli;
+    // Take a pointer to this process' task struct for later reference.
+    task_struct *parent_task = CURRENT_TASK; 
+
+    // Create a new process.
+    task_struct* child_task = copy_task_struct(parent_task); 
+
+    // Add it to the end of the ready queue
+    schedule_process(child_task, parent_task->kernel_stack[KERNEL_STACK_SIZE-6], parent_task->kernel_stack[KERNEL_STACK_SIZE-3]);
+    
+    // Set return (rax) for child process to be 0
+    child_task->kernel_stack[KERNEL_STACK_SIZE-7] = 0UL;
+
+    return child_task->pid;
 }
 

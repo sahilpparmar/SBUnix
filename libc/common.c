@@ -11,3 +11,13 @@ pid_t getppid()
     return __syscall0(GETPPID);
 }
 
+pid_t fork()
+{
+    return __syscall0(FORK);
+}
+
+void listprocess()
+{
+    __syscall0(LISTPROCESS);
+}
+

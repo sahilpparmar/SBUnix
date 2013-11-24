@@ -32,3 +32,4 @@ void scroll(int32_t lines);
 
 void newline();
 void newtab();
+void backspace();

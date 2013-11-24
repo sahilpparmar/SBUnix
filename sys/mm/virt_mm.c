@@ -32,7 +32,7 @@ void* virt_alloc_pages(uint32_t no_of_vpages)
         ret_addr = (void*)topVirtAddr; 
     }
 
-    for(i = 0; i < no_of_vpages; ++i) {
+    for (i = 0; i < no_of_vpages; ++i) {
         physaddr = (uint64_t*) phys_alloc_block();
         map_virt_phys_addr(topVirtAddr, (uint64_t)physaddr, PAGING_PRESENT_WRITABLE);
         topVirtAddr += PAGESIZE;     
