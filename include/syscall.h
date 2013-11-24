@@ -6,6 +6,8 @@
 
 #define SYSCALL_PROTO(n) static __inline uint64_t __syscall##n
 
+uint64_t last_addr;
+
 SYSCALL_PROTO(0)(uint64_t n)
 {
     uint64_t ret;

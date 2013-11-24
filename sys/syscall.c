@@ -4,11 +4,13 @@
 #include <sys/virt_mm.h>
 #include <io_common.h>
 #include <string.h>
+#include <screen.h>
+#include <defs.h>
 
 extern task_struct* CURRENT_TASK;
 
 // These will get invoked in kernel mode
-
+extern uint64_t last_addr;
 volatile int flag, counter;
 volatile char buf[1024];
 
@@ -19,8 +21,9 @@ int gets(uint64_t addr)
 
     flag = 1;
     sti;
+         
+    last_addr = get_video_addr();
     while(flag == 1);
-
     memcpy((void *)user_buf, (void *)buf, counter);
     count = counter;
     counter = 0;
