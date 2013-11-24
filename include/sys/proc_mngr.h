@@ -10,12 +10,35 @@ typedef struct vm_area_struct vma_struct;
 typedef struct mm_struct mm_struct;
 typedef struct task_struct task_struct;
 
+enum vmatype {
+   TEXT,
+   DATA,
+   HEAP,
+   STACK,
+   ANON 
+
+};
+
+enum vmaflag {
+    NONE,  //no permission
+    X,     //execute only
+    W,     //write only
+    WX,    //write execute
+    R,     //read only
+    RX,    //read execute
+    RW,    //read write
+    RWX    //read write execute
+
+};
+
+
 struct vm_area_struct {
     mm_struct *vm_mm;               // The address space we belong to.
     uint64_t vm_start;              // Our start address within vm_mm
     uint64_t vm_end;                // The first byte after our end address within vm_mm
     vma_struct *vm_next;            // linked list of VM areas per task, sorted by address
-    uint64_t vm_flags;              // Flags, see mm.h
+    uint8_t vm_flags;               // Flags read, write, execute permissions
+    uint64_t vm_type;               // type of segment its reffering to 
 };
 
 struct mm_struct {
@@ -57,14 +80,16 @@ struct task_struct
 
 extern task_struct* CURRENT_TASK;
 
-void* mmap(uint64_t virt_addr, int bytes);
+void* kmmap(uint64_t virt_addr, int bytes);
 task_struct* alloc_new_task(bool IsUserProcess);
 pid_t create_elf_proc(char *filename);
 void schedule_process(task_struct* new_task, uint64_t entry_point, uint64_t stack_ind);
+vma_struct* alloc_new_vma(uint64_t start_addr, uint64_t end_addr);
 void set_tss_rsp0(uint64_t rsp);
 void add_to_ready_list(task_struct* new_task);
 void copy_vma(task_struct* child_task, task_struct* parent_task);
 void increment_brk(task_struct *proc, uint64_t bytes);
+bool verify_addr(task_struct *proc, uint64_t addr, uint64_t size);
 pid_t sys_getpid();
 pid_t sys_getppid();
 
