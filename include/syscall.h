@@ -9,50 +9,75 @@
 SYSCALL_PROTO(0)(uint64_t n)
 {
     uint64_t ret;
-    __asm__ __volatile__("movq %[retv], %%rax;" : : [retv]"a"(n));
-    __asm__ __volatile__("int $0x80" : "=a" (ret));
+    __asm__ __volatile__(
+        "movq %[no], %%rax;"
+        "int $0x80;"
+        : "=a" (ret)
+        : [no]"a"(n)
+        : "%rcx", "%r11"
+    );
     return ret;
 }
 
 SYSCALL_PROTO(1)(uint64_t n, uint64_t a1)
 {
     uint64_t ret;
-    __asm__ __volatile__("movq %[a1], %%rdi;" : : [a1]"m"(a1));
-    __asm__ __volatile__("movq %[retv], %%rax;" : : [retv]"a"(n));
-    __asm__ __volatile__("int $0x80;" : "=a" (ret));
+    __asm__ __volatile__(
+        "movq %[a1], %%rdi;" 
+        "movq %[no], %%rax;"
+        "int $0x80;"
+        : "=a" (ret)
+        : [a1]"g"(a1), [no]"a"(n)
+        : "%rdi", "%rcx", "%r11"
+    );
     return ret;
 }
 
 SYSCALL_PROTO(2)(uint64_t n, uint64_t a1, uint64_t a2)
 {
     uint64_t ret;
-    __asm__ __volatile__("movq %[a1], %%rdi;" : : [a1]"m"(a1));
-    __asm__ __volatile__("movq %[a2], %%rsi;" : : [a2]"m"(a2));
-    __asm__ __volatile__("movq %[retv], %%rax;" : : [retv]"a"(n));
-    __asm__ __volatile__("int $0x80;" : "=a" (ret));
+    __asm__ __volatile__(
+        "movq %[a1], %%rdi;" 
+        "movq %[a2], %%rsi;" 
+        "movq %[no], %%rax;"
+        "int $0x80;"
+        : "=a" (ret)
+        : [a1]"g"(a1), [a2]"g"(a2), [no]"a"(n)
+        : "%rdi", "%rsi", "%rcx", "%r11"
+    );
     return ret;
 }
 
 SYSCALL_PROTO(3)(uint64_t n, uint64_t a1, uint64_t a2, uint64_t a3)
 {
     uint64_t ret;
-    __asm__ __volatile__("movq %[a1], %%rdi;" : : [a1]"m"(a1));
-    __asm__ __volatile__("movq %[a2], %%rsi;" : : [a2]"m"(a2));
-    __asm__ __volatile__("movq %[a3], %%rdx;" : : [a3]"m"(a3));
-    __asm__ __volatile__("movq %[retv], %%rax;" : : [retv]"a"(n));
-    __asm__ __volatile__("int $0x80;" : "=a" (ret));
+    __asm__ __volatile__(
+        "movq %[a1], %%rdi;" 
+        "movq %[a2], %%rsi;" 
+        "movq %[a3], %%rdx;" 
+        "movq %[no], %%rax;"
+        "int $0x80;"
+        : "=a" (ret)
+        : [a1]"g"(a1), [a2]"g"(a2), [a3]"g"(a3), [no]"a"(n)
+        : "%rdi", "%rsi", "%rdx", "%rcx", "%r11"
+    );
     return ret;
 }
 
 SYSCALL_PROTO(4)(uint64_t n, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4)
 {
     uint64_t ret;
-    __asm__ __volatile__("movq %[a1], %%rdi;" : : [a1]"m"(a1));
-    __asm__ __volatile__("movq %[a2], %%rsi;" : : [a2]"m"(a2));
-    __asm__ __volatile__("movq %[a3], %%rdx;" : : [a3]"m"(a3));
-    __asm__ __volatile__("movq %[a4], %%rcx;" : : [a4]"m"(a4));
-    __asm__ __volatile__("movq %[retv], %%rax;" : : [retv]"a"(n));
-    __asm__ __volatile__("int $0x80;" : "=a" (ret));
+    __asm__ __volatile__(
+        "movq %[a1], %%rdi;" 
+        "movq %[a2], %%rsi;" 
+        "movq %[a3], %%rdx;" 
+        "movq %[a4], %%rcx;" 
+        "movq %[no], %%rax;"
+        "int $0x80;"
+        : "=a" (ret)
+        : [a1]"g"(a1), [a2]"g"(a2), [a3]"g"(a3), [a4]"g"(a4), [no]"a"(n)
+        : "%rdi", "%rsi", "%rdx", "%rcx", "%r11"
+    );
     return ret;
 }
 
@@ -61,6 +86,8 @@ enum syscall_num {
     WRITE,
     BRK, 
     FORK,
+    EXECVPE,
+    EXIT,
     MMAP,
     GETPID,
     GETPPID,

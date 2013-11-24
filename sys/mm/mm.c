@@ -6,9 +6,43 @@
 #include <sys/elf.h>
 #include <sys/kmalloc.h>
 
-#define USER_STACK_ADDR 0xF0000000
+#define USER_STACK_TOP 0xF0000000
 
 uint64_t next_pid = 0;
+task_struct *task_free_list = NULL;
+vma_struct *vma_free_list = NULL;
+
+task_struct* get_free_task_struct()
+{
+    task_struct *ret = NULL;
+    if (task_free_list != NULL) {
+        ret = task_free_list;
+        task_free_list = task_free_list->next;
+    }
+    return ret;
+}
+
+vma_struct* get_free_vma_struct()
+{
+    vma_struct *ret = NULL;
+    if (vma_free_list != NULL) {
+        ret = vma_free_list;
+        vma_free_list = vma_free_list->vm_next;
+    }
+    return ret;
+}
+
+void add_to_task_free_list(task_struct* free_task)
+{
+    free_task->next = task_free_list;
+    task_free_list = free_task;
+}
+
+void add_to_vma_free_list(vma_struct* free_vma)
+{
+    free_vma->vm_next = vma_free_list;
+    vma_free_list = free_vma;
+}
 
 void increment_brk(task_struct *proc, uint64_t bytes)
 {   
@@ -31,20 +65,31 @@ void increment_brk(task_struct *proc, uint64_t bytes)
 
 vma_struct* alloc_new_vma(uint64_t start_addr, uint64_t end_addr)
 {
-    vma_struct *vma = (vma_struct*) kmalloc(sizeof(vma_struct));
-    vma->vm_start   = start_addr;
-    vma->vm_end     = end_addr; 
-    vma->vm_next    = NULL;
+    vma_struct *vma = NULL;
+
+    if ((vma = get_free_vma_struct()) == NULL) {
+        vma = (vma_struct*) kmalloc(sizeof(vma_struct));
+    }
+    vma->vm_start = start_addr;
+    vma->vm_end   = end_addr; 
+    vma->vm_next  = NULL;
     return vma;
 }
 
 task_struct* alloc_new_task(bool IsUserProcess)
 {
-    mm_struct* mms;
-    task_struct* new_proc;
+    mm_struct* mms = NULL;
+    task_struct* new_proc = NULL;
 
-    // Allocate a new mm_struct
-    mms = (mm_struct *) kmalloc(sizeof(mm_struct));
+    if ((new_proc = get_free_task_struct()) == NULL) {
+        new_proc = (task_struct*) kmalloc(sizeof(task_struct));
+        mms      = (mm_struct *) kmalloc(sizeof(mm_struct));
+        new_proc->mm = mms;
+    } else {
+        mms = new_proc->mm;
+    }
+
+    // Initialize mm_struct
     mms->pml4_t     = create_new_pml4();
     mms->vma_list   = NULL;
     mms->vma_count  = NULL;
@@ -52,12 +97,11 @@ task_struct* alloc_new_task(bool IsUserProcess)
     mms->total_vm   = NULL;
     mms->stack_vm   = NULL;
 
-    // Allocate a new task struct
-    new_proc = (task_struct*) kmalloc(sizeof(task_struct));
+    // Initialize new process
     new_proc->pid           = next_pid++;
     new_proc->ppid          = 0;
     new_proc->IsUserProcess = IsUserProcess;
-    new_proc->mm            = mms;
+    new_proc->task_state    = READY_STATE;
     new_proc->next          = NULL;
     new_proc->last          = NULL;
     new_proc->parent        = NULL;
@@ -69,6 +113,42 @@ task_struct* alloc_new_task(bool IsUserProcess)
 #endif
 
     return new_proc;
+}
+
+void empty_vma_list(vma_struct *vma_list)
+{
+    vma_struct *cur_vma  = vma_list;
+    vma_struct *last_vma = NULL;
+
+    while (cur_vma) {
+        uint64_t start, end;
+
+        start = cur_vma->vm_start;
+        end   = cur_vma->vm_end;
+
+        // Deallocate all used pages
+        if (end - start) {
+            uint64_t vaddr = PAGE_ALIGN(start); 
+            while (vaddr < end) {
+                free_virt_page((void*)vaddr);
+                vaddr = vaddr + PAGESIZE;
+            }
+        }
+
+        cur_vma->vm_mm    = NULL;
+        cur_vma->vm_start = NULL;
+        cur_vma->vm_end   = NULL;
+        cur_vma->vm_flags = NULL;
+
+        last_vma = cur_vma;
+        cur_vma = cur_vma->vm_next;
+    }
+
+    // Add vma_list to vma_free_list
+    if (last_vma) {
+        last_vma->vm_next = vma_free_list;
+        vma_free_list = vma_list;
+    }
 }
 
 void* mmap(uint64_t start_addr, int bytes)
@@ -165,8 +245,8 @@ uint64_t load_elf(Elf64_Ehdr* header, task_struct *proc)
 
     // Stack VMA of one page (TODO: Need to allocate a dynamically growing stack)
     for (iter = mms->vma_list; iter->vm_next != NULL; iter = iter->vm_next);
-    start_vaddr = USER_STACK_ADDR;
-    end_vaddr = USER_STACK_ADDR + PAGESIZE;
+    end_vaddr = USER_STACK_TOP;
+    start_vaddr = USER_STACK_TOP - PAGESIZE;
     iter->vm_next = alloc_new_vma(start_vaddr, end_vaddr);
 
     // Map a physical page

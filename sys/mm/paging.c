@@ -11,13 +11,17 @@
 #define ENTRIES_PER_PDPE 512
 #define ENTRIES_PER_PML4 512
 
+#define PTE_SELF_REF  0xFFFFFF0000000000UL
+#define PDE_SELF_REF  0xFFFFFF7F80000000UL
+#define PDPE_SELF_REF 0xFFFFFF7FBFC00000UL
+#define PML4_SELF_REF 0xFFFFFF7FBFDFE000UL
+
 // For accessing Page table addresses, we need to first convert PhyADDR to VirADDR
 // So need to add below kernel base address
 #define VADDR(PADDR) ((KERNEL_START_VADDR) + PAGE_ALIGN(PADDR))
 #define PADDR(VADDR) (PAGE_ALIGN(VADDR) - (KERNEL_START_VADDR))
 
-#define PAGING_PRESENT_WRITABLE PAGING_PRESENT | PAGING_WRITABLE | PAGING_USER
-
+static uint64_t ker_cr3;
 static uint64_t *ker_pml4_t;
 
 uint64_t* get_ker_pml4_t()
@@ -127,12 +131,12 @@ static void init_map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t no_
 void init_paging(uint64_t kernmem, uint64_t physbase, uint64_t no_of_pages)
 {
     // Allocate free memory for PML4 table 
-    uint64_t pml4_paddr = phys_alloc_block();
+    ker_cr3 = phys_alloc_block();
 
-    ker_pml4_t = (uint64_t*) VADDR(pml4_paddr);
+    ker_pml4_t = (uint64_t*) VADDR(ker_cr3);
     kprintf("\tKernel PML4t:%p", ker_pml4_t);
 
-    ker_pml4_t[510] = pml4_paddr | PAGING_PRESENT_WRITABLE;   
+    ker_pml4_t[510] = ker_cr3 | PAGING_PRESENT_WRITABLE;   
     
     // Kernal Memory Mapping 
     // Mappings for virtual address range [0xFFFFFFFF80200000, 0xFFFFFFFF80406000]
@@ -144,7 +148,7 @@ void init_paging(uint64_t kernmem, uint64_t physbase, uint64_t no_of_pages)
     init_map_virt_phys_addr(0xFFFFFFFF800B8000, 0xB8000, 1);
     
     // Set CR3 register to address of PML4 table
-    LOAD_CR3(pml4_paddr);
+    LOAD_CR3(ker_cr3);
     
     // Set value of top virtual address
     set_top_virtaddr(kernmem + (no_of_pages * PAGESIZE));
@@ -162,7 +166,7 @@ uint64_t* get_pte_entry(uint64_t vaddr)
 
     tvaddr  = vaddr << 16 >> 28 << 3;
 
-    tvaddr = tvaddr | 0xFFFFFF0000000000UL;
+    tvaddr = tvaddr | PTE_SELF_REF;
     addr = (uint64_t *)tvaddr; 
     return addr;
 } 
@@ -174,7 +178,7 @@ static uint64_t* get_pde_entry(uint64_t vaddr)
 
     tvaddr  = vaddr << 16 >> 37 << 3;
 
-    tvaddr = tvaddr | 0xFFFFFF7F80000000UL;
+    tvaddr = tvaddr | PDE_SELF_REF;
     addr = (uint64_t *)tvaddr; 
     
     return addr;
@@ -187,7 +191,7 @@ static uint64_t* get_pdpe_entry(uint64_t vaddr)
 
     tvaddr  = vaddr << 16 >> 46 << 3;
 
-    tvaddr = tvaddr | 0xFFFFFF7FBFC00000UL;
+    tvaddr = tvaddr | PDPE_SELF_REF;
     addr = (uint64_t *)tvaddr; 
 
     return addr;
@@ -201,7 +205,7 @@ static uint64_t* get_pml4_entry(uint64_t vaddr)
 
     tvaddr  = vaddr << 16 >> 55 << 3;
 
-    tvaddr = tvaddr | 0xFFFFFF7FBFDFE000UL;
+    tvaddr = tvaddr | PML4_SELF_REF;
     addr = (uint64_t *)tvaddr; 
     
     return addr;
@@ -282,5 +286,46 @@ uint64_t create_new_pml4()
     new_pml4_t[510] = physAddr | PAGING_PRESENT_WRITABLE;
 
     return physAddr;
+}
+
+void empty_page_tables(uint64_t pml4_t)
+{
+    uint64_t pml4, pdpe, pde, pte;
+    uint64_t *pml4_e, *pdpe_e, *pde_e, *pte_e;
+
+    // Free entries except [510] and [511] entries 
+    for (pml4 = 0; pml4 < ENTRIES_PER_PML4-2; pml4++) {
+        pml4_e = (uint64_t*) (PML4_SELF_REF | (pml4 << 3));
+        if (*pml4_e & PAGING_PRESENT) {
+
+            for (pdpe = 0; pdpe < ENTRIES_PER_PDPE; pdpe++) {
+                pdpe_e = (uint64_t*) (PDPE_SELF_REF | (pml4 << 12) | (pdpe << 3));
+                if (*pdpe_e & PAGING_PRESENT) {
+
+                    for (pde = 0; pde < ENTRIES_PER_PDE; pde++) {
+                        pde_e = (uint64_t*) (PDE_SELF_REF | (pml4 << 21) | (pdpe << 12) | (pde << 3));
+                        if (*pde_e & PAGING_PRESENT) {
+
+                            for (pte = 0; pte < ENTRIES_PER_PTE; pte++) {
+                                pte_e = (uint64_t*) (PTE_SELF_REF | (pml4 << 30) | (pdpe << 21) | (pde << 12) | (pte << 3));
+                                if (*pte_e & PAGING_PRESENT) {
+                                    *pte_e = 0UL;
+                                }
+                            }
+                            phys_free_block(PAGE_ALIGN(*pde_e));
+                            *pde_e = 0UL;
+                        }
+                    }
+                    phys_free_block(PAGE_ALIGN(*pdpe_e));
+                    *pdpe_e = 0UL;
+                }
+            }
+            phys_free_block(PAGE_ALIGN(*pml4_e));
+            *pml4_e = 0UL;
+        }
+    }
+    //TODO: Need to zero out [510] and [511] by using virtual address of pml4_t
+    LOAD_CR3(ker_cr3);
+    phys_free_block(PAGE_ALIGN(pml4_t));
 }
 

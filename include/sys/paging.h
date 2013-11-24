@@ -17,6 +17,8 @@ enum PAGE_FLAGS {
     PAGING_NX              =   0x8000000000000000,               //10000000000000000000000000000000 00000000000000000000000000000000
 };
 
+#define PAGING_PRESENT_WRITABLE PAGING_PRESENT | PAGING_WRITABLE | PAGING_USER
+
 void init_paging(uint64_t, uint64_t, uint64_t);
 void map_virt_phys_addr(uint64_t,uint64_t, uint64_t);
 
@@ -24,4 +26,5 @@ uint64_t* get_ker_pml4_t();
 uint64_t* get_pte_entry(uint64_t);
 
 uint64_t create_new_pml4();
+void empty_page_tables(uint64_t pml4_t);
 

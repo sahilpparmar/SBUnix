@@ -98,6 +98,8 @@ void* syscall_tbl[NUM_SYSCALLS] =
     sys_write,
     sys_brk,
     sys_fork,
+    sys_execvpe,
+    sys_exit,
     sys_mmap,
     sys_getpid,
     sys_getppid,

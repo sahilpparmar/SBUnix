@@ -22,7 +22,6 @@ void *memset8(void *ptr, uint64_t value, uint64_t num);
 int32_t pow(int base, int power);
 int32_t atoi(char *p);
 int32_t oct_to_dec(int n);
-int sys_fork();
 
 #endif
 

@@ -5,8 +5,6 @@
 #include <sys/types.h>
 #include <sys/paging.h>
 
-#define PAGING_PRESENT_WRITABLE PAGING_PRESENT | PAGING_WRITABLE | PAGING_USER
-
 uint64_t topVirtAddr;
 
 uint64_t get_top_virtaddr()
@@ -53,6 +51,7 @@ void free_virt_page(void *vaddr)
     pte_entry = get_pte_entry((uint64_t)vaddr);
     // Get physical address of the page
     physaddr = (*pte_entry) >> 12 << 12;     
+
     // Free the physical page
     phys_free_block (physaddr);
     // Empty PTE entry

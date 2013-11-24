@@ -131,8 +131,7 @@ static char write_buf[1024];
 
 int write(int n, char *str, int len)
 {
-        return __syscall3(WRITE, n, (uint64_t)str, len);
-    
+    return __syscall3(WRITE, n, (uint64_t)str, len);
 }
 
 
