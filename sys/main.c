@@ -9,6 +9,7 @@
 #include <sys/virt_mm.h>
 #include <sys/kmalloc.h>
 #include <sys/proc_mngr.h>
+#include <string.h>
 
 #define K_MEM_PAGES 518
 #define INITIAL_STACK_SIZE 4096
@@ -58,7 +59,7 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
 
     // Allow interrupts
     sti;
-
+    
     kprintf("\nEnd of Kernel");
     while(1);
 }

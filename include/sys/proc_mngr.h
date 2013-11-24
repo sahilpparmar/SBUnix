@@ -15,6 +15,25 @@ enum task_states {
     EXIT_STATE
 };
 
+enum vmatype {
+    TEXT,
+    DATA,
+    HEAP,
+    STACK,
+    ANON 
+};
+
+enum vmaflag {
+    NONE,  //no permission
+    X,     //execute only
+    W,     //write only
+    WX,    //write execute
+    R,     //read only
+    RX,    //read execute
+    RW,    //read write
+    RWX    //read write execute
+};
+
 typedef struct vm_area_struct vma_struct;
 typedef struct mm_struct mm_struct;
 typedef struct task_struct task_struct;
@@ -24,7 +43,8 @@ struct vm_area_struct {
     uint64_t vm_start;              // Our start address within vm_mm
     uint64_t vm_end;                // The first byte after our end address within vm_mm
     vma_struct *vm_next;            // linked list of VM areas per task, sorted by address
-    uint64_t vm_flags;              // Flags, see mm.h
+    uint8_t vm_flags;               // Flags read, write, execute permissions
+    uint64_t vm_type;               // type of segment its reffering to 
 };
 
 struct mm_struct {
@@ -49,6 +69,7 @@ struct task_struct
     uint64_t rsp_register;
     uint64_t task_state;    // Saves the current state of task
     mm_struct* mm; 
+    char comm[16];
     task_struct* next;      // The next process in the process list
     task_struct* last;      // The process that ran last
     task_struct* parent;    // Keep track of parent process on fork
@@ -59,11 +80,12 @@ struct task_struct
 extern task_struct* CURRENT_TASK;
 
 void create_idle_process();
-void* mmap(uint64_t virt_addr, int bytes);
+void* kmmap(uint64_t virt_addr, int bytes);
 pid_t create_elf_proc(char *filename);
 void schedule_process(task_struct* new_task, uint64_t entry_point, uint64_t stack_top);
 void set_tss_rsp0(uint64_t rsp);
 void increment_brk(task_struct *proc, uint64_t bytes);
+bool verify_addr(task_struct *proc, uint64_t addr, uint64_t size);
 
 extern task_struct *task_free_list;
 extern vma_struct *vma_free_list;

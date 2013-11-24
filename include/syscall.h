@@ -2,7 +2,6 @@
 #define _SYSCALL_H
 
 #include <defs.h>
-#include <stdlib.h>
 
 #define SYSCALL_PROTO(n) static __inline uint64_t __syscall##n
 
@@ -89,6 +88,7 @@ enum syscall_num {
     EXECVPE,
     EXIT,
     MMAP,
+    MUNMAP, 
     GETPID,
     GETPPID,
     LISTPROCESS,

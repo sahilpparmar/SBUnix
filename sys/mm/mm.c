@@ -5,6 +5,7 @@
 #include <sys/tarfs.h>
 #include <sys/elf.h>
 #include <sys/kmalloc.h>
+#include <string.h>
 
 #define USER_STACK_TOP 0xF0000000
 
@@ -43,6 +44,29 @@ void add_to_vma_free_list(vma_struct* free_vma)
     free_vma->vm_next = vma_free_list;
     vma_free_list = free_vma;
 }
+
+bool verify_addr(task_struct *proc, uint64_t addr, uint64_t size)
+{
+    //traverse vma list and check for addr
+    
+    mm_struct *mms = proc->mm;
+    vma_struct *iter;
+
+    for (iter = mms->vma_list; iter != NULL; iter = iter->vm_next) {
+
+        if (addr < iter->vm_start && (addr + size) > iter->vm_start)
+            return 0;
+
+        if (addr < iter->vm_end && (addr + size) > iter->vm_end)
+            return 0;
+    }
+    
+    if (addr >= KERNEL_START_VADDR)
+        return 0;
+
+    return 1;
+}
+
 
 void increment_brk(task_struct *proc, uint64_t bytes)
 {   
@@ -151,7 +175,7 @@ void empty_vma_list(vma_struct *vma_list)
     }
 }
 
-void* mmap(uint64_t start_addr, int bytes)
+void* kmmap(uint64_t start_addr, int bytes)
 {
     int no_of_pages = 0;
     uint64_t end_vaddr;
@@ -190,14 +214,20 @@ uint64_t load_elf(Elf64_Ehdr* header, task_struct *proc)
     
     for (i = 0; i < header->e_phnum; ++i) {
 
-        // kprintf("\n Type of Segment: %x", program_header->p_type);
         if ((int)program_header->p_type == 1) {           // this is loadable section
+            
+            
+            start_vaddr    = program_header->p_vaddr;
+            size           = program_header->p_memsz;
+            end_vaddr      = start_vaddr + size;    
+            node           = alloc_new_vma(start_vaddr, end_vaddr); 
+            node->vm_flags = program_header->p_type; 
+             
+            if(program_header->p_type == 5)
+                node->vm_type = TEXT;
+            else if(program_header->p_type == 6)
+                node->vm_type = DATA;
 
-            start_vaddr = program_header->p_vaddr;
-            size        = program_header->p_memsz;
- 
-            end_vaddr = start_vaddr + size;    
-            node      = alloc_new_vma(start_vaddr, end_vaddr); 
             mms->vma_count++;
             mms->total_vm += size;
 
@@ -210,7 +240,7 @@ uint64_t load_elf(Elf64_Ehdr* header, task_struct *proc)
             // Load ELF sections into new Virtual Memory Area
             LOAD_CR3(mms->pml4_t);
 
-            mmap(start_vaddr, size); 
+            kmmap(start_vaddr, size); 
 
             if (mms->vma_list == NULL) {
                 mms->vma_list = node;
@@ -235,9 +265,12 @@ uint64_t load_elf(Elf64_Ehdr* header, task_struct *proc)
  
     // Traverse the vmalist to reach end vma and allocate a vma for the heap at 4k align
     for (iter = mms->vma_list; iter->vm_next != NULL; iter = iter->vm_next);
-    start_vaddr = end_vaddr = ((((max_addr - 1) >> 12) + 1) << 12);
-    iter->vm_next = alloc_new_vma(start_vaddr, end_vaddr); 
-
+    start_vaddr    = end_vaddr = ((((max_addr - 1) >> 12) + 1) << 12);
+    node           = alloc_new_vma(start_vaddr, end_vaddr); 
+    node->vm_flags = RW;
+    node->vm_type  = HEAP; 
+    iter->vm_next  = node;
+    
     mms->vma_count++;
     mms->start_brk = start_vaddr;
     mms->end_brk   = end_vaddr; 
@@ -247,11 +280,14 @@ uint64_t load_elf(Elf64_Ehdr* header, task_struct *proc)
     for (iter = mms->vma_list; iter->vm_next != NULL; iter = iter->vm_next);
     end_vaddr = USER_STACK_TOP;
     start_vaddr = USER_STACK_TOP - PAGESIZE;
-    iter->vm_next = alloc_new_vma(start_vaddr, end_vaddr);
-
+    node           = alloc_new_vma(start_vaddr, end_vaddr); 
+    node->vm_flags = RW;
+    node->vm_type  = STACK;
+    iter->vm_next  = node;
+    
     // Map a physical page
     LOAD_CR3(mms->pml4_t);
-    mmap(start_vaddr, PAGESIZE);
+    kmmap(start_vaddr, PAGESIZE);
     LOAD_CR3(cur_pml4_t);
 
     mms->vma_count++;
@@ -281,6 +317,7 @@ pid_t create_elf_proc(char *filename)
     
     if (elf_header->e_ident[1] == 'E' && elf_header->e_ident[2] == 'L' && elf_header->e_ident[3] == 'F') {                
         new_proc = alloc_new_task(TRUE);
+        kstrcpy(new_proc->comm, filename);
         entrypoint = load_elf(elf_header, new_proc);
         schedule_process(new_proc, entrypoint, (uint64_t)new_proc->mm->start_stack);
         

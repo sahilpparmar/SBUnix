@@ -7,6 +7,7 @@
 #include <io_common.h>
 #include <sys/paging.h>
 #include <sys/types.h>
+#include <string.h>
 
 // The process lists. The task at the head of the READY_LIST should always be executed next
 task_struct* READY_LIST = NULL;
@@ -30,6 +31,7 @@ void create_idle_process()
 {
     idle_task = alloc_new_task(FALSE);
     idle_task->task_state = IDLE_STATE;
+    kstrcpy(idle_task->comm, "IDLE Process");
     schedule_process(idle_task, (uint64_t)idle_process, (uint64_t)&idle_task->kernel_stack[KERNEL_STACK_SIZE-1]);
 }
 
@@ -256,11 +258,12 @@ task_struct* copy_task_struct(task_struct* parent_task)
     memcpy((void*)child_task->mm, (void*)parent_task->mm, sizeof(mm_struct));
     child_task->mm->pml4_t = child_pml4_t;
     child_task->mm->vma_list = NULL; 
+    kstrcpy(child_task->comm, "[CHILD PROCESS]");
 
     child_task->ppid   = parent_task->pid;
     child_task->parent = parent_task;
     parent_task->children = child_task;
-
+    
     while (parent_vma_l) {
         uint64_t start, end;
 
