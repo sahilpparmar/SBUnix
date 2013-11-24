@@ -42,11 +42,10 @@ void *alloc_new(int aligned_size)
         heap_end = add; 
     }
     
-    /*TODO: Need to uncomment following printfs for printfs in user malloc function to work
-     * */
-    //printf("");
     heap_end = (char*)((uint64_t)add + (uint64_t)(PAGESIZE * no_of_pages));
     max_mem += PAGESIZE * no_of_pages; 
+
+    //TODO: Need to uncomment following printf for printf in user malloc function to work
     printf("");
     
     p_mcb               = (MCB_P)add; 
@@ -54,7 +53,7 @@ void *alloc_new(int aligned_size)
     p_mcb->size         = aligned_size + sz; 
     mcb_count++;    
 
-    if(PAGESIZE * no_of_pages > aligned_size + sz) {
+    if (PAGESIZE * no_of_pages > aligned_size + sz) {
         make_head(((char *)p_mcb + aligned_size + sz), (PAGESIZE * no_of_pages - aligned_size - sz));
     }
 
@@ -63,7 +62,7 @@ void *alloc_new(int aligned_size)
     return ((void *) p_mcb + sz);
 }
 
-void *malloc(int elem_size)
+void* malloc(int elem_size)
 {
     MCB_P p_mcb;
     int flag, sz, temp = 0, aligned_size;

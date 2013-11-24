@@ -18,12 +18,6 @@ char stack[INITIAL_STACK_SIZE];
 uint32_t* loader_stack;
 extern char kernmem, physbase;
 
-void idle_process(void)
-{
-    kprintf("\nInside Idle Process %d", sys_getpid());
-    while(1);
-}
-
 void start(uint32_t* modulep, void* physbase, void* physfree)
 {
     uint64_t phys_size = 0x0, phys_base = 0x0;
@@ -53,9 +47,7 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
     __asm__ __volatile__("movq %0, %%rsp" : :"a"(&stack[INITIAL_STACK_SIZE]));
 
     // Schedule an Idle Kernel Process 
-    task_struct* idle_proc = alloc_new_task(FALSE);
-    kstrcpy(idle_proc->comm,"IDLE Process");
-    schedule_process(idle_proc, (uint64_t)idle_process, (uint64_t)&idle_proc->kernel_stack[KERNEL_STACK_SIZE-1]);
+    create_idle_process();
 
 // Context Switching code between tarfs processes
 #if 1

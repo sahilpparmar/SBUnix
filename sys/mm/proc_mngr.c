@@ -9,32 +9,87 @@
 #include <sys/types.h>
 #include <string.h>
 
-#define PAGING_PRESENT_WRITABLE PAGING_PRESENT | PAGING_WRITABLE | PAGING_USER
-// The process lists. The task at the head of the READY_LIST should always be executed next.
+// The process lists. The task at the head of the READY_LIST should always be executed next
 task_struct* READY_LIST = NULL;
 task_struct* CURRENT_TASK = NULL;
-task_struct* prev = NULL;
-task_struct* next = NULL;
+task_struct* idle_task = NULL;
+
+static task_struct* prev = NULL;
+static task_struct* next = NULL;
 
 // Whether scheduling has been initiated
 uint8_t IsInitScheduler;
 
-void add_to_ready_list(task_struct* new_task)
+// Idle kernel thread
+static void idle_process(void)
+{
+    kprintf("\nInside Idle Process %d", sys_getpid());
+    while(1);
+}
+
+void create_idle_process()
+{
+    idle_task = alloc_new_task(FALSE);
+    idle_task->task_state = IDLE_STATE;
+    kstrcpy(idle_task->comm, "IDLE Process");
+    schedule_process(idle_task, (uint64_t)idle_process, (uint64_t)&idle_task->kernel_stack[KERNEL_STACK_SIZE-1]);
+}
+
+static void add_to_ready_list(task_struct* new_task)
 {
     task_struct* ready_list_ptr = READY_LIST;
-    // kprintf("\nThe READY_LIST: %p", READY_LIST);
+
+    if (new_task->task_state == IDLE_STATE) {
+        return;
+    } else if (new_task->task_state == EXIT_STATE) {
+        add_to_task_free_list(new_task);
+        return;
+    } else if (new_task->task_state == RUNNING_STATE) {
+        new_task->task_state = READY_STATE;
+    }
+
     if (ready_list_ptr == NULL) {
         READY_LIST = new_task;
     } else {
-        // kprintf("\nThe READY_LIST->next= %p", ready_list_ptr->next);
-        while(ready_list_ptr->next != NULL) {
+        while (ready_list_ptr->next != NULL) {
             ready_list_ptr = ready_list_ptr->next;
         }
-        // kprintf("\nGoing in to add with ready_list_ptr=%p", ready_list_ptr);
         ready_list_ptr->next = new_task;
         new_task->next = NULL;
     }
-    // kprintf("\nLeaving add_to_ready_list with READY_LIST=%p", READY_LIST);
+}
+
+static task_struct* get_next_ready_task()
+{
+    task_struct* last, *next;
+
+    CURRENT_TASK = READY_LIST;
+    last = next = NULL;
+
+    // Find a process with READY_STATE
+    while (CURRENT_TASK != NULL) {
+        if (CURRENT_TASK->task_state == READY_STATE) {
+            next = CURRENT_TASK;
+            next->task_state = RUNNING_STATE;
+            break;
+        }
+        last = CURRENT_TASK;
+        CURRENT_TASK = CURRENT_TASK->next;
+    }
+
+    if (CURRENT_TASK == NULL) {
+        // Schedule IDLE process if no READY process found
+        CURRENT_TASK = next = idle_task;
+    } else {
+        // READY process found
+        if (last != NULL) {
+            last->next = CURRENT_TASK->next;
+            CURRENT_TASK->next = READY_LIST;
+        } else {
+            READY_LIST = READY_LIST->next;
+        }
+    }
+    return next;
 }
 
 static uint32_t sec, min, hr, tick;
@@ -98,67 +153,61 @@ void print_timer()
 
 #define switch_to_ring3 \
     __asm__ __volatile__(\
-        "mov $0x23, %rax;"\
-        "mov %rax,  %ds;"\
-        "mov %rax,  %es;"\
-        "mov %rax,  %fs;"\
-        "mov %rax,  %gs;")
+        "movq $0x23, %rax;"\
+        "movq %rax,  %ds;"\
+        "movq %rax,  %es;"\
+        "movq %rax,  %fs;"\
+        "movq %rax,  %gs;")
 
 void timer_handler()
 {
     print_timer();
 
-    if (READY_LIST != NULL) {
-        if (!IsInitScheduler) {
-            // The first time schedule gets invoked - additional processing needs done
-            prev = READY_LIST;
-            READY_LIST = READY_LIST->next;
-            CURRENT_TASK = prev;
-            IsInitScheduler = TRUE;
+    if (!IsInitScheduler) {
+        IsInitScheduler = TRUE;
 
-#if DEBUG_SCHEDULING
-            kprintf("\nScheduler Initiated with PID: %d", prev->pid);
-#endif
+        // Get the first process to be scheduled
+        prev = get_next_ready_task();
 
-            LOAD_CR3(prev->mm->pml4_t);
+        LOAD_CR3(prev->mm->pml4_t);
 
-            // Switch the kernel stack to that of the first process
-            __asm__ __volatile__("movq %[prev_rsp], %%rsp" : : [prev_rsp] "m" (prev->rsp_register));
+        // Switch the kernel stack to that of the first process
+        __asm__ __volatile__("movq %[prev_rsp], %%rsp" : : [prev_rsp] "m" (prev->rsp_register));
 
-            if (prev->IsUserProcess) {
-                set_tss_rsp0((uint64_t)&prev->kernel_stack[KERNEL_STACK_SIZE-1]);
-                switch_to_ring3;
-            }
-
-        } else {
-            uint64_t cur_rsp;
-            __asm__ __volatile__("movq %%rsp, %[cur_rsp]": [cur_rsp] "=r"(cur_rsp));
-
-            prev = CURRENT_TASK;
-            next = READY_LIST;
-
-            prev->rsp_register = cur_rsp;
-
-            LOAD_CR3(next->mm->pml4_t);
-
-            __asm__ __volatile__("movq %[next_rsp], %%rsp" : : [next_rsp] "m" (next->rsp_register));
-
-            if (next->IsUserProcess) {
-                set_tss_rsp0((uint64_t)&next->kernel_stack[KERNEL_STACK_SIZE-1]);
-                switch_to_ring3;
-            }
-
-            CURRENT_TASK = READY_LIST;
-            
-            // Add prev to the end of the READY_LIST
-            add_to_ready_list(prev);
-
-            READY_LIST = READY_LIST->next;
-
-#if DEBUG_SCHEDULING
-            //kprintf(" %d", next->pid);
-#endif
+        if (prev->IsUserProcess) {
+            set_tss_rsp0((uint64_t)&prev->kernel_stack[KERNEL_STACK_SIZE-1]);
+            switch_to_ring3;
         }
+
+#if DEBUG_SCHEDULING
+        kprintf("\nScheduler Initiated with PID: %d[%d]", prev->pid, prev->task_state);
+#endif
+
+    } else {
+        uint64_t cur_rsp;
+        __asm__ __volatile__("movq %%rsp, %[cur_rsp]": [cur_rsp] "=r"(cur_rsp));
+
+        prev = CURRENT_TASK;
+        prev->rsp_register = cur_rsp;
+
+        // Add prev to the end of the READY_LIST for states other than EXIT
+        add_to_ready_list(prev);
+
+        // Schedule next READY process
+        next = get_next_ready_task();
+
+        LOAD_CR3(next->mm->pml4_t);
+
+        __asm__ __volatile__("movq %[next_rsp], %%rsp" : : [next_rsp] "m" (next->rsp_register));
+
+        if (next->IsUserProcess) {
+            set_tss_rsp0((uint64_t)&next->kernel_stack[KERNEL_STACK_SIZE-1]);
+            switch_to_ring3;
+        }
+
+#if DEBUG_SCHEDULING
+        //kprintf(" %d[%d]", next->pid, next->task_state);
+#endif
     }
     __asm__ __volatile__("mov $0x20, %al;" "out %al, $0x20");
 }
@@ -209,11 +258,11 @@ task_struct* copy_task_struct(task_struct* parent_task)
     memcpy((void*)child_task->mm, (void*)parent_task->mm, sizeof(mm_struct));
     child_task->mm->pml4_t = child_pml4_t;
     child_task->mm->vma_list = NULL; 
+    kstrcpy(child_task->comm, "[CHILD PROCESS]");
 
     child_task->ppid   = parent_task->pid;
     child_task->parent = parent_task;
     parent_task->children = child_task;
-    kstrcpy(child_task->comm, "[CHILD PROCESS]");
     
     while (parent_vma_l) {
         uint64_t start, end;
@@ -283,10 +332,8 @@ task_struct* copy_task_struct(task_struct* parent_task)
     return child_task;
 }
 
-int sys_fork()
+pid_t sys_fork()
 {
-    // We are modifying kernel structures, and so cannot be interrupted.
-    cli;
     // Take a pointer to this process' task struct for later reference.
     task_struct *parent_task = CURRENT_TASK; 
 
@@ -300,5 +347,29 @@ int sys_fork()
     child_task->kernel_stack[KERNEL_STACK_SIZE-7] = 0UL;
 
     return child_task->pid;
+}
+
+uint64_t sys_execvpe(char *filename, char *argv[])
+{
+    return -1;
+}
+
+uint64_t sys_exit()
+{
+    task_struct *cur_task = CURRENT_TASK;
+    mm_struct *mms = cur_task->mm;
+
+    empty_vma_list(mms->vma_list);
+    empty_page_tables(mms->pml4_t);
+
+    memset((void*)cur_task->kernel_stack, 0, KERNEL_STACK_SIZE);
+    cur_task->task_state = EXIT_STATE;
+
+    // Enable interrupt for scheduling next process
+    sti;
+
+    while(1);
+
+    return 0;
 }
 
