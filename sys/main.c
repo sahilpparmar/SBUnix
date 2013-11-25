@@ -38,7 +38,7 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
    
     // kernel starts here
 
-    phys_init(phys_base, phys_size); 
+    phys_init(phys_base, (uint64_t) physfree, phys_size); 
 
     init_paging((uint64_t)&kernmem, (uint64_t)physbase, K_MEM_PAGES);
 
@@ -50,11 +50,11 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
     create_idle_process();
 
 // Context Switching code between tarfs processes
-#if 0
+#if 1
     create_elf_proc("bin/hello");
     create_elf_proc("bin/ps");
     //create_elf_proc("bin/sh");
-    create_elf_proc("bin/exitwala");
+    //create_elf_proc("bin/exitwala");
     create_elf_proc("bin/world");
 #endif
 
