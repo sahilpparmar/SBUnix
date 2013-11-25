@@ -13,12 +13,17 @@
 task_struct* READY_LIST = NULL;
 task_struct* CURRENT_TASK = NULL;
 task_struct* idle_task = NULL;
+task_struct* SLEEP_LIST = NULL;
 
 static task_struct* prev = NULL;
 static task_struct* next = NULL;
 
 // Whether scheduling has been initiated
 uint8_t IsInitScheduler;
+
+
+void sleep_time_check();
+void  evict_ready_proc_from_sleep_list();
 
 // Idle kernel thread
 static void idle_process(void)
@@ -162,7 +167,10 @@ void print_timer()
 void timer_handler()
 {
     print_timer();
-
+    
+    sleep_time_check();
+    
+    
     if (!IsInitScheduler) {
         IsInitScheduler = TRUE;
 
@@ -373,3 +381,43 @@ uint64_t sys_exit()
     return 0;
 }
 
+// Keeps track of the sleep time for the sleeping processes
+void sleep_time_check()
+{
+    task_struct* timer_list_ptr = READY_LIST;
+
+    while (timer_list_ptr != NULL) {
+        if (timer_list_ptr->task_state == SLEEP_STATE) {
+            if (timer_list_ptr->sleep_time == 0)
+            {
+                timer_list_ptr->task_state = READY_STATE;    
+                
+            } else {
+                timer_list_ptr->sleep_time -= 1;    
+            }
+        }  
+        timer_list_ptr = timer_list_ptr->next;
+    }
+}
+
+//prints the ready and sleep list [test function]
+void print_list()
+{
+    task_struct* task = SLEEP_LIST;
+
+    kprintf("\nSLEEP LIST\n");
+    while (task != NULL) {
+        if (task->task_state == SLEEP_STATE)
+            kprintf("\nPID:%d\tTIME:%d\tSTATE:%d", task->pid, task->sleep_time, task->task_state);
+        task = task->next;
+    }
+
+    task = READY_LIST;
+    kprintf("\nREADY LIST\n");
+    while (task != NULL) {
+        if (task->task_state == READY_STATE)
+            kprintf("\nPID:%d\tTIME:%d\tSTATE:%d", task->pid, task->sleep_time, task->task_state);
+        task = task->next;
+    }
+
+}

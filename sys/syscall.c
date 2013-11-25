@@ -7,13 +7,27 @@
 #include <screen.h>
 #include <defs.h>
 #include <sys/types.h>
-t
 extern task_struct* CURRENT_TASK;
+extern task_struct* SLEEP_LIST;
 
 // These will get invoked in kernel mode
 extern uint64_t last_addr;
 volatile int flag, counter;
 volatile char buf[1024];
+
+const char *t_state[6] = { "RUNNING" , "READY  " , "SLEEP  " , "WAIT   " , "IDLE   " , "EXIT  " };
+int sys_sleep(int msec)
+{
+
+    task_struct *task = CURRENT_TASK;
+    
+    task->sleep_time = msec;
+    task->task_state = SLEEP_STATE;
+    __asm__ __volatile__("int $32;");
+    
+    return task->sleep_time;
+}
+
 
 int gets(uint64_t addr)
 {
@@ -208,10 +222,10 @@ void sys_listprocess()
     int i = 0;
     task_struct *cur = CURRENT_TASK;
 
-    kprintf("\n ===== LIST OF CURRENT PROCESSES ====== \n  #  |  PID  |  PPID  |  Process Name \n ----| ----- | ------ | --------------- ");
+    kprintf("\n ===== LIST OF CURRENT PROCESSES ====== \n  #  |  PID  |  PPID  |   State   |  Process Name \n ----| ----- | ------ | --------- | --------------- ");
     while(cur)
     {
-        kprintf("\n  %d  |   %d   |    %d   |  %s  ", ++i, cur->pid, cur->ppid, cur->comm);
+        kprintf("\n  %d  |   %d   |   %d    |  %s  |  %s  ", ++i, cur->pid, cur->ppid, t_state[cur->task_state], cur->comm);
         cur = cur->next;
     }
 }    
@@ -230,6 +244,7 @@ void* syscall_tbl[NUM_SYSCALLS] =
     sys_getpid,
     sys_getppid,
     sys_listprocess,
+    sys_sleep,
 };
 
 // The handler for the int 0x80

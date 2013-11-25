@@ -94,6 +94,7 @@ enum syscall_num {
     GETPID,
     GETPPID,
     LISTPROCESS,
+    SLEEP,
     NUM_SYSCALLS
 };
 

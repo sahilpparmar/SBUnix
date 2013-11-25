@@ -162,9 +162,15 @@ static void keyboard_handler(registers_t regs)
                     flag = 0;
                 } else if (val == '\b') {
                     if (get_video_addr() <= last_addr)
-                        counter--;
-                    else 
+                        {
+                            counter--;
+                            counter++;
+                        }
+                    else { 
+
                         putchar(val);
+                        counter--;
+                    }
                 } else {
                     buf[counter++] = val;
                     

@@ -4,7 +4,7 @@
 #include <sys/types.h>
 
 #define KERNEL_STACK_SIZE 128
-#define DEBUG_SCHEDULING 0
+#define DEBUG_SCHEDULING 1
 
 enum task_states {
     RUNNING_STATE,
@@ -70,6 +70,7 @@ struct task_struct
     uint64_t task_state;    // Saves the current state of task
     mm_struct* mm; 
     char comm[16];
+    int32_t sleep_time;     // Number of miliseconds to sleep
     task_struct* next;      // The next process in the process list
     task_struct* last;      // The process that ran last
     task_struct* parent;    // Keep track of parent process on fork
@@ -78,7 +79,10 @@ struct task_struct
 };
 
 extern task_struct* CURRENT_TASK;
+extern task_struct* TIMER_LIST;
 
+void add_to_timer_list(task_struct* task);
+void print_list();
 void create_idle_process();
 void* kmmap(uint64_t virt_addr, int bytes);
 pid_t create_elf_proc(char *filename);
