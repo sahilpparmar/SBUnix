@@ -13,6 +13,8 @@ extern task_struct* CURRENT_TASK;
 volatile int flag, counter;
 volatile char buf[1024];
 
+const char *t_state[6] = { "RUNNING" , "READY  " , "SLEEP  " , "WAIT   " , "IDLE   " , "EXIT  " };
+
 int gets(uint64_t addr)
 {
     char *user_buf = (char*) addr;
@@ -205,10 +207,10 @@ void sys_listprocess()
     int i = 0;
     task_struct *cur = CURRENT_TASK;
 
-    kprintf("\n ===== LIST OF CURRENT PROCESSES ====== \n  #  |  PID  |  PPID  |  Process Name \n ----| ----- | ------ | --------------- ");
+    kprintf("\n ===== LIST OF CURRENT PROCESSES ====== \n  #  |  PID  |  PPID  |   State   |  Process Name \n ----| ----- | ------ | --------- | --------------- ");
     while(cur)
     {
-        kprintf("\n  %d  |   %d   |    %d   |  %s  ", ++i, cur->pid, cur->ppid, cur->comm);
+        kprintf("\n  %d  |   %d   |   %d    |  %s  |  %s  ", ++i, cur->pid, cur->ppid, t_state[cur->task_state], cur->comm);
         cur = cur->next;
     }
 }    

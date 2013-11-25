@@ -38,7 +38,7 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
    
     // kernel starts here
 
-    phys_init(phys_base, phys_size, (uint64_t) physfree); 
+    phys_init(phys_base, (uint64_t) physfree, phys_size); 
 
     init_paging((uint64_t)&kernmem, (uint64_t)physbase, K_MEM_PAGES);
 

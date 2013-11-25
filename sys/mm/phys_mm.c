@@ -10,10 +10,6 @@ static uint64_t _mmngr_max_blocks;
 static uint64_t* _mmngr_memory_map;
 static uint64_t _mmngr_base_addr;
 
-// Currently this works for 128(512*64*4k) MB RAM.
-// Need to design a better way to dynamically allocate the bitmap!
-//static uint64_t bitmap_t[512];
-
 static void mmap_set(int bit)
 {
     _mmngr_memory_map[bit / 64] |= (1UL << (bit % 64));
@@ -53,7 +49,7 @@ static int mmap_first_free()
     return -1;
 }
 
-void phys_init(uint64_t physBase, uint64_t physSize, uint64_t physfree) {
+void phys_init(uint64_t physBase, uint64_t physfree, uint64_t physSize) {
 
     uint64_t bitmap_t;
     
@@ -64,15 +60,14 @@ void phys_init(uint64_t physBase, uint64_t physSize, uint64_t physfree) {
     _mmngr_used_blocks = 0;
 
     // Set all physical memory to 0
-    memset8((void*)_mmngr_base_addr, 0x0, _mmngr_memory_size/8);
+    memset8((uint64_t *)_mmngr_base_addr, 0x0, _mmngr_memory_size/8);
 
     kprintf("\nPhysical Blocks Base:%p, Size:%p, Max:%p", _mmngr_base_addr, _mmngr_memory_size, _mmngr_max_blocks);
 
     // Set Bitmap to all 0
-    bitmap_t = _mmngr_max_blocks/8 + 1;
-    _mmngr_memory_map = (uint64_t *) (physfree + KERNEL_START_VADDR);
-    memset8((void*)_mmngr_memory_map, 0x0, bitmap_t);
-
+    bitmap_t = _mmngr_max_blocks/64 + 1;
+    _mmngr_memory_map = (uint64_t *) (KERNEL_START_VADDR + physfree);
+    memset8((uint64_t *)_mmngr_memory_map, 0x0, bitmap_t);
 }
 
 uint64_t phys_alloc_block() {
