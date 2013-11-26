@@ -53,8 +53,8 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
 #if 1
     create_elf_proc("bin/hello");
     create_elf_proc("bin/ps");
-    //create_elf_proc("bin/sh");
-    //create_elf_proc("bin/exitwala");
+    create_elf_proc("bin/sh");
+    create_elf_proc("bin/fork");
     create_elf_proc("bin/world");
 #endif
 

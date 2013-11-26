@@ -36,8 +36,7 @@ char * kstrcat(char *str1, const char *str2)
 char * kstrcpy(char *dest, const char *src)
 {
     char *str = dest;
-    while (*src)
-    {
+    while (*src) {
         *dest++ = *src++;
     }
     *dest = '\0';
@@ -48,13 +47,14 @@ char * kstrcpyn(char *destination, const char *source, uint64_t n)
 {
     uint64_t i = 0;
     char *str = destination;
-    for (i = 0; i < n; i++){
-            *destination++ = *source++;
-            if ( *source == '\0') {
-                *destination++ = '\0';
-                return(str);
-            }
+
+    for (i = 0; i < n; i++) {
+        *destination++ = *source++;
+        if ( *source == '\0') {
+            *destination++ = '\0';
+            return(str);
         }
+    }
     *destination++ = '\0';
 
     return str;

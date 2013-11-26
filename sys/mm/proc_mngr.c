@@ -13,17 +13,12 @@
 task_struct* READY_LIST = NULL;
 task_struct* CURRENT_TASK = NULL;
 task_struct* idle_task = NULL;
-task_struct* SLEEP_LIST = NULL;
 
 static task_struct* prev = NULL;
 static task_struct* next = NULL;
 
 // Whether scheduling has been initiated
 uint8_t IsInitScheduler;
-
-
-void sleep_time_check();
-void  evict_ready_proc_from_sleep_list();
 
 // Idle kernel thread
 static void idle_process(void)
@@ -95,6 +90,23 @@ static task_struct* get_next_ready_task()
         }
     }
     return next;
+}
+
+// Keeps track of the sleep time for the sleeping processes
+static void sleep_time_check()
+{
+    task_struct* timer_list_ptr = READY_LIST;
+
+    while (timer_list_ptr != NULL) {
+        if (timer_list_ptr->task_state == SLEEP_STATE) {
+            if (timer_list_ptr->sleep_time == 0) {
+                timer_list_ptr->task_state = READY_STATE;
+            } else {
+                timer_list_ptr->sleep_time -= 1;  
+            }
+        }
+        timer_list_ptr = timer_list_ptr->next;
+    }
 }
 
 static uint32_t sec, min, hr, tick;
@@ -169,7 +181,6 @@ void timer_handler()
     print_timer();
     
     sleep_time_check();
-    
     
     if (!IsInitScheduler) {
         IsInitScheduler = TRUE;
@@ -266,11 +277,11 @@ task_struct* copy_task_struct(task_struct* parent_task)
     memcpy((void*)child_task->mm, (void*)parent_task->mm, sizeof(mm_struct));
     child_task->mm->pml4_t = child_pml4_t;
     child_task->mm->vma_list = NULL; 
-    kstrcpy(child_task->comm, "[CHILD PROCESS]");
 
     child_task->ppid   = parent_task->pid;
     child_task->parent = parent_task;
     parent_task->children = child_task;
+    kstrcpy(child_task->comm, parent_task->comm);
     
     while (parent_vma_l) {
         uint64_t start, end;
@@ -340,93 +351,3 @@ task_struct* copy_task_struct(task_struct* parent_task)
     return child_task;
 }
 
-pid_t sys_fork()
-{
-    // Take a pointer to this process' task struct for later reference.
-    task_struct *parent_task = CURRENT_TASK; 
-
-    // Create a new process.
-    task_struct* child_task = copy_task_struct(parent_task); 
-
-    // Add it to the end of the ready queue
-    schedule_process(child_task, parent_task->kernel_stack[KERNEL_STACK_SIZE-6], parent_task->kernel_stack[KERNEL_STACK_SIZE-3]);
-    
-    // Set return (rax) for child process to be 0
-    child_task->kernel_stack[KERNEL_STACK_SIZE-7] = 0UL;
-
-    return child_task->pid;
-}
-
-uint64_t sys_execvpe(char *file, char *argv[], char *envp[])
-{
-    task_struct *new_task = create_elf_proc(file);
-
-    //TODO: Need to load argv[] and envp[]
-    if (new_task) {
-        // Exec process uses the same pid
-        set_next_pid(new_task->pid);
-        new_task->pid = CURRENT_TASK->pid;
-
-        // Exit from the current process
-        exit_task_struct(CURRENT_TASK);
-
-        // Enable interrupt for scheduling next process
-        __asm__ __volatile__ ("int $32");
-
-        panic("\nEXECVPE terminated incorrectly");
-    }
-    // execvpe failed; so return -1
-    return -1;
-}
-
-void sys_exit()
-{
-
-    exit_task_struct(CURRENT_TASK);
-
-    // Enable interrupt for scheduling next process
-    __asm__ __volatile__ ("int $32");
-
-    panic("\nEXIT terminated incorrectly");
-}
-
-// Keeps track of the sleep time for the sleeping processes
-void sleep_time_check()
-{
-    task_struct* timer_list_ptr = READY_LIST;
-
-    while (timer_list_ptr != NULL) {
-        if (timer_list_ptr->task_state == SLEEP_STATE) {
-            if (timer_list_ptr->sleep_time == 0)
-            {
-                timer_list_ptr->task_state = READY_STATE;    
-                
-            } else {
-                timer_list_ptr->sleep_time -= 1;    
-            }
-        }  
-        timer_list_ptr = timer_list_ptr->next;
-    }
-}
-
-//prints the ready and sleep list [test function]
-void print_list()
-{
-    task_struct* task = SLEEP_LIST;
-
-    kprintf("\nSLEEP LIST\n");
-    while (task != NULL) {
-        if (task->task_state == SLEEP_STATE)
-            kprintf("\nPID:%d\tTIME:%d\tSTATE:%d", task->pid, task->sleep_time, task->task_state);
-        task = task->next;
-    }
-
-    task = READY_LIST;
-    kprintf("\nREADY LIST\n");
-    while (task != NULL) {
-        if (task->task_state == READY_STATE)
-            kprintf("\nPID:%d\tTIME:%d\tSTATE:%d", task->pid, task->sleep_time, task->task_state);
-        task = task->next;
-    }
-
-}

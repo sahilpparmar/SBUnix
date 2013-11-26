@@ -1,8 +1,6 @@
 #include <stdlib.h>
 #include <defs.h>
 
-
-
 int ustrlen(const char *str)
 {
     int len=0;
@@ -10,7 +8,6 @@ int ustrlen(const char *str)
         len += 1;
     return len;
 }
-
 
 char* strcat(char *str1, const char *str2)
 {
@@ -35,6 +32,7 @@ char *strcpy(char *dest, const char *src)
     *dest = '\0';
     return str;
 }
+
 char *getLine(char *ptr, char *str)
 {
     while (*ptr != '\n')
@@ -43,7 +41,6 @@ char *getLine(char *ptr, char *str)
     
     return ++ptr;
 }
-
 
 int argsCount(char *str)
 {

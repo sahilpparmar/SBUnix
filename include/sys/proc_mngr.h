@@ -4,7 +4,8 @@
 #include <sys/types.h>
 
 #define KERNEL_STACK_SIZE 128
-#define DEBUG_SCHEDULING 1
+#define USER_STACK_TOP 0xF0000000
+#define DEBUG_SCHEDULING 0
 
 enum task_states {
     RUNNING_STATE,
@@ -70,7 +71,7 @@ struct task_struct
     uint64_t task_state;    // Saves the current state of task
     mm_struct* mm; 
     char comm[16];
-    int32_t sleep_time;     // Number of miliseconds to sleep
+    int32_t sleep_time;     // Number of centiseconds to sleep
     task_struct* next;      // The next process in the process list
     task_struct* last;      // The process that ran last
     task_struct* parent;    // Keep track of parent process on fork
@@ -79,10 +80,7 @@ struct task_struct
 };
 
 extern task_struct* CURRENT_TASK;
-extern task_struct* TIMER_LIST;
 
-void add_to_timer_list(task_struct* task);
-void print_list();
 void create_idle_process();
 void* kmmap(uint64_t virt_addr, int bytes);
 task_struct* create_elf_proc(char *filename);
@@ -92,19 +90,17 @@ void increment_brk(task_struct *proc, uint64_t bytes);
 bool verify_addr(task_struct *proc, uint64_t addr, uint64_t size);
 void set_next_pid(pid_t fnext_pid);
 
-extern task_struct *task_free_list;
-extern vma_struct *vma_free_list;
 task_struct* alloc_new_task(bool IsUserProcess);
-vma_struct* alloc_new_vma(uint64_t start_addr, uint64_t end_addr);
+task_struct* copy_task_struct(task_struct* parent_task);
 void add_to_task_free_list(task_struct* free_task);
 void exit_task_struct(task_struct *new_task);
+
+vma_struct* alloc_new_vma(uint64_t start_addr, uint64_t end_addr);
+void add_to_vma_free_list(vma_struct* free_vma);
 void empty_vma_list(vma_struct *vma_list);
 
 // Syscalls
 pid_t sys_getpid();
 pid_t sys_getppid();
-pid_t sys_fork();
-uint64_t sys_execvpe();
-void sys_exit();
 
 #endif

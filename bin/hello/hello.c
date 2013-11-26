@@ -5,13 +5,16 @@ char hello[10] = "HELLO";
 
 int main(int argc, char* argv[])
 {
-     
-     //test for sleep
+    // test for sleep
+#if 0
     printf("\nhello goin to sleep");
     sleep(1000);
     printf("\nhello awake");
-    //int c;*/
-/*    int c;
+#endif
+
+    // test for malloc
+#if 0
+    int c;
     char* b = malloc(100);
     char d, a[10];
     printf("\n Address : %p ", b);
@@ -23,7 +26,8 @@ int main(int argc, char* argv[])
     
     scanf("%s%s%d%c", a, b, &c, &d);
     printf("\na = %s, b = %s, c = %d, d = %c", a, b, c, d);
-*/  
+#endif
+
     printf("\nProcess %d (parent %d) says %s", getpid(), getppid(), hello);
     
     return 0;
