@@ -4,16 +4,30 @@
 #include <sys/virt_mm.h>
 #include <io_common.h>
 #include <string.h>
+#include <screen.h>
+#include <defs.h>
 #include <sys/types.h>
-
 extern task_struct* CURRENT_TASK;
+extern task_struct* SLEEP_LIST;
 
 // These will get invoked in kernel mode
-
+extern uint64_t last_addr;
 volatile int flag, counter;
 volatile char buf[1024];
 
 const char *t_state[6] = { "RUNNING" , "READY  " , "SLEEP  " , "WAIT   " , "IDLE   " , "EXIT  " };
+int sys_sleep(int msec)
+{
+
+    task_struct *task = CURRENT_TASK;
+    
+    task->sleep_time = msec;
+    task->task_state = SLEEP_STATE;
+    __asm__ __volatile__("int $32;");
+    
+    return task->sleep_time;
+}
+
 
 int gets(uint64_t addr)
 {
@@ -22,8 +36,9 @@ int gets(uint64_t addr)
 
     flag = 1;
     sti;
+         
+    last_addr = get_video_addr();
     while(flag == 1);
-
     memcpy((void *)user_buf, (void *)buf, counter);
     count = counter;
     counter = 0;
@@ -229,6 +244,7 @@ void* syscall_tbl[NUM_SYSCALLS] =
     sys_getpid,
     sys_getppid,
     sys_listprocess,
+    sys_sleep,
 };
 
 // The handler for the int 0x80

@@ -5,6 +5,12 @@ char hello[10] = "HELLO";
 
 int main(int argc, char* argv[])
 {
+     
+     //test for sleep
+    printf("\nhello goin to sleep");
+    sleep(1000);
+    printf("\nhello awake");
+    //int c;*/
 /*    int c;
     char* b = malloc(100);
     char d, a[10];

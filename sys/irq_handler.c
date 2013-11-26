@@ -8,7 +8,7 @@
 #include <screen.h>
 #include <io_common.h>
 #include <sys/irq_common.h>
-
+#include <syscall.h>
 
 /****************************************************************
   IRQ1: Keyboard
@@ -161,12 +161,24 @@ static void keyboard_handler(registers_t regs)
                     buf[counter++] = '\0';
                     flag = 0;
                 } else if (val == '\b') {
-                    counter--;
+                    if (get_video_addr() <= last_addr)
+                        {
+                            counter--;
+                            counter++;
+                        }
+                    else { 
+
+                        putchar(val);
+                        counter--;
+                    }
                 } else {
                     buf[counter++] = val;
+                    
+                    putchar(val);
                 }
+                
             }
-            putchar(val);
+            
         }
     }       
 }
