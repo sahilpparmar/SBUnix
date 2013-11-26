@@ -83,7 +83,6 @@ extern task_struct* CURRENT_TASK;
 
 void create_idle_process();
 void* kmmap(uint64_t virt_addr, int bytes);
-task_struct* create_elf_proc(char *filename);
 void schedule_process(task_struct* new_task, uint64_t entry_point, uint64_t stack_top);
 void set_tss_rsp0(uint64_t rsp);
 void increment_brk(task_struct *proc, uint64_t bytes);
@@ -93,7 +92,7 @@ void set_next_pid(pid_t fnext_pid);
 task_struct* alloc_new_task(bool IsUserProcess);
 task_struct* copy_task_struct(task_struct* parent_task);
 void add_to_task_free_list(task_struct* free_task);
-void exit_task_struct(task_struct *new_task);
+void empty_task_struct(task_struct *cur_task);
 
 vma_struct* alloc_new_vma(uint64_t start_addr, uint64_t end_addr);
 void add_to_vma_free_list(vma_struct* free_vma);

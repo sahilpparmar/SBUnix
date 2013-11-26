@@ -17,9 +17,6 @@ task_struct* idle_task = NULL;
 static task_struct* prev = NULL;
 static task_struct* next = NULL;
 
-// Whether scheduling has been initiated
-uint8_t IsInitScheduler;
-
 // Idle kernel thread
 static void idle_process(void)
 {
@@ -182,24 +179,21 @@ void timer_handler()
     
     sleep_time_check();
     
-    if (!IsInitScheduler) {
-        IsInitScheduler = TRUE;
+    if (CURRENT_TASK == NULL) {
+        next = get_next_ready_task();
 
-        // Get the first process to be scheduled
-        prev = get_next_ready_task();
-
-        LOAD_CR3(prev->mm->pml4_t);
+        LOAD_CR3(next->mm->pml4_t);
 
         // Switch the kernel stack to that of the first process
-        __asm__ __volatile__("movq %[prev_rsp], %%rsp" : : [prev_rsp] "m" (prev->rsp_register));
+        __asm__ __volatile__("movq %[next_rsp], %%rsp" : : [next_rsp] "m" (next->rsp_register));
 
-        if (prev->IsUserProcess) {
-            set_tss_rsp0((uint64_t)&prev->kernel_stack[KERNEL_STACK_SIZE-1]);
+        if (next->IsUserProcess) {
+            set_tss_rsp0((uint64_t)&next->kernel_stack[KERNEL_STACK_SIZE-1]);
             switch_to_ring3;
         }
 
 #if DEBUG_SCHEDULING
-        kprintf("\nScheduler Initiated with PID: %d[%d]", prev->pid, prev->task_state);
+        kprintf("\nScheduler Initiated with PID: %d[%d]", next->pid, next->task_state);
 #endif
 
     } else {
@@ -265,6 +259,9 @@ void schedule_process(task_struct* new_task, uint64_t entry_point, uint64_t stac
     add_to_ready_list(new_task);
 }
 
+//TODO: Fix COW FORK
+#define COW_FORK 0
+
 task_struct* copy_task_struct(task_struct* parent_task)
 {
     task_struct* child_task = alloc_new_task(TRUE);
@@ -299,11 +296,12 @@ task_struct* copy_task_struct(task_struct* parent_task)
 
         // Allocate page tables if physical memory is allocated
         if (end - start) {
-            uint64_t vaddr = PAGE_ALIGN(start); 
-            uint64_t pte_entry, paddr, page_flags;
+            uint64_t vaddr = PAGE_ALIGN(start), paddr; 
 
+#if COW_FORK 
             // Allocate separate physical memory for only stack VMA
             if (start < child_task->mm->start_stack && child_task->mm->start_stack < end) {
+#endif
                 uint64_t k_vaddr = get_top_virtaddr();
                 uint64_t *k_pte_entry;
 
@@ -327,26 +325,31 @@ task_struct* copy_task_struct(task_struct* parent_task)
 
                     vaddr = vaddr + PAGESIZE;
                 }
+                LOAD_CR3(parent_pml4_t);
+#if COW_FORK 
             } else {
-                while (vaddr < end) {
+                uint64_t pte_entry, page_flags;
 
-                    //TODO: Need to check if page is "present" and set COW bit to parent page tables
+                //TODO: Need to check if page is "present" and set COW bit to parent page tables
+                while (vaddr < end) {
                     LOAD_CR3(parent_pml4_t);
 
                     pte_entry  = *get_pte_entry(vaddr);
                     page_flags = pte_entry & 0xFFF;
-                    paddr      = PAGE_ALIGN(pte_entry);
+                    paddr      = pte_entry & PAGING_ADDR;
 
                     LOAD_CR3(child_pml4_t);
+                    kprintf("\nv:%p p:%p f:%p", vaddr, paddr, page_flags);
                     map_virt_phys_addr(vaddr, paddr, page_flags | PAGING_COW);
 
                     vaddr = vaddr + PAGESIZE;
                 }
             }
+            LOAD_CR3(parent_pml4_t);
+#endif
         }
         parent_vma_l = parent_vma_l->vm_next;
     }
-    LOAD_CR3(parent_pml4_t);
 
     return child_task;
 }
