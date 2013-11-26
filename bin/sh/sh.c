@@ -60,10 +60,10 @@ int main(int argc, char **argv)
 {
     //buffer is to hold the commands that the user will type in
     char /*str[25], *newstr,*/ ptr[20]; //= "Hello World Program\nls -l\nls -a\n\0";
-    int i, j=0, k=0, count;
+    int i, j=0, k=0;//, count;
     // /bin/program_name is the arguments to pass to execv
     //if we want to run ls, "/bin/ls" is required to be passed to execv()
-    char* path = "/bin/";
+    char* path = "bin/";
     while(1)
     {
         char args[20][20];
@@ -74,7 +74,7 @@ int main(int argc, char **argv)
         //newstr = ptr;
         j=0;
         k=0;
-        count = argsCount(ptr);
+        //count = argsCount(ptr);
         for (i = 0; i < ustrlen(ptr); i++)
         {
             if(ptr[i] == ' ') {
@@ -97,16 +97,33 @@ int main(int argc, char **argv)
 
         char prog[20];
         strcpy(prog, path);
-        printf("\nprog:%s", prog);
+        //printf("\nprog:%s", prog);
         strcat(prog, args[0]);
-        printf("\nfinal prog:%s", prog);
-        int l;
+        //printf("\nfinal prog:%s", prog);
+        //int l;
         //printf("\t%s\t%d", str, argsCount(str));
         
-        printf("\tnumber of args:%d \targs:", count);
-        for (l=1; l<= count; l++)
-        printf("\t%s", args[l]);
-        
+        //printf("\tnumber of args:%d \targs:", count);
+        //for (l=1; l<= count; l++)
+        //printf("\t%s", args[l]);
+   
+       //fork and execv calls start 
+
+        //fork!
+        int pid = fork();
+        //Error checking to see if fork works
+        //If pid !=0 then it's the parent
+        if(pid!=0)
+        {
+            //wait(NULL);
+        }
+        else
+        {
+            execvpe(prog, NULL, NULL);
+        }
+
+       // fork and execv ends
+
     }
 
     /*
@@ -191,6 +208,6 @@ int main(int argc, char **argv)
         }
     }
     */
-    while(1);
+//    while(1);
     return 0;
 }
