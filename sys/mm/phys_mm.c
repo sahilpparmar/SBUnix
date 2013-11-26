@@ -17,7 +17,7 @@ static void mmap_set(int bit)
 
 static void mmap_unset(int bit)
 {
-    _mmngr_memory_map[bit / 64] &= ~ (1UL << (bit % 64));
+    //_mmngr_memory_map[bit / 64] &= ~ (1UL << (bit % 64));
 }
 
 static uint64_t phys_get_block_count() 
@@ -48,6 +48,7 @@ static int mmap_first_free()
     }
     return -1;
 }
+
 
 void phys_init(uint64_t physBase, uint64_t physfree, uint64_t physSize) {
 
@@ -87,12 +88,13 @@ uint64_t phys_alloc_block() {
     paddr = _mmngr_base_addr + (frame << PAGE_2ALIGN);
     _mmngr_used_blocks++;
     
-    // kprintf("\tNewPaddr: %p", paddr);
+    //kprintf("\tNewPaddr: %p", paddr);
     return paddr;
 }
 
 void phys_free_block(uint64_t addr) {
 
+    //kprintf("\tFreePaddr:%p", addr);
     int frame = (addr - _mmngr_base_addr) >> PAGE_2ALIGN;
 
     mmap_unset(frame);

@@ -349,27 +349,36 @@ pid_t sys_fork()
     return child_task->pid;
 }
 
-uint64_t sys_execvpe(char *filename, char *argv[])
+uint64_t sys_execvpe(char *file, char *argv[], char *envp[])
 {
+    task_struct *new_task = create_elf_proc(file);
+
+    //TODO: Need to load argv[] and envp[]
+    if (new_task) {
+        // Exec process uses the same pid
+        set_next_pid(new_task->pid);
+        new_task->pid = CURRENT_TASK->pid;
+
+        // Exit from the current process
+        exit_task_struct(CURRENT_TASK);
+
+        // Enable interrupt for scheduling next process
+        __asm__ __volatile__ ("int $32");
+
+        panic("\nEXECVPE terminated incorrectly");
+    }
+    // execvpe failed; so return -1
     return -1;
 }
 
-uint64_t sys_exit()
+void sys_exit()
 {
-    task_struct *cur_task = CURRENT_TASK;
-    mm_struct *mms = cur_task->mm;
 
-    empty_vma_list(mms->vma_list);
-    empty_page_tables(mms->pml4_t);
-
-    memset((void*)cur_task->kernel_stack, 0, KERNEL_STACK_SIZE);
-    cur_task->task_state = EXIT_STATE;
+    exit_task_struct(CURRENT_TASK);
 
     // Enable interrupt for scheduling next process
-    sti;
+    __asm__ __volatile__ ("int $32");
 
-    while(1);
-
-    return 0;
+    panic("\nEXIT terminated incorrectly");
 }
 

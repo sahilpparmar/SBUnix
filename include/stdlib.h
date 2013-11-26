@@ -16,7 +16,9 @@ int munmap(uint64_t* addr, uint64_t size);
 
 pid_t getpid();
 pid_t getppid();
-pid_t fork();
 void listprocess();
+
+pid_t fork();
+int execvpe(const char *file, char *const argv[], char *const envp[]);
 
 #endif

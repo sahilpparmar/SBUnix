@@ -5,11 +5,18 @@
 #include <sys/tarfs.h>
 #include <sys/elf.h>
 #include <sys/kmalloc.h>
+#include <sys/types.h>
 #include <string.h>
 
 #define USER_STACK_TOP 0xF0000000
 
 uint64_t next_pid = 0;
+
+void set_next_pid(pid_t fnext_pid)
+{
+    next_pid = fnext_pid;
+}
+
 task_struct *task_free_list = NULL;
 vma_struct *vma_free_list = NULL;
 
@@ -70,7 +77,6 @@ bool verify_addr(task_struct *proc, uint64_t addr, uint64_t size)
 
 void increment_brk(task_struct *proc, uint64_t bytes)
 {   
-    //kprintf("\n new heapend: %p", addr);
     mm_struct *mms = proc->mm;
     vma_struct *iter;
     
@@ -96,6 +102,8 @@ vma_struct* alloc_new_vma(uint64_t start_addr, uint64_t end_addr)
     }
     vma->vm_start = start_addr;
     vma->vm_end   = end_addr; 
+    vma->vm_flags = NULL;
+    vma->vm_type  = NULL; 
     vma->vm_next  = NULL;
     return vma;
 }
@@ -106,15 +114,15 @@ task_struct* alloc_new_task(bool IsUserProcess)
     task_struct* new_proc = NULL;
 
     if ((new_proc = get_free_task_struct()) == NULL) {
-        new_proc = (task_struct*) kmalloc(sizeof(task_struct));
-        mms      = (mm_struct *) kmalloc(sizeof(mm_struct));
+        new_proc    = (task_struct*) kmalloc(sizeof(task_struct));
+        mms         = (mm_struct *) kmalloc(sizeof(mm_struct));
+        mms->pml4_t = create_new_pml4();
         new_proc->mm = mms;
     } else {
         mms = new_proc->mm;
     }
 
     // Initialize mm_struct
-    mms->pml4_t     = create_new_pml4();
     mms->vma_list   = NULL;
     mms->vma_count  = NULL;
     mms->hiwater_vm = NULL;
@@ -139,25 +147,23 @@ task_struct* alloc_new_task(bool IsUserProcess)
     return new_proc;
 }
 
+void exit_task_struct(task_struct *new_task)
+{
+    mm_struct *mms = new_task->mm;
+
+    empty_vma_list(mms->vma_list);
+    empty_page_tables(mms->pml4_t);
+    
+    memset((void*)new_task->kernel_stack, 0, KERNEL_STACK_SIZE);
+    new_task->task_state = EXIT_STATE;
+}
+
 void empty_vma_list(vma_struct *vma_list)
 {
     vma_struct *cur_vma  = vma_list;
     vma_struct *last_vma = NULL;
 
     while (cur_vma) {
-        uint64_t start, end;
-
-        start = cur_vma->vm_start;
-        end   = cur_vma->vm_end;
-
-        // Deallocate all used pages
-        if (end - start) {
-            uint64_t vaddr = PAGE_ALIGN(start); 
-            while (vaddr < end) {
-                free_virt_page((void*)vaddr);
-                vaddr = vaddr + PAGESIZE;
-            }
-        }
 
         cur_vma->vm_mm    = NULL;
         cur_vma->vm_start = NULL;
@@ -215,7 +221,6 @@ uint64_t load_elf(Elf64_Ehdr* header, task_struct *proc)
     for (i = 0; i < header->e_phnum; ++i) {
 
         if ((int)program_header->p_type == 1) {           // this is loadable section
-            
             
             start_vaddr    = program_header->p_vaddr;
             size           = program_header->p_memsz;
@@ -298,7 +303,7 @@ uint64_t load_elf(Elf64_Ehdr* header, task_struct *proc)
     return header->e_entry;
 }
 
-pid_t create_elf_proc(char *filename)
+task_struct* create_elf_proc(char *filename)
 {
     HEADER *header;
     Elf64_Ehdr* elf_header;
@@ -309,7 +314,7 @@ pid_t create_elf_proc(char *filename)
     header = (HEADER*) lookup(filename); 
     
     if (header == NULL) {
-        return -1;
+        return NULL;
     }
 
     // Check if file is an ELF executable by checking the magic bits
@@ -321,8 +326,8 @@ pid_t create_elf_proc(char *filename)
         entrypoint = load_elf(elf_header, new_proc);
         schedule_process(new_proc, entrypoint, (uint64_t)new_proc->mm->start_stack);
         
-        return new_proc->pid;
+        return new_proc;
     }
-    return -1;
+    return NULL;
 }
 

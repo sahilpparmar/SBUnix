@@ -10,6 +10,7 @@ int main(int argc, char* argv[])
 
     if ((pid = fork()) == 0) {
         printf("\nFork return: %d Process %d (parent %d): child", pid, getpid(), getppid());
+        execvpe("bin/world", NULL, NULL);
     } else {
         printf("\nFork return: %d Process %d (parent %d): parent", pid, getpid(), getppid());
     }

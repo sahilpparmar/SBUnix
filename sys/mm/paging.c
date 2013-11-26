@@ -5,6 +5,7 @@
 #include <sys/phys_mm.h>
 #include <sys/virt_mm.h>
 #include <sys/kmalloc.h>
+#include <sys/proc_mngr.h>
 
 #define ENTRIES_PER_PTE  512
 #define ENTRIES_PER_PDE  512
@@ -308,24 +309,24 @@ void empty_page_tables(uint64_t pml4_t)
 
                             for (pte = 0; pte < ENTRIES_PER_PTE; pte++) {
                                 pte_e = (uint64_t*) (PTE_SELF_REF | (pml4 << 30) | (pdpe << 21) | (pde << 12) | (pte << 3));
-                                if (*pte_e & PAGING_PRESENT) {
+                                if ((*pte_e & PAGING_PRESENT) && !(*pte_e & PAGING_COW)) {
+
+                                    phys_free_block(PAGE_ALIGN(*pte_e & PAGING_ADDR));
                                     *pte_e = 0UL;
                                 }
                             }
-                            phys_free_block(PAGE_ALIGN(*pde_e));
+                            phys_free_block(PAGE_ALIGN(*pde_e & PAGING_ADDR));
                             *pde_e = 0UL;
                         }
                     }
-                    phys_free_block(PAGE_ALIGN(*pdpe_e));
+                    phys_free_block(PAGE_ALIGN(*pdpe_e & PAGING_ADDR));
                     *pdpe_e = 0UL;
                 }
             }
-            phys_free_block(PAGE_ALIGN(*pml4_e));
+            phys_free_block(PAGE_ALIGN(*pml4_e & PAGING_ADDR));
             *pml4_e = 0UL;
         }
     }
-    //TODO: Need to zero out [510] and [511] by using virtual address of pml4_t
     LOAD_CR3(ker_cr3);
-    phys_free_block(PAGE_ALIGN(pml4_t));
 }
 
