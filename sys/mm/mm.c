@@ -104,15 +104,24 @@ vma_struct* alloc_new_vma(uint64_t start_addr, uint64_t end_addr)
     return vma;
 }
 
-void exit_task_struct(task_struct *new_task)
+void empty_task_struct(task_struct *cur_task)
 {
-    mm_struct *mms = new_task->mm;
+    mm_struct *mms = cur_task->mm;
 
     empty_vma_list(mms->vma_list);
     empty_page_tables(mms->pml4_t);
+    mms->vma_list   = NULL;
+    mms->vma_count  = NULL;
+    mms->hiwater_vm = NULL;
+    mms->total_vm   = NULL;
+    mms->stack_vm   = NULL;
     
-    memset((void*)new_task->kernel_stack, 0, KERNEL_STACK_SIZE);
-    new_task->task_state = EXIT_STATE;
+    memset((void*)cur_task->kernel_stack, 0, KERNEL_STACK_SIZE);
+    cur_task->next     = NULL;
+    cur_task->last     = NULL;
+    cur_task->parent   = NULL;
+    cur_task->children = NULL;
+    cur_task->sibling  = NULL;
 }
 
 void empty_vma_list(vma_struct *vma_list)

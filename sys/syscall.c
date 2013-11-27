@@ -2,14 +2,13 @@
 #include <stdio.h>
 #include <syscall.h>
 #include <sys/proc_mngr.h>
+#include <sys/elf.h>
+#include <sys/tarfs.h>
 #include <sys/virt_mm.h>
 #include <io_common.h>
 #include <string.h>
 #include <screen.h>
 #include <sys/types.h>
-
-extern task_struct* CURRENT_TASK;
-extern task_struct* SLEEP_LIST;
 
 // These will get invoked in kernel mode
 extern uint64_t last_addr;
@@ -17,6 +16,14 @@ volatile int flag, counter;
 volatile char buf[1024];
 
 const char *t_state[6] = { "RUNNING" , "READY  " , "SLEEP  " , "WAIT   " , "IDLE   " , "EXIT  " };
+
+
+int sys_clear()
+{
+    clear_screen();
+    return 1;
+}
+
 
 pid_t sys_fork()
 {
@@ -35,19 +42,48 @@ pid_t sys_fork()
     return child_task->pid;
 }
 
+//static uint64_t temp_stack[64];
+
 uint64_t sys_execvpe(char *file, char *argv[], char *envp[])
 {
+    //TODO: Need to load argv[] and envp[]
+#if 0
+    HEADER *header;
+    Elf64_Ehdr* elf_header;
+
+    // lookup for the file in tarfs
+    header = (HEADER*) lookup(file); 
+
+    elf_header = (Elf64_Ehdr *)header;
+    
+    if (is_file_elf_exec(elf_header)) {
+        task_struct *cur_task = CURRENT_TASK;
+
+        kstrcpyn(cur_task->comm, file, sizeof(cur_task->comm)-1);
+
+        empty_task_struct(cur_task);
+        cur_task->task_state = READY_STATE;
+        
+        load_elf(elf_header, cur_task);
+
+        CURRENT_TASK = NULL;
+
+        // Stack used until scheduling of next process 
+        __asm__ __volatile__("movq %[temp_rsp], %%rsp" : : [temp_rsp] "g" ((uint64_t)&temp_stack[63]));
+
+#else
     task_struct *new_task = create_elf_proc(file);
 
-    //TODO: Need to load argv[] and envp[]
     if (new_task) {
         // Exec process uses the same pid
         set_next_pid(new_task->pid);
         new_task->pid = CURRENT_TASK->pid;
 
         // Exit from the current process
-        exit_task_struct(CURRENT_TASK);
+        empty_task_struct(CURRENT_TASK);
+        CURRENT_TASK->task_state = EXIT_STATE;
 
+#endif
         // Enable interrupt for scheduling next process
         __asm__ __volatile__ ("int $32");
 
@@ -59,8 +95,8 @@ uint64_t sys_execvpe(char *file, char *argv[], char *envp[])
 
 void sys_exit()
 {
-
-    exit_task_struct(CURRENT_TASK);
+    empty_task_struct(CURRENT_TASK);
+    CURRENT_TASK->task_state = EXIT_STATE;
 
     // Enable interrupt for scheduling next process
     __asm__ __volatile__ ("int $32");
@@ -294,6 +330,7 @@ void* syscall_tbl[NUM_SYSCALLS] =
     sys_getppid,
     sys_listprocess,
     sys_sleep,
+    sys_clear,
 };
 
 // The handler for the int 0x80

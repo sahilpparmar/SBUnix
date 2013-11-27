@@ -35,8 +35,20 @@ void readelf(char* filename)
     }
 }
 
+bool is_file_elf_exec(Elf64_Ehdr* header)
+{
+    if (header == NULL)
+        return FALSE;
+
+    // Check if file is an ELF executable by checking the magic bits
+    if (header->e_ident[1] == 'E' && header->e_ident[2] == 'L' && header->e_ident[3] == 'F')
+        return TRUE;
+
+    return FALSE;
+}
+
 // Loads CS and DS into VMAs and returns the entry point into process
-static uint64_t load_elf(Elf64_Ehdr* header, task_struct *proc)
+task_struct* load_elf(Elf64_Ehdr* header, task_struct *proc)
 {
     Elf64_Phdr* program_header;
     mm_struct *mms = proc->mm;
@@ -132,34 +144,28 @@ static uint64_t load_elf(Elf64_Ehdr* header, task_struct *proc)
     mms->total_vm += PAGESIZE;
     mms->start_stack = end_vaddr - 8;
 
-    return header->e_entry;
+    schedule_process(proc, header->e_entry, mms->start_stack);
+
+    return proc;
 }
 
 task_struct* create_elf_proc(char *filename)
 {
     HEADER *header;
     Elf64_Ehdr* elf_header;
-    task_struct* new_proc;
-    uint64_t entrypoint;
 
     // lookup for the file in tarfs
     header = (HEADER*) lookup(filename); 
-    
-    if (header == NULL) {
-        return NULL;
-    }
 
-    // Check if file is an ELF executable by checking the magic bits
     elf_header = (Elf64_Ehdr *)header;
     
-    if (elf_header->e_ident[1] == 'E' && elf_header->e_ident[2] == 'L' && elf_header->e_ident[3] == 'F') {                
-        new_proc = alloc_new_task(TRUE);
+    if (is_file_elf_exec(elf_header)) {
+
+        task_struct* new_proc = alloc_new_task(TRUE);
 
         kstrcpyn(new_proc->comm, filename, sizeof(new_proc->comm)-1);
-        entrypoint = load_elf(elf_header, new_proc);
-        schedule_process(new_proc, entrypoint, (uint64_t)new_proc->mm->start_stack);
-        
-        return new_proc;
+
+        return load_elf(elf_header, new_proc);
     }
     return NULL;
 }

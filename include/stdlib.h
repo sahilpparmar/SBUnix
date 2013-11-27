@@ -7,7 +7,7 @@ void exit(int status);
 int sleep(int seconds);
 int printf(const char *format, ...);
 void scanf(const char *format, ...);
-
+int cls();
 void *malloc(int elem_size);
 void free(void *p);
 

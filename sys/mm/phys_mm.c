@@ -3,6 +3,7 @@
 #include <screen.h>
 #include <sys/types.h>
 #include <sys/virt_mm.h>
+#include <io_common.h>
 
 static uint64_t _mmngr_memory_size;
 static uint64_t _mmngr_used_blocks;
@@ -17,7 +18,7 @@ static void mmap_set(int bit)
 
 static void mmap_unset(int bit)
 {
-    //_mmngr_memory_map[bit / 64] &= ~ (1UL << (bit % 64));
+    _mmngr_memory_map[bit / 64] &= ~ (1UL << (bit % 64));
 }
 
 static uint64_t phys_get_block_count() 
@@ -48,7 +49,6 @@ static int mmap_first_free()
     }
     return -1;
 }
-
 
 void phys_init(uint64_t physBase, uint64_t physfree, uint64_t physSize) {
 
@@ -94,8 +94,14 @@ uint64_t phys_alloc_block() {
 
 void phys_free_block(uint64_t addr) {
 
-    //kprintf("\tFreePaddr:%p", addr);
     int frame = (addr - _mmngr_base_addr) >> PAGE_2ALIGN;
+
+    if (addr < _mmngr_base_addr || addr > (_mmngr_base_addr + _mmngr_memory_size)) {
+        kprintf("\tFreePaddr: %p", addr);
+        panic("Trying to Free out of range Physical Block");
+    }
+
+    zero_out_phys_block(addr);
 
     mmap_unset(frame);
 

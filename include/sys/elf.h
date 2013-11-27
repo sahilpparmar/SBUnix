@@ -52,4 +52,9 @@ typedef struct elf64_phdr
     Elf64_Xword p_align; /* Alignment of segment */
 } Elf64_Phdr;
 
-void readelf(char *);
+void readelf(char* filename);
+bool is_file_elf_exec(Elf64_Ehdr* header);
+task_struct* load_elf(Elf64_Ehdr* header, task_struct *proc);
+task_struct* create_elf_proc(char *filename);
+
+
