@@ -9,6 +9,10 @@
 #include <string.h>
 #include <screen.h>
 #include <sys/types.h>
+#include <sys/dirent.h>
+#include <sys/kmalloc.h>
+#include <io_common.h>
+#include <string.h>
 
 // These will get invoked in kernel mode
 extern uint64_t last_addr;
@@ -24,6 +28,72 @@ int sys_clear()
     return 1;
 }
 
+
+DIR* sys_opendir(uint64_t* entry, uint64_t* directory)
+{
+    
+    char* dir_path = (char *)entry;
+    DIR* dir = (DIR *)directory;
+
+    fnode_t *currnode = root_node;
+    char *temp = NULL; 
+    int i;
+    char *path = (char *)kmalloc(sizeof(char) * strlen(dir_path));
+    kstrcpy(path, dir_path); 
+
+    temp = kstrtok(path, "/");  
+    
+    while(temp != NULL)
+    {
+        for(i = 2; i < currnode->end; ++i){
+            if(strcmp(temp, currnode->f_child[i]->f_name) == 0) {
+                currnode = (fnode_t *)currnode->f_child[i];
+                break;       
+            }        
+        }
+        
+        temp = kstrtok(NULL, "/");          
+    }
+   
+
+    if(currnode->f_type == DIRECTORY) {
+    
+        dir->curr = 2; 
+        dir->filenode = currnode; 
+        return dir;
+    } else {
+        return NULL; 
+    }
+}
+
+
+struct dirent* sys_readdir(uint64_t* entry)
+{
+    
+    DIR *dir = (DIR*)entry;
+    if(dir->filenode->end < 3 || dir->curr == dir->filenode->end ||dir->curr == 0) { 
+        return NULL;
+    } else{
+        kstrcpy(dir->curr_dirent.name, dir->filenode->f_child[dir->curr]->f_name);
+        dir->curr++;
+        return &dir->curr_dirent;
+    }
+
+}
+
+
+int sys_closedir(uint64_t* entry)
+{
+   DIR *dir = (DIR *)entry; 
+   if(dir->filenode->f_type == DIRECTORY && dir->curr > 1) {
+       
+       dir->filenode = NULL; 
+       dir->curr = 0;
+       return 0;
+    } else {
+       return -1; 
+   }
+}
 
 pid_t sys_fork()
 {
@@ -264,6 +334,58 @@ int sys_munmap(uint64_t* addr, uint64_t length)
     }
 }
 
+uint64_t sys_open(uint64_t* dir_path, uint64_t flags)
+{
+    char* file_path = (char *)dir_path;
+    
+    //allocate new filedescriptor
+    FD* file_d = (FD *)kmalloc(sizeof(FD));
+    fnode_t *currnode = root_node;
+
+    char *temp = NULL; 
+    int i;
+    char *path = (char *)kmalloc(sizeof(char) * strlen(file_path));
+    kstrcpy(path, file_path); 
+
+    temp = kstrtok(path, "/");  
+    
+    
+    while(temp != NULL)
+    {
+        for(i = 2; i < currnode->end; ++i){
+            if(strcmp(temp, currnode->f_child[i]->f_name) == 0) {
+                currnode = (fnode_t *)currnode->f_child[i];
+                break;       
+            }        
+        }
+        
+        temp = kstrtok(NULL, "/");          
+    }
+   
+
+    file_d->filenode = currnode;
+    file_d->curr = 0;
+    
+    
+    //traverse file descriptor array and insert this entry
+    for(i = 3; i < MAXFD; ++i) {
+        if(CURRENT_TASK->file_descp[i] == NULL) {
+            CURRENT_TASK->file_descp[i] = (uint64_t *)file_d;
+            return i;        
+        }
+    }
+   
+   return 0;
+}
+
+void sys_close(int fd)
+{
+    //TODO add this filedescriptor to free list    
+    CURRENT_TASK->file_descp[fd] = NULL;
+    
+}
+
+
 uint64_t* sys_mmap(uint64_t* addr, uint64_t nbytes, uint64_t flags)
 {
     vma_struct *node, *iter, *temp;
@@ -320,15 +442,35 @@ uint64_t* sys_mmap(uint64_t* addr, uint64_t nbytes, uint64_t flags)
     return (void *)addr;
 }
 
-int sys_read(int n, uint64_t addr, int len)
+uint64_t sys_read(uint64_t fd_type, uint64_t addr, uint64_t length)
 {
-    int l = 0;
-    if (n == stdin) {
-        l = gets(addr);
-    }
-    return l;
-}
+    if (fd_type == stdin) {
+        length = gets(addr);
 
+    } else if(fd_type > 2) {
+        
+        if((CURRENT_TASK->file_descp[fd_type]) == NULL) {
+            length = -1;
+        } else {
+            uint64_t start, end;
+            int currlength = 0;
+    
+            currlength = (int)((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr;
+            start      = ((FD *)(CURRENT_TASK->file_descp[fd_type]))->filenode->start;
+            end        = ((FD *)(CURRENT_TASK->file_descp[fd_type]))->filenode->end;
+           
+            if((end - (uint64_t)((void *)start + currlength)) < length) {
+                length = (end - (uint64_t)((void *)start + currlength));
+            }
+            
+            memcpy((uint64_t *)addr, (uint64_t *)((void *)start + currlength), length);
+        
+            ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr += length;
+        } 
+    }
+    
+    return length;
+}
 
 int sys_write(int n, uint64_t addr, int len)
 {
@@ -395,6 +537,11 @@ void* syscall_tbl[NUM_SYSCALLS] =
     sys_getpid,
     sys_getppid,
     sys_listprocess,
+    sys_opendir,
+    sys_readdir,
+    sys_closedir, 
+    sys_open,
+    sys_close,
     sys_sleep,
     sys_clear,
 };
@@ -407,10 +554,17 @@ void syscall_handler(void)
     __asm__ __volatile__("movq %%rax, %0;" : "=r"(syscallNo));
 
     if (syscallNo >= 0 && syscallNo < NUM_SYSCALLS) {
-        void *func_ptr = syscall_tbl[syscallNo];
+        void *func_ptr;
         uint64_t ret;
 
-        __asm__ __volatile__("callq *%0;" : "=a" (ret) : "r" (func_ptr));
+        __asm__ __volatile__("pushq %rdx;");
+        func_ptr = syscall_tbl[syscallNo];
+        __asm__ __volatile__(
+            "movq %%rax, %0;"
+            "popq %%rdx;"
+            "callq *%%rax;"
+            : "=a" (ret) : "r" (func_ptr)
+        );
     }
 
     __asm__ __volatile__("iretq;");

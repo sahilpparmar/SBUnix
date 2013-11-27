@@ -6,10 +6,11 @@
 
 char read_buf[1024];
 
-int read(int n, char *str, int len)
+uint64_t read(uint64_t fd, void *buf, uint64_t nbytes)
 {
-    return __syscall3(READ, n, (uint64_t)str, len);
+    return __syscall3(READ, fd, (uint64_t)buf, nbytes);
 }
+
 
 void scanf(const char *str, ...)
 {

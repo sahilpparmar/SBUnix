@@ -11,6 +11,9 @@
 #include <sys/proc_mngr.h>
 #include <sys/elf.h>
 #include <string.h>
+#include <sys/tarfs.h>
+#include <sys/dirent.h>
+#include <io_common.h>
 
 #define K_MEM_PAGES 518
 #define INITIAL_STACK_SIZE 4096
@@ -36,7 +39,7 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
             phys_size = smap->length;
         }
     }
-   
+
     // kernel starts here
 
     phys_init(phys_base, (uint64_t) physfree, phys_size); 
@@ -49,25 +52,23 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
 
     // Schedule an Idle Kernel Process 
     create_idle_process();
+    // Initialize tarfs structure of fs
+    init_tarfs();
 
-// Context Switching code between tarfs processes
+    // Context Switching code between tarfs processes
 #if 1
     //create_elf_proc("bin/hello");
     //create_elf_proc("bin/ps");
     create_elf_proc("bin/init");
     //create_elf_proc("bin/fork");
     //create_elf_proc("bin/world");
-    //create_elf_proc("bin/hello");
-    //create_elf_proc("bin/ps");
-    //create_elf_proc("bin/fork");
    // create_elf_proc("bin/sh");
-    //create_elf_proc("bin/world");
 #endif
-
+    
     // Allow interrupts
     sti;
-    
-    kprintf("\nEnd of Kernel");
+
+    panic("\nKernel should never reach here");
     while(1);
 }
 

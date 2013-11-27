@@ -18,7 +18,8 @@ static void mmap_set(int bit)
 
 static void mmap_unset(int bit)
 {
-    _mmngr_memory_map[bit / 64] &= ~ (1UL << (bit % 64));
+    //TODO: FIX physical memory allocation
+    //_mmngr_memory_map[bit / 64] &= ~ (1UL << (bit % 64));
 }
 
 static uint64_t phys_get_block_count() 

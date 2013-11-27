@@ -7,5 +7,6 @@ int strlen(const char *s);
 int strcmp(const char *s1, const char *s2);
 char* kstrcat(char *str1, const char *str2);
 char* kstrcpy(char *dest, const char *src);
+char * kstrtok(char *s, const char *delim);
 char * kstrcpyn(char *dest, const char *src, uint64_t n);
 #endif

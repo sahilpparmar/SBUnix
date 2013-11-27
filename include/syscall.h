@@ -96,6 +96,11 @@ enum syscall_num {
     GETPID,
     GETPPID,
     LISTPROCESS,
+    OPENDIR,
+    READDIR,
+    CLOSEDIR, 
+    OPEN, 
+    CLOSE,
     SLEEP,
     CLEAR,
     NUM_SYSCALLS
