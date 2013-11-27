@@ -23,7 +23,7 @@ int main(int argc, char* argv[])
 #endif
     
     // test for open, read, close
-#if 1
+#if 0
     int i, fd;
     fd = open("/rootfs/newfolder/timepass/helloworldfile.txt", 0);
     //fd = open("/rootfs/bin/hello", 0); 
@@ -67,11 +67,7 @@ int main(int argc, char* argv[])
     scanf("%s%s%d%c", a, b, &c, &d);
     printf("\na = %s, b = %s, c = %d, d = %c", a, b, c, d);
 #endif
-   /* printf("\nin hello");
-    char str[11];
-    scanf("%s", str);
-    printf("str=%s", str);*/
-    //printf("\nProcess %d (parent %d) says %s", getpid(), getppid(), hello);
+    printf("\nProcess %d (parent %d) says %s", getpid(), getppid(), hello);
     
     return 0;
 }
