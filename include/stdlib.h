@@ -14,6 +14,10 @@ void free(void *p);
 void* mmap(void* addr, uint64_t nbytes, uint64_t flags);
 int munmap(uint64_t* addr, uint64_t size);
 
+int open(char *path, int flags);
+uint64_t read(uint64_t fd, void *buf, uint64_t nbytes);
+void close(int file_d);
+
 pid_t getpid();
 pid_t getppid();
 pid_t fork();

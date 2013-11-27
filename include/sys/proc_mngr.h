@@ -5,6 +5,8 @@
 
 #define KERNEL_STACK_SIZE 128
 #define DEBUG_SCHEDULING 0
+#define MAXFD 10
+
 
 enum task_states {
     RUNNING_STATE,
@@ -33,6 +35,7 @@ enum vmaflag {
     RW,    //read write
     RWX    //read write execute
 };
+
 
 typedef struct vm_area_struct vma_struct;
 typedef struct mm_struct mm_struct;
@@ -75,6 +78,8 @@ struct task_struct
     task_struct* parent;    // Keep track of parent process on fork
     task_struct* children;  // Keep track of its children on fork
     task_struct* sibling;   // Keep track of its siblings (children of same parent)
+    uint64_t* file_descp[MAXFD]; //array of file descriptor pointers
+
 };
 
 extern task_struct* CURRENT_TASK;

@@ -13,11 +13,11 @@ void* lookup(char *file_name) {
         size_of_file = oct_to_dec(atoi(header->size));
         p = (char*)(header + 1);
         
-        // kprintf("\n...File Name: %s..File Size: %d bytes..Type %s: ", header->name, size_of_file, header->typeflag);
+        //kprintf("\n...File Name: %s..File Size: %d bytes..Type %s: ", header->name, size_of_file, header->typeflag);
         if (strcmp(file_name, header->name) == 0) {   
             return (void*)p;
         }
-        
+       
         if (size_of_file > 0) {
             header = header + size_of_file / (sizeof(HEADER) + 1) + 2;
         } else {

@@ -92,6 +92,11 @@ enum syscall_num {
     GETPID,
     GETPPID,
     LISTPROCESS,
+    OPENDIR,
+    READDIR,
+    CLOSEDIR, 
+    OPEN, 
+    CLOSE,
     NUM_SYSCALLS
 };
 
