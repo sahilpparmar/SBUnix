@@ -85,7 +85,7 @@ int sys_closedir(uint64_t* entry)
     } else {
        return -1; 
    }
-
+}
 
 pid_t sys_fork()
 {

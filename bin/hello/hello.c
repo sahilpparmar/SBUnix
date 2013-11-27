@@ -6,7 +6,9 @@ char hello[10] = "HELLO";
 
 int main(int argc, char* argv[])
 {
-//test for opendir, readdir, closedir
+    printf("\nProcess %d (parent %d) says %s", getpid(), getppid(), hello);
+    
+    //test for opendir, readdir, closedir
 #if 0 
     DIR *tp; 
     struct dirent *temp;
@@ -20,7 +22,7 @@ int main(int argc, char* argv[])
     closedir(tp);
 #endif
     
-//test for open, read, close
+    // test for open, read, close
 #if 1
     int i, fd;
     fd = open("/rootfs/newfolder/timepass/helloworldfile.txt", 0);
@@ -65,8 +67,6 @@ int main(int argc, char* argv[])
     scanf("%s%s%d%c", a, b, &c, &d);
     printf("\na = %s, b = %s, c = %d, d = %c", a, b, c, d);
 #endif
-
-    printf("\nProcess %d (parent %d) says %s", getpid(), getppid(), hello);
     
     return 0;
 }

@@ -78,8 +78,8 @@ struct task_struct
     task_struct* next;      // The next process in the process list
     task_struct* last;      // The process that ran last
     task_struct* parent;    // Keep track of parent process on fork
-    task_struct* children;  // Keep track of its children on fork
-    task_struct* sibling;   // Keep track of its siblings (children of same parent)
+    task_struct* childhead;  // Keep track of its children on fork
+    task_struct* siblings;   // Keep track of its siblings (children of same parent)
     uint64_t* file_descp[MAXFD]; //array of file descriptor pointers
     uint32_t no_children;   // Number of children
     pid_t last_child_exit;  // pid of child last exited
