@@ -71,12 +71,14 @@ struct task_struct
     uint64_t task_state;    // Saves the current state of task
     mm_struct* mm; 
     char comm[16];
-    int32_t sleep_time;     // Number of centiseconds to sleep
+    uint32_t sleep_time;    // Number of centiseconds to sleep
     task_struct* next;      // The next process in the process list
     task_struct* last;      // The process that ran last
     task_struct* parent;    // Keep track of parent process on fork
-    task_struct* children;  // Keep track of its children on fork
-    task_struct* sibling;   // Keep track of its siblings (children of same parent)
+    task_struct* childhead; // Keep track of its children on fork
+    task_struct* siblings;  // Keep track of siblings (children of same parent)
+    uint32_t no_children;   // Number of children
+    pid_t last_child_exit;  // pid of child last exited
 };
 
 extern task_struct* CURRENT_TASK;
@@ -85,9 +87,12 @@ void create_idle_process();
 void* kmmap(uint64_t virt_addr, int bytes);
 void schedule_process(task_struct* new_task, uint64_t entry_point, uint64_t stack_top);
 void set_tss_rsp0(uint64_t rsp);
-void increment_brk(task_struct *proc, uint64_t bytes);
-bool verify_addr(task_struct *proc, uint64_t addr, uint64_t size);
 void set_next_pid(pid_t fnext_pid);
+void add_child_to_parent(task_struct *child_task);
+void remove_child_from_parent(task_struct *child_task);
+void replace_child_task(task_struct *old_task, task_struct *new_task);
+bool verify_addr(task_struct *proc, uint64_t addr, uint64_t size);
+void increment_brk(task_struct *proc, uint64_t bytes);
 
 task_struct* alloc_new_task(bool IsUserProcess);
 task_struct* copy_task_struct(task_struct* parent_task);

@@ -277,8 +277,9 @@ task_struct* copy_task_struct(task_struct* parent_task)
 
     child_task->ppid   = parent_task->pid;
     child_task->parent = parent_task;
-    parent_task->children = child_task;
     kstrcpy(child_task->comm, parent_task->comm);
+
+    add_child_to_parent(child_task);
     
     while (parent_vma_l) {
         uint64_t start, end;

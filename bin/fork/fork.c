@@ -15,6 +15,10 @@ int main(int argc, char* argv[])
         printf("\nFork return: %d Process %d (parent %d): parent", pid, getpid(), getppid());
     }
 
+    //wait(NULL);
+    waitpid(pid, NULL, 0);
+    printf("\nWait Return");
+
     while(1);
     return 0;
 }

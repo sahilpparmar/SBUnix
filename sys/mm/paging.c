@@ -135,7 +135,7 @@ void init_paging(uint64_t kernmem, uint64_t physbase, uint64_t no_of_pages)
     ker_cr3 = phys_alloc_block();
 
     ker_pml4_t = (uint64_t*) VADDR(ker_cr3);
-    kprintf("\tKernel PML4t:%p", ker_pml4_t);
+    //kprintf("\tKernel PML4t:%p", ker_pml4_t);
 
     ker_pml4_t[510] = ker_cr3 | PAGING_PRESENT_WRITABLE;   
     
