@@ -88,6 +88,8 @@ enum syscall_num {
     BRK, 
     FORK,
     EXECVPE,
+    WAIT,
+    WAITPID,
     EXIT,
     MMAP,
     MUNMAP, 

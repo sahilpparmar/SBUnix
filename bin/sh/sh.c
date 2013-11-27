@@ -64,6 +64,7 @@ int main(int argc, char **argv)
     // /bin/program_name is the arguments to pass to execv
     //if we want to run ls, "/bin/ls" is required to be passed to execv()
     char* path = "bin/";
+    //volatile int exit_now = 0;
     while(1)
     {
         char args[20][20];
@@ -108,22 +109,28 @@ int main(int argc, char **argv)
         //printf("\t%s", args[l]);
    
        //fork and execv calls start 
-
+        //if (prog[4] == 'e') {
+            //printf("\n");
+            //exit(1); 
+            //exit_now = 1;
+            //exit(1);
+        //} else {
         //fork!
         int pid = fork();
         //Error checking to see if fork works
         //If pid !=0 then it's the parent
         if(pid!=0)
         {
-            //wait(NULL);
+            wait(NULL);
         }
         else
         {
             execvpe(prog, NULL, NULL);
+            exit(1);
         }
 
        // fork and execv ends
-
+        //}
     }
 
     /*

@@ -2,12 +2,11 @@
 
 int main(int argc, char **argv)
 {
-    
-    if (fork()) {
+    if (fork() == 0) {
+        printf("\nin init\n");
         execvpe("bin/sh", NULL, NULL);
-        printf("\nFinish");
-        exit(1);
     }
     //while
+    while(1);
     return 1;
 }

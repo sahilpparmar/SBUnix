@@ -27,8 +27,11 @@ int main(int argc, char* argv[])
     scanf("%s%s%d%c", a, b, &c, &d);
     printf("\na = %s, b = %s, c = %d, d = %c", a, b, c, d);
 #endif
-
-    printf("\nProcess %d (parent %d) says %s", getpid(), getppid(), hello);
+    printf("\nin hello");
+    char str[11];
+    scanf("%s", str);
+    printf("str=%s", str);
+    //printf("\nProcess %d (parent %d) says %s", getpid(), getppid(), hello);
     
     return 0;
 }

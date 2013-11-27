@@ -44,9 +44,11 @@ pid_t sys_fork()
 
 //static uint64_t temp_stack[64];
 
+//TODO: Need to load argv[] and envp[]
 uint64_t sys_execvpe(char *file, char *argv[], char *envp[])
 {
     //TODO: Need to load argv[] and envp[]
+// Code to reuse the same task_struct, but facing some issues
 #if 0
     HEADER *header;
     Elf64_Ehdr* elf_header;
@@ -75,13 +77,20 @@ uint64_t sys_execvpe(char *file, char *argv[], char *envp[])
     task_struct *new_task = create_elf_proc(file);
 
     if (new_task) {
-        // Exec process uses the same pid
-        set_next_pid(new_task->pid);
-        new_task->pid = CURRENT_TASK->pid;
+        task_struct *cur_task = CURRENT_TASK;
+
+        // Exec process has same pid, ppid and parent
+        set_next_pid(cur_task->pid);
+        new_task->pid  = cur_task->pid;
+        new_task->ppid = cur_task->ppid;
+        new_task->parent = cur_task->parent;
+
+        // Replace current child with new exec process
+        replace_child_task(cur_task, new_task);
 
         // Exit from the current process
-        empty_task_struct(CURRENT_TASK);
-        CURRENT_TASK->task_state = EXIT_STATE;
+        empty_task_struct(cur_task);
+        cur_task->task_state = EXIT_STATE;
 
 #endif
         // Enable interrupt for scheduling next process
@@ -93,10 +102,65 @@ uint64_t sys_execvpe(char *file, char *argv[], char *envp[])
     return -1;
 }
 
+uint64_t sys_wait(uint64_t status)
+{
+    volatile task_struct *cur_task = CURRENT_TASK;
+    int *status_p = (int*) status;
+    
+    if (cur_task->no_children == 0) {
+        if (status_p) *status_p = -1;
+        return -1;
+    }
+
+    // Reset last child exit
+    cur_task->last_child_exit = 0;
+
+    sti;
+    while (!cur_task->last_child_exit);
+        
+    if (status_p) *status_p = 0;
+    return (uint64_t)cur_task->last_child_exit;
+}
+
+uint64_t sys_waitpid(uint64_t fpid, uint64_t fstatus, uint64_t foptions)
+{
+    pid_t pid = fpid;
+    volatile task_struct *cur_task = CURRENT_TASK;
+    int *status_p = (int*) fstatus;
+    
+    if (cur_task->no_children == 0) {
+        if (status_p) *status_p = -1;
+        return -1;
+    }
+
+    // Reset last child exit
+    cur_task->last_child_exit = 0;
+
+    sti;
+    if (pid > 0) {
+        // If pid > 0, wait for the child with 'pid' to exit
+        while (cur_task->last_child_exit != pid);
+    } else {
+        // If pid <= 0, wait for any one of the children to exit
+        while (!cur_task->last_child_exit);
+    }
+        
+    if (status_p) *status_p = 0;
+    return (uint64_t)cur_task->last_child_exit;
+}
+
 void sys_exit()
 {
-    empty_task_struct(CURRENT_TASK);
-    CURRENT_TASK->task_state = EXIT_STATE;
+    task_struct *cur_task = CURRENT_TASK;
+
+    // Remove the task from parent's child list
+    if (cur_task->parent) {
+        remove_child_from_parent(cur_task);
+    }
+
+    // Empty current task
+    empty_task_struct(cur_task);
+    cur_task->task_state = EXIT_STATE;
 
     // Enable interrupt for scheduling next process
     __asm__ __volatile__ ("int $32");
@@ -323,6 +387,8 @@ void* syscall_tbl[NUM_SYSCALLS] =
     sys_brk,
     sys_fork,
     sys_execvpe,
+    sys_wait,
+    sys_waitpid,
     sys_exit,
     sys_mmap,
     sys_munmap,

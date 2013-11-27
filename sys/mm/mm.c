@@ -6,6 +6,7 @@
 #include <sys/elf.h>
 #include <sys/kmalloc.h>
 #include <sys/types.h>
+#include <io_common.h>
 #include <string.h>
 
 static uint64_t next_pid = 0;
@@ -79,8 +80,10 @@ task_struct* alloc_new_task(bool IsUserProcess)
     new_proc->next          = NULL;
     new_proc->last          = NULL;
     new_proc->parent        = NULL;
-    new_proc->children      = NULL;
-    new_proc->sibling       = NULL;
+    new_proc->childhead     = NULL;
+    new_proc->siblings      = NULL;
+    new_proc->no_children   = 0;
+    new_proc->last_child_exit = 0;
 
 #if DEBUG_SCHEDULING
     kprintf("\nPID:%d\tCR3: %p", new_proc->pid, mms->pml4_t);
@@ -117,11 +120,13 @@ void empty_task_struct(task_struct *cur_task)
     mms->stack_vm   = NULL;
     
     memset((void*)cur_task->kernel_stack, 0, KERNEL_STACK_SIZE);
-    cur_task->next     = NULL;
-    cur_task->last     = NULL;
-    cur_task->parent   = NULL;
-    cur_task->children = NULL;
-    cur_task->sibling  = NULL;
+    cur_task->next        = NULL;
+    cur_task->last        = NULL;
+    cur_task->parent      = NULL;
+    cur_task->childhead   = NULL;
+    cur_task->siblings    = NULL;
+    cur_task->no_children = 0;
+    cur_task->last_child_exit = 0;
 }
 
 void empty_vma_list(vma_struct *vma_list)
@@ -147,6 +152,75 @@ void empty_vma_list(vma_struct *vma_list)
     }
 }
 
+void add_child_to_parent(task_struct *child_task)
+{
+    task_struct *parent_task = child_task->parent;
+
+    if (parent_task->childhead) {
+        // Prepend new child_task to sibling list
+        child_task->siblings   = parent_task->childhead;
+    }
+    // assign task as childhead
+    parent_task->childhead = child_task;
+    parent_task->no_children++;
+}
+
+void remove_child_from_parent(task_struct *child_task)
+{
+    task_struct *parent_task = child_task->parent;
+    task_struct *sibling_l, *last_sibling;
+
+    // Find the child_task in childlist
+    sibling_l = parent_task->childhead;
+    last_sibling = NULL;
+    while (sibling_l) {
+        if (sibling_l == child_task) {
+            break;
+        }
+        last_sibling = sibling_l;
+        sibling_l = sibling_l->siblings;
+    }
+
+    if (!sibling_l) panic("Child task should be in the sibling list");
+
+    // Remove from sibling list
+    if (last_sibling) {
+        last_sibling->siblings = sibling_l->siblings;    
+    } else {
+        parent_task->childhead = sibling_l->siblings;
+    }
+
+    parent_task->no_children--;
+    parent_task->last_child_exit = child_task->pid;
+}
+
+void replace_child_task(task_struct *old_task, task_struct *new_task)
+{
+    task_struct *parent_task = old_task->parent;
+    task_struct *sibling_l, *last_sibling;
+
+    // Find the old child task in childlist
+    sibling_l = parent_task->childhead;
+    last_sibling = NULL;
+    while (sibling_l) {
+        if (sibling_l == old_task) {
+            break;
+        }
+        last_sibling = sibling_l;
+        sibling_l = sibling_l->siblings;
+    }
+
+    if (!sibling_l) panic("Child task should be in the sibling list");
+    
+    // Replace old_task with new_task
+    if (last_sibling) {
+        last_sibling->siblings = new_task;
+        new_task->siblings = sibling_l->siblings;
+    } else {
+        new_task->siblings = sibling_l->siblings;
+        parent_task->childhead = new_task;
+    }
+}
 
 bool verify_addr(task_struct *proc, uint64_t addr, uint64_t size)
 {
