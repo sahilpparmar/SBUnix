@@ -4,7 +4,7 @@
 
 int main(int argc, char* argv[]);
 void exit(int status);
-
+int sleep(int seconds);
 int printf(const char *format, ...);
 void scanf(const char *format, ...);
 
@@ -20,7 +20,11 @@ void close(int file_d);
 
 pid_t getpid();
 pid_t getppid();
-pid_t fork();
 void listprocess();
+
+pid_t fork();
+int execvpe(const char *file, char *const argv[], char *const envp[]);
+pid_t wait(uint64_t *status);
+pid_t waitpid(pid_t pid, uint64_t *status, int options);
 
 #endif

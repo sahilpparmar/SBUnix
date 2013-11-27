@@ -10,9 +10,14 @@ int main(int argc, char* argv[])
 
     if ((pid = fork()) == 0) {
         printf("\nFork return: %d Process %d (parent %d): child", pid, getpid(), getppid());
+        execvpe("bin/ps", NULL, NULL);
     } else {
         printf("\nFork return: %d Process %d (parent %d): parent", pid, getpid(), getppid());
     }
+
+    //wait(NULL);
+    waitpid(pid, NULL, 0);
+    printf("\nWait Return");
 
     while(1);
     return 0;

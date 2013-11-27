@@ -2,16 +2,14 @@
 #include <stdio.h>
 #include <screen.h>
 #include <sys/types.h>
+#include <sys/virt_mm.h>
+#include <io_common.h>
 
 static uint64_t _mmngr_memory_size;
 static uint64_t _mmngr_used_blocks;
 static uint64_t _mmngr_max_blocks;
 static uint64_t* _mmngr_memory_map;
 static uint64_t _mmngr_base_addr;
-
-// Currently this works for 128(512*64*4k) MB RAM.
-// Need to design a better way to dynamically allocate the bitmap!
-static uint64_t bitmap_t[512];
 
 static void mmap_set(int bit)
 {
@@ -33,28 +31,6 @@ uint64_t phys_get_free_block_count()
     return _mmngr_max_blocks - _mmngr_used_blocks;
 }
 
-// Uncomment below functions when we actually use them
-#if 0
-static int mmap_test(int bit)
-{
-    return _mmngr_memory_map[bit / 64] & (1UL << (bit % 64));
-}
-
-static uint64_t  phys_get_memory_size() {
-    return _mmngr_memory_size;
-}
-
-static uint64_t phys_get_use_block_count() {
-
-    return _mmngr_used_blocks;
-}
-
-static uint64_t phys_get_block_size() {
-
-    return PAGESIZE;
-}
-#endif
-
 static int mmap_first_free() 
 {
     uint64_t i, j;
@@ -74,8 +50,10 @@ static int mmap_first_free()
     return -1;
 }
 
-void phys_init(uint64_t physBase, uint64_t physSize) {
+void phys_init(uint64_t physBase, uint64_t physfree, uint64_t physSize) {
 
+    uint64_t bitmap_t;
+    
     // Start Physical Pages from 4MB
     _mmngr_base_addr   = physBase + 0x300000UL;
     _mmngr_memory_size = physSize - 0x300000UL;                   
@@ -83,13 +61,14 @@ void phys_init(uint64_t physBase, uint64_t physSize) {
     _mmngr_used_blocks = 0;
 
     // Set all physical memory to 0
-    memset8((void*)_mmngr_base_addr, 0x0, _mmngr_memory_size/8);
+    memset8((uint64_t *)_mmngr_base_addr, 0x0, _mmngr_memory_size/8);
 
     kprintf("\nPhysical Blocks Base:%p, Size:%p, Max:%p", _mmngr_base_addr, _mmngr_memory_size, _mmngr_max_blocks);
 
     // Set Bitmap to all 0
-    _mmngr_memory_map  = bitmap_t;
-    memset8((void*)_mmngr_memory_map, 0x0, sizeof(bitmap_t)/8);
+    bitmap_t = _mmngr_max_blocks/64 + 1;
+    _mmngr_memory_map = (uint64_t *) (KERNEL_START_VADDR + physfree);
+    memset8((uint64_t *)_mmngr_memory_map, 0x0, bitmap_t);
 }
 
 uint64_t phys_alloc_block() {
@@ -109,13 +88,20 @@ uint64_t phys_alloc_block() {
     paddr = _mmngr_base_addr + (frame << PAGE_2ALIGN);
     _mmngr_used_blocks++;
     
-    // kprintf("\tNewPaddr: %p", paddr);
+    //kprintf("\tNewPaddr: %p", paddr);
     return paddr;
 }
 
 void phys_free_block(uint64_t addr) {
 
     int frame = (addr - _mmngr_base_addr) >> PAGE_2ALIGN;
+
+    if (addr < _mmngr_base_addr || addr > (_mmngr_base_addr + _mmngr_memory_size)) {
+        kprintf("\tFreePaddr: %p", addr);
+        panic("Trying to Free out of range Physical Block");
+    }
+
+    zero_out_phys_block(addr);
 
     mmap_unset(frame);
 

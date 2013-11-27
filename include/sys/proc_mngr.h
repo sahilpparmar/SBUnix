@@ -4,6 +4,7 @@
 #include <sys/types.h>
 
 #define KERNEL_STACK_SIZE 128
+#define USER_STACK_TOP 0xF0000000
 #define DEBUG_SCHEDULING 0
 #define MAXFD 10
 
@@ -73,37 +74,41 @@ struct task_struct
     uint64_t task_state;    // Saves the current state of task
     mm_struct* mm; 
     char comm[16];
+    uint32_t sleep_time;    // Number of centiseconds to sleep
     task_struct* next;      // The next process in the process list
     task_struct* last;      // The process that ran last
     task_struct* parent;    // Keep track of parent process on fork
     task_struct* children;  // Keep track of its children on fork
     task_struct* sibling;   // Keep track of its siblings (children of same parent)
     uint64_t* file_descp[MAXFD]; //array of file descriptor pointers
-
+    uint32_t no_children;   // Number of children
+    pid_t last_child_exit;  // pid of child last exited
 };
 
 extern task_struct* CURRENT_TASK;
 
 void create_idle_process();
 void* kmmap(uint64_t virt_addr, int bytes);
-pid_t create_elf_proc(char *filename);
 void schedule_process(task_struct* new_task, uint64_t entry_point, uint64_t stack_top);
 void set_tss_rsp0(uint64_t rsp);
-void increment_brk(task_struct *proc, uint64_t bytes);
+void set_next_pid(pid_t fnext_pid);
+void add_child_to_parent(task_struct *child_task);
+void remove_child_from_parent(task_struct *child_task);
+void replace_child_task(task_struct *old_task, task_struct *new_task);
 bool verify_addr(task_struct *proc, uint64_t addr, uint64_t size);
+void increment_brk(task_struct *proc, uint64_t bytes);
 
-extern task_struct *task_free_list;
-extern vma_struct *vma_free_list;
 task_struct* alloc_new_task(bool IsUserProcess);
-vma_struct* alloc_new_vma(uint64_t start_addr, uint64_t end_addr);
+task_struct* copy_task_struct(task_struct* parent_task);
 void add_to_task_free_list(task_struct* free_task);
+void empty_task_struct(task_struct *cur_task);
+
+vma_struct* alloc_new_vma(uint64_t start_addr, uint64_t end_addr);
+void add_to_vma_free_list(vma_struct* free_vma);
 void empty_vma_list(vma_struct *vma_list);
 
 // Syscalls
 pid_t sys_getpid();
 pid_t sys_getppid();
-pid_t sys_fork();
-uint64_t sys_execvpe();
-uint64_t sys_exit();
 
 #endif

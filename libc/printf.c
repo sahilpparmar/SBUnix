@@ -50,7 +50,7 @@ void *memset(void *ptr, uint8_t value, uint64_t num)
 }
 
 // Sets 8 bytes at a time
-void *memset8(void *ptr, uint64_t value, uint64_t num)
+uint64_t *memset8(uint64_t *ptr, uint64_t value, uint64_t num)
 {
     uint64_t *temp = (uint64_t *)ptr;
 
