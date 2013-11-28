@@ -88,7 +88,7 @@ void* init_tarfs()
     fnode_t *temp_node;
 
     root_node = (fnode_t *)kmalloc(sizeof(struct file));
-    make_node(root_node, NULL, "/", 0, 2, DIRECTORY);  
+    make_node(root_node, root_node, "/", 0, 2, DIRECTORY);  
    
     temp_node = (fnode_t *)kmalloc(sizeof(struct file)); 
     make_node(temp_node, root_node, "rootfs", 0, 2, DIRECTORY);

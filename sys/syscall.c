@@ -35,7 +35,7 @@ DIR* sys_opendir(uint64_t* entry, uint64_t* directory)
     char* dir_path = (char *)entry;
     DIR* dir = (DIR *)directory;
 
-    fnode_t *currnode = root_node;
+    fnode_t *auxnode, *currnode = root_node;
     char *temp = NULL; 
     int i;
     char *path = (char *)kmalloc(sizeof(char) * strlen(dir_path));
@@ -45,25 +45,41 @@ DIR* sys_opendir(uint64_t* entry, uint64_t* directory)
     
     while(temp != NULL)
     {
-        for(i = 2; i < currnode->end; ++i){
-            if(strcmp(temp, currnode->f_child[i]->f_name) == 0) {
-                currnode = (fnode_t *)currnode->f_child[i];
-                break;       
-            }        
-        }
+        auxnode = currnode; 
         
+        if(strcmp(temp,"..") == 0) {
+
+            currnode = (fnode_t *)currnode->f_child[1];
+        } else {
+    
+            for(i = 2; i < currnode->end; ++i){
+                if(strcmp(temp, currnode->f_child[i]->f_name) == 0) {
+                    currnode = (fnode_t *)currnode->f_child[i];
+                    break;       
+                }        
+            }
+        
+            if(i == auxnode->end) {
+                dir->curr     = NULL;
+                dir->filenode = NULL;
+                return dir;
+            }
+        } 
+
         temp = kstrtok(NULL, "/");          
     }
    
 
     if(currnode->f_type == DIRECTORY) {
     
-        dir->curr = 2; 
+        dir->curr     = 2; 
         dir->filenode = currnode; 
-        return dir;
     } else {
-        return NULL; 
+        dir->curr     = NULL;
+        dir->filenode = NULL;
     }
+    
+        return dir;
 }
 
 
@@ -334,13 +350,13 @@ int sys_munmap(uint64_t* addr, uint64_t length)
     }
 }
 
-uint64_t sys_open(uint64_t* dir_path, uint64_t flags)
+int sys_open(uint64_t* dir_path, uint64_t flags)
 {
     char* file_path = (char *)dir_path;
     
     //allocate new filedescriptor
     FD* file_d = (FD *)kmalloc(sizeof(FD));
-    fnode_t *currnode = root_node;
+    fnode_t *auxnode, *currnode = root_node;
 
     char *temp = NULL; 
     int i;
@@ -352,11 +368,16 @@ uint64_t sys_open(uint64_t* dir_path, uint64_t flags)
     
     while(temp != NULL)
     {
+        auxnode = currnode;
         for(i = 2; i < currnode->end; ++i){
             if(strcmp(temp, currnode->f_child[i]->f_name) == 0) {
                 currnode = (fnode_t *)currnode->f_child[i];
                 break;       
             }        
+        }
+        
+        if(i == auxnode->end){
+            return -1;
         }
         
         temp = kstrtok(NULL, "/");          
@@ -375,7 +396,7 @@ uint64_t sys_open(uint64_t* dir_path, uint64_t flags)
         }
     }
    
-   return 0;
+   return -1;
 }
 
 void sys_close(int fd)
