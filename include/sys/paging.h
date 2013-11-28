@@ -17,7 +17,18 @@ enum PAGE_FLAGS {
     PAGING_NX              =   0x8000000000000000,               //10000000000000000000000000000000 00000000000000000000000000000000
 };
 
-#define PAGING_PRESENT_WRITABLE PAGING_PRESENT | PAGING_WRITABLE | PAGING_USER
+#define PAGING_PRESENT_WRITABLE (PAGING_PRESENT | PAGING_WRITABLE | PAGING_USER)
+
+#define IS_PRESENT_PAGE(entry)  ((entry) & PAGING_PRESENT)
+#define IS_WRITABLE_PAGE(entry) ((entry) & PAGING_WRITABLE)
+#define IS_USER_PAGE(entry)     ((entry) & PAGING_USER)
+#define IS_PWT_PAGE(entry)      ((entry) & PAGING_PWT)
+#define IS_PCD_PAGE(entry)      ((entry) & PAGING_PCD)
+#define IS_ACCESSED_PAGE(entry) ((entry) & PAGING_ACCESSED)
+#define IS_IGN_PAGE(entry)      ((entry) & PAGING_IGN) 
+#define IS_ZERO_PAGE(entry)     ((entry) & PAGING_ZER0)
+#define IS_COW_PAGE(entry)      ((entry) & PAGING_COW)
+#define IS_NX_PAGE(entry)       ((entry) & PAGING_NX)
 
 void init_paging(uint64_t, uint64_t, uint64_t);
 void map_virt_phys_addr(uint64_t,uint64_t, uint64_t);

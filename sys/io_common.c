@@ -71,7 +71,6 @@ void dump_regs()
 
 void panic(char* msg)
 {
-    dump_regs();
     kprintf("\n[FAULT]: %s\n", msg);
     while(1);
 }

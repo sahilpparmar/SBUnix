@@ -7,6 +7,7 @@ void putchar(char mychar);
 int32_t puts(char *str);
 int32_t kprintf(const char *str, ...);
 
+int gets(uint64_t addr);
 void kscanf(const char *str, ...);
 
 // By default copies 1 byte at a time

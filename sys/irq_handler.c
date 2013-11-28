@@ -7,8 +7,9 @@
 #include <stdio.h>
 #include <screen.h>
 #include <io_common.h>
-#include <sys/irq_common.h>
 #include <syscall.h>
+#include <sys/irq_common.h>
+#include <sys/types.h>
 
 /****************************************************************
   IRQ1: Keyboard
@@ -104,13 +105,31 @@ typedef enum lastKeyPressed {
 } lastKeyPressed_t;
 
 static lastKeyPressed_t lastKeyPressed;
-extern volatile int flag, counter;
-extern volatile char buf[];
+static uint64_t last_addr;
+static volatile int flag, counter;
+static volatile char buf[1024];
 
+int gets(uint64_t addr)
+{
+    char *user_buf = (char*) addr;
+    int count;
+
+    flag = 1;
+    sti;
+
+    last_addr = get_video_addr();
+    while (flag == 1);
+    memcpy((void *)user_buf, (void *)buf, counter);
+    count = counter;
+    counter = 0;
+    return count;
+}
 
 void init_keyboard()
 {
     lastKeyPressed = NOKEY;
+    last_addr = NULL;
+    flag = counter = 0;
 }
 
 /* Handles the keyboard interrupt */
