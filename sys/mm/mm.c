@@ -92,7 +92,7 @@ task_struct* alloc_new_task(bool IsUserProcess)
     return new_proc;
 }
 
-vma_struct* alloc_new_vma(uint64_t start_addr, uint64_t end_addr)
+vma_struct* alloc_new_vma(uint64_t start_addr, uint64_t end_addr, uint64_t flags, uint64_t type)
 {
     vma_struct *vma = NULL;
 
@@ -101,8 +101,8 @@ vma_struct* alloc_new_vma(uint64_t start_addr, uint64_t end_addr)
     }
     vma->vm_start = start_addr;
     vma->vm_end   = end_addr; 
-    vma->vm_flags = NULL;
-    vma->vm_type  = NULL; 
+    vma->vm_flags = flags;
+    vma->vm_type  = type; 
     vma->vm_next  = NULL;
     return vma;
 }
@@ -253,7 +253,7 @@ void increment_brk(task_struct *proc, uint64_t bytes)
         //kprintf("\n vm_start %p\t start_brk %p\t end_brk %p", iter->vm_start, mms->start_brk, mms->end_brk);
 
         // this vma is pointing to heap
-        if (iter->vm_start == mms->start_brk) {
+        if (iter->vm_type == HEAP) {
             iter->vm_end  += bytes;
             mms->end_brk  += bytes; 
             mms->total_vm += bytes;
@@ -273,7 +273,7 @@ void* kmmap(uint64_t start_addr, int bytes)
 
     // Find no of pages to be allocated
     end_vaddr = start_addr + bytes;
-    no_of_pages = (end_vaddr >> 12) - (start_addr >> 12) + 1;
+    no_of_pages = ((end_vaddr-1) >> 12) - ((start_addr) >> 12) + 1;
 
     // Allocate VPages
     virt_alloc_pages(no_of_pages);

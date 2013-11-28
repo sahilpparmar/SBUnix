@@ -23,7 +23,8 @@ enum vmatype {
     DATA,
     HEAP,
     STACK,
-    ANON 
+    ANON,
+    NOTYPE
 };
 
 enum vmaflag {
@@ -47,7 +48,7 @@ struct vm_area_struct {
     uint64_t vm_start;              // Our start address within vm_mm
     uint64_t vm_end;                // The first byte after our end address within vm_mm
     vma_struct *vm_next;            // linked list of VM areas per task, sorted by address
-    uint8_t vm_flags;               // Flags read, write, execute permissions
+    uint64_t vm_flags;              // Flags read, write, execute permissions
     uint64_t vm_type;               // type of segment its reffering to 
 };
 
@@ -58,7 +59,6 @@ struct mm_struct {
     uint64_t hiwater_vm;            // High-water virtual memory usage
     uint64_t total_vm;
     uint64_t stack_vm;
-    uint64_t start_code, end_code, start_data, end_data;
     uint64_t start_brk, end_brk, start_stack;
     uint64_t arg_start, arg_end, env_start, env_end;
 };
@@ -103,7 +103,7 @@ task_struct* copy_task_struct(task_struct* parent_task);
 void add_to_task_free_list(task_struct* free_task);
 void empty_task_struct(task_struct *cur_task);
 
-vma_struct* alloc_new_vma(uint64_t start_addr, uint64_t end_addr);
+vma_struct* alloc_new_vma(uint64_t start_addr, uint64_t end_addr, uint64_t flags, uint64_t type);
 void add_to_vma_free_list(vma_struct* free_vma);
 void empty_vma_list(vma_struct *vma_list);
 

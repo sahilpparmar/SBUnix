@@ -7,36 +7,40 @@
 #include <screen.h>
 #include <io_common.h>
 #include <sys/irq_common.h>
+#include <sys/types.h>
 
 /* Divide by Zero handler */
-static void isr0_handler(registers_t regs)
+static void divide_by_zero_handler(registers_t regs)
 {
     panic("Divide by Zero!");
 }
 
 /* Invalid TSS exception handler */
-static void isr10_handler(registers_t regs)
+static void tss_fault_handler(registers_t regs)
 {
+    dump_regs();
     panic("Invalid TSS Exception!");
 }
 
 /* General Protection fault handler */
-static void isr13_handler(registers_t regs)
+static void gpf_handler(registers_t regs)
 {
+    dump_regs();
     panic("General Protection Fault!");
 }
 
 /* Page Fault handler */
-static void isr14_handler(registers_t regs)
+static void page_fault_handler(registers_t regs)
 {
     uint64_t err_code = regs.err_no;
-    kprintf("Error Code: %p", err_code);
+    uint64_t fault_addr;
+
+    READ_CR2(fault_addr);
+    kprintf("\nFault Addr:%p Error Code:%p", fault_addr, err_code);
     panic("Page Fault!");
 #if 0
     vm_struct* vma_to_map = NULL;
     u8int okay_to_map = 0;
-    __asm__ __volatile__("movq %%cr2, %[cr2_register]\n\t":[cr2_register]"=r"(faulting_address));
-    __asm__ __volatile__("movq %%r10, %[error_code]\n\t":[error_code]"=r"(error_code));
     /* If the kernel faults or there's a fault in accessing a Present page, stop. */
     kprintf("The faulting address = %p\n", faulting_address);
     kprintf("The error code = %x\n", error_code);
@@ -96,16 +100,16 @@ void isr_handler(registers_t regs)
 {
     switch (regs.int_no) {
         case 0:
-            isr0_handler(regs);
+            divide_by_zero_handler(regs);
             break;
         case 10:
-            isr10_handler(regs);
+            tss_fault_handler(regs);
             break;
         case 13:
-            isr13_handler(regs);
+            gpf_handler(regs);
             break;
         case 14:
-            isr14_handler(regs);
+            page_fault_handler(regs);
             break;
         default:
             break;

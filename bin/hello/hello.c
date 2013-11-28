@@ -9,7 +9,7 @@ int main(int argc, char* argv[])
     printf("\nProcess %d (parent %d) says %s", getpid(), getppid(), hello);
     
     //test for opendir, readdir, closedir
-#if 0 
+#if 1 
     DIR *tp; 
     struct dirent *temp;
     char *path = "/";
@@ -67,7 +67,6 @@ int main(int argc, char* argv[])
     scanf("%s%s%d%c", a, b, &c, &d);
     printf("\na = %s, b = %s, c = %d, d = %c", a, b, c, d);
 #endif
-    printf("\nProcess %d (parent %d) says %s", getpid(), getppid(), hello);
     
     return 0;
 }
