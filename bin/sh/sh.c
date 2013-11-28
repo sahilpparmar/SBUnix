@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <defs.h>
 
+static char bg, prog[20];
+
 int ustrlen(const char *str)
 {
     int len=0;
@@ -56,112 +58,112 @@ int argsCount(char *str)
     return num;
 }
 
+void fork_and_execvpe()
+{
+
+    int pid = fork();
+
+    if(pid!=0) {
+        if (bg != '&')
+            wait(NULL);
+    } else {
+        execvpe(prog, NULL, NULL);
+        exit(1);
+    }
+
+}
+
 int main(int argc, char **argv)
 {
     //buffer is to hold the commands that the user will type in
-    char /*str[25], *newstr,*/ ptr[20]; //= "Hello World Program\nls -l\nls -a\n\0";
-    int i, j=0, k=0;//, count;
+    char str[25], *newstr, ptr[20], args[20][20];
+    int i, j=0, k=0, fd;
     char* path = "bin/";
+
     while(1)
     {
-        char args[20][20];
-        
+
         printf("\n"); 
         printf("<shell>");
         scanf("%s", ptr);
-        //newstr = ptr;
-        j=0;
-        k=0;
-        //count = argsCount(ptr);
-        for (i = 0; i < ustrlen(ptr); i++)
-        {
-            if(ptr[i] == ' ') {
-                args[j][k]= '\0';
-                j++;
-                k=0;
-            } else 
-                args[j][k++] = ptr[i];
-            
-            
-        }
-        *ptr = NULL;
-
-        args[j][k]='\0';
-
         
-        //for(i = 0; i <= j; i++);
-            //printf("\t%s",args[i]);
+        bg = ptr[ustrlen(ptr)-1];
+        if (bg == '&')
+            ptr[ustrlen(ptr)-1] = '\0';
+
+        if (ptr[0] != '.') {
+            j=0;
+            k=0;
+            
 
 
-        char prog[20];
-        strcpy(prog, path);
-        //printf("\nprog:%s", prog);
-        strcat(prog, args[0]);
-        //printf("\nfinal prog:%s", prog);
-        //int l;
-        //printf("\t%s\t%d", str, argsCount(str));
-        
-        //printf("\tnumber of args:%d \targs:", count);
-        //for (l=1; l<= count; l++)
-        //printf("\t%s", args[l]);
-   
-        int pid = fork();
-        //Error checking to see if fork works
-        //If pid !=0 then it's the parent
-        if(pid!=0)
-        {
-            wait(NULL);
-        }
-        else
-        {
-            execvpe(prog, NULL, NULL);
-            exit(1);
+            // Extracting the scan from shell into a 2d array: row 0 = command, other rows = arguments to the cmd
+            for (i = 0; i < ustrlen(ptr); i++)
+            {
+                if(ptr[i] == ' ') {
+                    args[j][k]= '\0';
+                    j++;
+                    k=0;
+                } else 
+                    args[j][k++] = ptr[i];
+            }
+
+            *ptr = NULL;
+            args[j][k]='\0';
+            //char prog[20];
+            strcpy(prog, path);
+            strcat(prog, args[0]);
+            
+            fork_and_execvpe();
+
+        } else {
+
+            char *tmp = ptr;
+
+            tmp +=1;
+            fd = open(tmp, 0);
+
+            if(fd != -1) {
+                read(fd, ptr, 100); 
+                if (ptr[0] == '#' && ptr[1] == '~') {
+                    newstr = ptr;
+                    newstr += 2;
+                    //For parsing a script file and extracting the commands from the file
+                    while (*newstr != '\0')
+                    {
+                        newstr = getLine(newstr, str);
+
+                        if (str[ustrlen(str)-1] == '&')
+                            str[ustrlen(str)-1] = '\0';
+
+                        j=0;
+                        k=0;
+
+                        for (i = 0; i < ustrlen(str); i++) {
+                            if(str[i] == ' ') {
+                                args[j][k]= '\0';
+                                j++;
+                                k=0;
+                            } else 
+                                args[j][k++] = str[i];
+                        }
+                        *str = NULL;
+
+                        args[j][k]='\0';
+
+                        strcpy(prog, path);
+                        strcat(prog, args[0]);
+
+                        fork_and_execvpe();
+                    }
+                } else {
+                    printf("\nNX");
+                }
+            } else {
+                printf("File does not exist");
+            }
         }
     }
 
-    /*
-    newstr = ptr;
-    //For parsing a script file and extracting the commands from the file
-    while (*newstr != '\0')
-    {
-        char args[20][20];
-        int count;
-        newstr = getLine(newstr, str);
-        j=0;
-        k=0;
-        count = argsCount(str);
-        for (i = 0; i < ustrlen(str); i++)
-        {
-            if(str[i] == ' ') {
-                args[j][k]= '\0';
-                j++;
-                k=0;
-            } else 
-                args[j][k++] = str[i];
-            
-            
-        }
-        *str = NULL;
-
-        args[j][k]='\0';
-
-        
-        for(i = 0; i <= j; i++);
-            //printf("\t%s",args[i]);
-
-
-        char prog[20];
-        strcpy(prog, path);
-        printf("\nprog:%s", prog);
-        strcat(prog, args[0]);
-        printf("\nfinal prog:%s", prog);
-        int l;
-        printf("\t%s\t%d", str, argsCount(str));
-        printf("\targs:");
-        for (l=1; l< count; l++)
-        printf("\t\t%s", args[l]);
-        
-    }
-   */ 
     return 0;
 }

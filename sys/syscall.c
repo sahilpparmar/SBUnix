@@ -340,8 +340,8 @@ uint64_t sys_open(uint64_t* dir_path, uint64_t flags)
     
     //allocate new filedescriptor
     FD* file_d = (FD *)kmalloc(sizeof(FD));
-    fnode_t *currnode = root_node;
-
+    fnode_t *aux_node, *currnode = root_node;
+    
     char *temp = NULL; 
     int i;
     char *path = (char *)kmalloc(sizeof(char) * strlen(file_path));
@@ -352,13 +352,16 @@ uint64_t sys_open(uint64_t* dir_path, uint64_t flags)
     
     while(temp != NULL)
     {
+        aux_node = currnode;
         for(i = 2; i < currnode->end; ++i){
             if(strcmp(temp, currnode->f_child[i]->f_name) == 0) {
                 currnode = (fnode_t *)currnode->f_child[i];
                 break;       
             }        
         }
-        
+        if (i == aux_node->end) {
+            return -1;
+        }
         temp = kstrtok(NULL, "/");          
     }
    
@@ -375,7 +378,7 @@ uint64_t sys_open(uint64_t* dir_path, uint64_t flags)
         }
     }
    
-   return 0;
+   return -1;
 }
 
 void sys_close(int fd)
