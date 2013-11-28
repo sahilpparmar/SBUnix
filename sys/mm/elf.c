@@ -53,15 +53,16 @@ task_struct* load_elf(Elf64_Ehdr* header, task_struct *proc)
     Elf64_Phdr* program_header;
     mm_struct *mms = proc->mm;
     vma_struct *node, *iter;
-    uint64_t start_vaddr, end_vaddr, cur_pml4_t, max_addr = 0;
+    uint64_t start_vaddr, end_vaddr, cur_pml4_t, max_addr, vm_type;
     int i, size;
 
     // Save current PML4 table
     READ_CR3(cur_pml4_t);
 
     // Offset at which program header table starts
-    program_header = (Elf64_Phdr*) ((void*)header + header->e_phoff);  
+    program_header = (Elf64_Phdr*) ((void*)header + header->e_phoff);
     
+    max_addr = 0; 
     for (i = 0; i < header->e_phnum; ++i) {
 
         if ((int)program_header->p_type == 1) {           // this is loadable section
@@ -69,13 +70,16 @@ task_struct* load_elf(Elf64_Ehdr* header, task_struct *proc)
             start_vaddr    = program_header->p_vaddr;
             size           = program_header->p_memsz;
             end_vaddr      = start_vaddr + size;    
-            node           = alloc_new_vma(start_vaddr, end_vaddr); 
-            node->vm_flags = program_header->p_type; 
              
-            if(program_header->p_type == 5)
-                node->vm_type = TEXT;
+            if (program_header->p_type == 5)
+                vm_type = TEXT;
             else if(program_header->p_type == 6)
-                node->vm_type = DATA;
+                vm_type = DATA;
+            else
+                vm_type = NOTYPE; 
+
+            // Allocate a new vma
+            node = alloc_new_vma(start_vaddr, end_vaddr, program_header->p_type, vm_type); 
 
             mms->vma_count++;
             mms->total_vm += size;
@@ -115,10 +119,8 @@ task_struct* load_elf(Elf64_Ehdr* header, task_struct *proc)
     // Traverse the vmalist to reach end vma and allocate a vma for the heap at 4k align
     for (iter = mms->vma_list; iter->vm_next != NULL; iter = iter->vm_next);
     start_vaddr    = end_vaddr = ((((max_addr - 1) >> 12) + 1) << 12);
-    node           = alloc_new_vma(start_vaddr, end_vaddr); 
-    node->vm_flags = RW;
-    node->vm_type  = HEAP; 
-    iter->vm_next  = node;
+    
+    iter->vm_next  = alloc_new_vma(start_vaddr, end_vaddr, RW, HEAP);
     
     mms->vma_count++;
     mms->start_brk = start_vaddr;
@@ -129,10 +131,7 @@ task_struct* load_elf(Elf64_Ehdr* header, task_struct *proc)
     for (iter = mms->vma_list; iter->vm_next != NULL; iter = iter->vm_next);
     end_vaddr = USER_STACK_TOP;
     start_vaddr = USER_STACK_TOP - PAGESIZE;
-    node           = alloc_new_vma(start_vaddr, end_vaddr); 
-    node->vm_flags = RW;
-    node->vm_type  = STACK;
-    iter->vm_next  = node;
+    iter->vm_next = alloc_new_vma(start_vaddr, end_vaddr, RW, STACK);
     
     // Map a physical page
     LOAD_CR3(mms->pml4_t);

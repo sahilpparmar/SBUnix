@@ -265,7 +265,7 @@ void map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t flags)
         *pte_entry = paddr | flags;
     }
 
-    // kprintf("\nEntries: PML4: %p, PDPE: %p, PDE: %p, PTE: %p ", pml4_entry, pdpe_entry, pde_entry, pte_entry);
+    //kprintf("\t1:%p 2:%p 3:%p 4:%p ", *pml4_entry, *pdpe_entry, *pde_entry, *pte_entry);
 }
 
 uint64_t create_new_pml4()
@@ -294,36 +294,47 @@ void empty_page_tables(uint64_t pml4_t)
     uint64_t pml4, pdpe, pde, pte;
     uint64_t *pml4_e, *pdpe_e, *pde_e, *pte_e;
 
+//    uint64_t cr3;
+//    READ_CR3(cr3);
+//    kprintf("\tCR3:%p", cr3);
+
     // Free entries except [510] and [511] entries 
     for (pml4 = 0; pml4 < ENTRIES_PER_PML4-2; pml4++) {
         pml4_e = (uint64_t*) (PML4_SELF_REF | (pml4 << 3));
-        if (*pml4_e & PAGING_PRESENT) {
+        if (IS_PRESENT_PAGE(*pml4_e)) {
+            //kprintf("\tpml4[%d]:%p", pml4, *pml4_e);
 
             for (pdpe = 0; pdpe < ENTRIES_PER_PDPE; pdpe++) {
                 pdpe_e = (uint64_t*) (PDPE_SELF_REF | (pml4 << 12) | (pdpe << 3));
-                if (*pdpe_e & PAGING_PRESENT) {
+                if (IS_PRESENT_PAGE(*pdpe_e)) {
+                    //kprintf("\tpdpe[%d]:%p", pdpe, *pdpe_e);
 
                     for (pde = 0; pde < ENTRIES_PER_PDE; pde++) {
                         pde_e = (uint64_t*) (PDE_SELF_REF | (pml4 << 21) | (pdpe << 12) | (pde << 3));
-                        if (*pde_e & PAGING_PRESENT) {
+                        if (IS_PRESENT_PAGE(*pde_e)) {
+                            //kprintf("\tpde[%d]:%p", pde, *pde_e);
 
                             for (pte = 0; pte < ENTRIES_PER_PTE; pte++) {
                                 pte_e = (uint64_t*) (PTE_SELF_REF | (pml4 << 30) | (pdpe << 21) | (pde << 12) | (pte << 3));
-                                if ((*pte_e & PAGING_PRESENT) && !(*pte_e & PAGING_COW)) {
+                                if (IS_PRESENT_PAGE(*pte_e) && !IS_COW_PAGE(*pte_e)) {
+                                    //kprintf("\tpte[%d]:%p", pte, *pte_e);
 
-                                    phys_free_block(PAGE_ALIGN(*pte_e & PAGING_ADDR));
+                                    //TODO (WAR): FIX THIS!!
+                                    set_top_virtaddr(get_top_virtaddr() + 0x1000);
+
+                                    phys_free_block(*pte_e & PAGING_ADDR);
                                     *pte_e = 0UL;
                                 }
                             }
-                            phys_free_block(PAGE_ALIGN(*pde_e & PAGING_ADDR));
+                            phys_free_block(*pde_e & PAGING_ADDR);
                             *pde_e = 0UL;
                         }
                     }
-                    phys_free_block(PAGE_ALIGN(*pdpe_e & PAGING_ADDR));
+                    phys_free_block(*pdpe_e & PAGING_ADDR);
                     *pdpe_e = 0UL;
                 }
             }
-            phys_free_block(PAGE_ALIGN(*pml4_e & PAGING_ADDR));
+            phys_free_block(*pml4_e & PAGING_ADDR);
             *pml4_e = 0UL;
         }
     }

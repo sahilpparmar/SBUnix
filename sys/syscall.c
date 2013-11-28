@@ -15,12 +15,6 @@
 #include <string.h>
 
 // These will get invoked in kernel mode
-extern uint64_t last_addr;
-volatile int flag, counter;
-volatile char buf[1024];
-
-const char *t_state[6] = { "RUNNING" , "READY  " , "SLEEP  " , "WAIT   " , "IDLE   " , "EXIT  " };
-
 
 int sys_clear()
 {
@@ -112,45 +106,16 @@ pid_t sys_fork()
     return child_task->pid;
 }
 
-//static uint64_t temp_stack[64];
-
-//TODO: Need to load argv[] and envp[]
 uint64_t sys_execvpe(char *file, char *argv[], char *envp[])
 {
     //TODO: Need to load argv[] and envp[]
-// Code to reuse the same task_struct, but facing some issues
-#if 0
-    HEADER *header;
-    Elf64_Ehdr* elf_header;
-
-    // lookup for the file in tarfs
-    header = (HEADER*) lookup(file); 
-
-    elf_header = (Elf64_Ehdr *)header;
-    
-    if (is_file_elf_exec(elf_header)) {
-        task_struct *cur_task = CURRENT_TASK;
-
-        kstrcpyn(cur_task->comm, file, sizeof(cur_task->comm)-1);
-
-        empty_task_struct(cur_task);
-        cur_task->task_state = READY_STATE;
-        
-        load_elf(elf_header, cur_task);
-
-        CURRENT_TASK = NULL;
-
-        // Stack used until scheduling of next process 
-        __asm__ __volatile__("movq %[temp_rsp], %%rsp" : : [temp_rsp] "g" ((uint64_t)&temp_stack[63]));
-
-#else
     task_struct *new_task = create_elf_proc(file);
 
     if (new_task) {
         task_struct *cur_task = CURRENT_TASK;
 
         // Exec process has same pid, ppid and parent
-        set_next_pid(cur_task->pid);
+        set_next_pid(new_task->pid);
         new_task->pid  = cur_task->pid;
         new_task->ppid = cur_task->ppid;
         new_task->parent = cur_task->parent;
@@ -162,7 +127,6 @@ uint64_t sys_execvpe(char *file, char *argv[], char *envp[])
         empty_task_struct(cur_task);
         cur_task->task_state = EXIT_STATE;
 
-#endif
         // Enable interrupt for scheduling next process
         __asm__ __volatile__ ("int $32");
 
@@ -248,22 +212,6 @@ int sys_sleep(int msec)
     __asm__ __volatile__("int $32;");
      
     return task->sleep_time;
-}
-
-int gets(uint64_t addr)
-{
-    char *user_buf = (char*) addr;
-    int count;
-
-    flag = 1;
-    sti;
-
-    last_addr = get_video_addr();
-    while (flag == 1);
-    memcpy((void *)user_buf, (void *)buf, counter);
-    count = counter;
-    counter = 0;
-    return count;
 }
 
 int sys_munmap(uint64_t* addr, uint64_t length)
@@ -409,9 +357,7 @@ uint64_t* sys_mmap(uint64_t* addr, uint64_t nbytes, uint64_t flags)
         }
     } 
 
-    node           = alloc_new_vma((uint64_t)addr, (uint64_t)((void *)addr + nbytes)); 
-    node->vm_flags = RW;
-    node->vm_type  = ANON;
+    node = alloc_new_vma((uint64_t)addr, (uint64_t)((void *)addr + nbytes), RW, ANON); 
 
     CURRENT_TASK->mm->vma_count++;
     CURRENT_TASK->mm->total_vm += nbytes;
@@ -505,6 +451,8 @@ pid_t sys_getppid()
 {
     return CURRENT_TASK->ppid;
 }
+
+const char *t_state[6] = { "RUNNING" , "READY  " , "SLEEP  " , "WAIT   " , "IDLE   " , "EXIT  " };
 
 void sys_listprocess()
 {

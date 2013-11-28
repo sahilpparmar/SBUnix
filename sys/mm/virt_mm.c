@@ -72,3 +72,20 @@ void zero_out_phys_block(uint64_t paddr)
     *k_pte_entry = 0UL;
 }
 
+//TODO: Debug routines (Remove this at final submission)
+#if 0
+uint64_t get_temp_vaddr(uint64_t paddr)
+{
+    uint64_t vaddr = get_top_virtaddr();
+
+    map_virt_phys_addr(vaddr, paddr, PAGING_PRESENT_WRITABLE);
+
+    return vaddr;
+}
+
+void free_temp_vaddr(uint64_t vaddr)
+{
+    uint64_t *k_pte_entry = get_pte_entry(vaddr);
+    *k_pte_entry = 0UL;
+}
+#endif

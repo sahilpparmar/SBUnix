@@ -18,8 +18,7 @@ static void mmap_set(int bit)
 
 static void mmap_unset(int bit)
 {
-    //TODO: FIX physical memory allocation
-    //_mmngr_memory_map[bit / 64] &= ~ (1UL << (bit % 64));
+    _mmngr_memory_map[bit / 64] &= ~ (1UL << (bit % 64));
 }
 
 static uint64_t phys_get_block_count() 
@@ -72,6 +71,8 @@ void phys_init(uint64_t physBase, uint64_t physfree, uint64_t physSize) {
     memset8((uint64_t *)_mmngr_memory_map, 0x0, bitmap_t);
 }
 
+int flag = 0;
+
 uint64_t phys_alloc_block() {
 
     uint64_t paddr = NULL;
@@ -98,7 +99,7 @@ void phys_free_block(uint64_t addr) {
     int frame = (addr - _mmngr_base_addr) >> PAGE_2ALIGN;
 
     if (addr < _mmngr_base_addr || addr > (_mmngr_base_addr + _mmngr_memory_size)) {
-        kprintf("\tFreePaddr: %p", addr);
+        kprintf("\nInvalid Paddr: %p", addr);
         panic("Trying to Free out of range Physical Block");
     }
 

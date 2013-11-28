@@ -288,10 +288,10 @@ task_struct* copy_task_struct(task_struct* parent_task)
         end   = parent_vma_l->vm_end;  
 
         if (child_task->mm->vma_list == NULL) {
-            child_task->mm->vma_list = alloc_new_vma(start, end);
+            child_task->mm->vma_list = alloc_new_vma(start, end, parent_vma_l->vm_flags, parent_vma_l->vm_type);
             child_vma_l = child_task->mm->vma_list;
         } else {
-            child_vma_l->vm_next = alloc_new_vma(start, end);
+            child_vma_l->vm_next = alloc_new_vma(start, end, parent_vma_l->vm_flags, parent_vma_l->vm_type);
             child_vma_l = child_vma_l->vm_next;
         }
 
@@ -301,7 +301,7 @@ task_struct* copy_task_struct(task_struct* parent_task)
 
 #if COW_FORK 
             // Allocate separate physical memory for only stack VMA
-            if (start < child_task->mm->start_stack && child_task->mm->start_stack < end) {
+            if (parent_vma_l->vm_type == STACK) {
 #endif
                 uint64_t k_vaddr = get_top_virtaddr();
                 uint64_t *k_pte_entry;
@@ -318,6 +318,7 @@ task_struct* copy_task_struct(task_struct* parent_task)
 
                     // Map paddr with child vaddr
                     LOAD_CR3(child_pml4_t);
+                    //kprintf("\nStack v:%p p:%p", vaddr, paddr);
                     map_virt_phys_addr(vaddr, paddr, PAGING_PRESENT_WRITABLE);
 
                     // Unmap k_vaddr
@@ -340,7 +341,7 @@ task_struct* copy_task_struct(task_struct* parent_task)
                     paddr      = pte_entry & PAGING_ADDR;
 
                     LOAD_CR3(child_pml4_t);
-                    kprintf("\nv:%p p:%p f:%p", vaddr, paddr, page_flags);
+                    //kprintf("\nv:%p p:%p f:%p", vaddr, paddr, page_flags);
                     map_virt_phys_addr(vaddr, paddr, page_flags | PAGING_COW);
 
                     vaddr = vaddr + PAGESIZE;
