@@ -8,6 +8,7 @@
 #include <sys/paging.h>
 #include <sys/types.h>
 #include <string.h>
+#include <sys/dirent.h>
 
 // The process lists. The task at the head of the READY_LIST should always be executed next
 task_struct* READY_LIST = NULL;
@@ -260,20 +261,34 @@ void schedule_process(task_struct* new_task, uint64_t entry_point, uint64_t stac
 }
 
 //TODO: Fix COW FORK
-#define COW_FORK 0
+#define COW_FORK 1
 
 task_struct* copy_task_struct(task_struct* parent_task)
 {
-    task_struct* child_task = alloc_new_task(TRUE);
-    uint64_t parent_pml4_t = parent_task->mm->pml4_t;
-    uint64_t child_pml4_t = child_task->mm->pml4_t;
+    uint64_t i = 0;
+
+    task_struct* child_task  = alloc_new_task(TRUE);
+    uint64_t parent_pml4_t   = parent_task->mm->pml4_t;
+    uint64_t child_pml4_t    = child_task->mm->pml4_t;
     vma_struct *parent_vma_l = parent_task->mm->vma_list;
-    vma_struct *child_vma_l = NULL;
+    vma_struct *child_vma_l  = NULL;
 
     // Copy contains of parent mm_struct, except pml4_t and vma_list
     memcpy((void*)child_task->mm, (void*)parent_task->mm, sizeof(mm_struct));
-    child_task->mm->pml4_t = child_pml4_t;
+    child_task->mm->pml4_t   = child_pml4_t;
     child_task->mm->vma_list = NULL; 
+
+    for (i  = 3; i < MAXFD; ++i) {
+        if(parent_task->file_descp[i] != NULL) {
+            //kprintf("\n check");    
+            FD* file_d                = (FD *)kmalloc(sizeof(FD));
+            file_d->filenode          = ((FD *)(parent_task->file_descp[i]))->filenode;
+            file_d->curr              = ((FD *)(parent_task->file_descp[i]))->curr;
+            child_task->file_descp[i] = (uint64_t *)file_d;
+
+        }
+    }
+
 
     child_task->ppid   = parent_task->pid;
     child_task->parent = parent_task;
@@ -289,10 +304,10 @@ task_struct* copy_task_struct(task_struct* parent_task)
 
         if (child_task->mm->vma_list == NULL) {
             child_task->mm->vma_list = alloc_new_vma(start, end, parent_vma_l->vm_flags, parent_vma_l->vm_type);
-            child_vma_l = child_task->mm->vma_list;
+            child_vma_l              = child_task->mm->vma_list;
         } else {
             child_vma_l->vm_next = alloc_new_vma(start, end, parent_vma_l->vm_flags, parent_vma_l->vm_type);
-            child_vma_l = child_vma_l->vm_next;
+            child_vma_l          = child_vma_l->vm_next;
         }
 
         // Allocate page tables if physical memory is allocated
@@ -312,7 +327,8 @@ task_struct* copy_task_struct(task_struct* parent_task)
                     // Allocate a new page in kernel
                     paddr = phys_alloc_block();
                     map_virt_phys_addr(k_vaddr, paddr, PAGING_PRESENT_WRITABLE);
-
+                    
+                    //kprintf("\nStack v:%p p:%p", vaddr, paddr);
                     // Copy parent page in kernel space
                     memcpy((void*)k_vaddr, (void*)vaddr, PAGESIZE);
 
@@ -322,7 +338,7 @@ task_struct* copy_task_struct(task_struct* parent_task)
                     map_virt_phys_addr(vaddr, paddr, PAGING_PRESENT_WRITABLE);
 
                     // Unmap k_vaddr
-                    k_pte_entry = get_pte_entry(k_vaddr);
+                    k_pte_entry  = get_pte_entry(k_vaddr);
                     *k_pte_entry = 0UL;
 
                     vaddr = vaddr + PAGESIZE;
