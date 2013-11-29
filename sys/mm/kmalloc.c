@@ -1,6 +1,7 @@
 #include <defs.h>
 #include <stdio.h>
 #include <sys/virt_mm.h>
+#include <sys/paging.h>
 #include <sys/types.h>
 
 // 2 ^ POWER2_ALIGN = BLOCK_ALIGN
@@ -31,7 +32,7 @@ void* kmalloc(uint32_t size)
     if (size > free_mem_avail) {
         no_of_pages = size/(PAGESIZE + 1) + 1;     
         
-        retaddr = virt_alloc_pages(no_of_pages);         
+        retaddr = virt_alloc_pages(no_of_pages, PAGING_PRESENT | PAGING_WRITABLE);
         // kprintf("\tkmalloc = %p", retaddr);
         if (retaddr != NULL) {
             free_mem_avail = (no_of_pages * PAGESIZE) - size;

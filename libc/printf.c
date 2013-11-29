@@ -25,19 +25,6 @@ void *memcpy(void *destination, void *source, uint64_t num)
     return destination;
 }
 
-// Copies 8 bytes at a time
-void *memcpy8(void *destination, void *source, uint64_t num) 
-{
-    uint64_t *dest = (uint64_t *)destination;
-    uint64_t *src = (uint64_t *)source;
-
-    while(num--) {
-        *dest++ = *src++; 
-    }
-
-    return destination;
-}
-
 // Sets 1 byte at a time
 void *memset(void *ptr, uint8_t value, uint64_t num)
 {

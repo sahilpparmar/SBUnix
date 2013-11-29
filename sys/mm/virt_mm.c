@@ -19,7 +19,7 @@ void set_top_virtaddr(uint64_t vaddr)
     //kprintf("\nTopVaddr = %p", topVirtAddr);
 }
 
-void* virt_alloc_pages(uint32_t no_of_vpages)
+void* virt_alloc_pages(uint32_t no_of_vpages, uint64_t flags)
 {
     void *ret_addr = NULL; 
     uint64_t physaddr = NULL;
@@ -34,7 +34,7 @@ void* virt_alloc_pages(uint32_t no_of_vpages)
 
     for (i = 0; i < no_of_vpages; ++i) {
         physaddr = phys_alloc_block();
-        map_virt_phys_addr(topVirtAddr, physaddr, PAGING_PRESENT_WRITABLE);
+        map_virt_phys_addr(topVirtAddr, physaddr, flags); 
         topVirtAddr += PAGESIZE;     
     }
 
@@ -62,23 +62,21 @@ void zero_out_phys_block(uint64_t paddr)
     uint64_t vaddr = get_top_virtaddr();
     uint64_t *k_pte_entry;
 
-    map_virt_phys_addr(vaddr, paddr, PAGING_PRESENT_WRITABLE);
+    map_virt_phys_addr(vaddr, paddr, RW_KERNEL_FLAGS);
 
     // Copy parent page in kernel space
-    memset8((uint64_t*)vaddr, 0, PAGESIZE/8);
+    memset((void*)vaddr, 0, PAGESIZE);
 
     // Unmap k_vaddr
     k_pte_entry = get_pte_entry(vaddr);
     *k_pte_entry = 0UL;
 }
 
-//TODO: Debug routines (Remove this at final submission)
-#if 0
 uint64_t get_temp_vaddr(uint64_t paddr)
 {
     uint64_t vaddr = get_top_virtaddr();
 
-    map_virt_phys_addr(vaddr, paddr, PAGING_PRESENT_WRITABLE);
+    map_virt_phys_addr(vaddr, paddr, RW_USER_FLAGS);
 
     return vaddr;
 }
@@ -88,4 +86,4 @@ void free_temp_vaddr(uint64_t vaddr)
     uint64_t *k_pte_entry = get_pte_entry(vaddr);
     *k_pte_entry = 0UL;
 }
-#endif
+

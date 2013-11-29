@@ -29,10 +29,12 @@ void scanf(const char *str, ...)
                 case 'd':
                     len = read(stdin, read_buf, 0);
                     num = atoi(read_buf);
-                    memcpy8( (void *) va_arg(ap, int32_t *), (void *) &num, len);
+                    // TODO: Directly assign, dont memcpy
+                    memcpy((void *) va_arg(ap, int32_t *), (void *) &num, len);
                     break;
                 case 'c':
                     len = read(stdin, read_buf, 0);
+                    // TODO: Directly assign, dont memcpy
                     memcpy( (void *) va_arg(ap, char *), (void *)read_buf, 1);
                     break;
                 default:

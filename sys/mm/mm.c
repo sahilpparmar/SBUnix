@@ -77,7 +77,7 @@ task_struct* alloc_new_task(bool IsUserProcess)
         new_task->no_children   = 0;
         new_task->last_child_exit = 0;
         memset((void*)new_task->kernel_stack, 0, KERNEL_STACK_SIZE);
-        memset8((uint64_t*)new_task->file_descp, 0, MAXFD);
+        memset((void*)new_task->file_descp, 0, MAXFD*8);
     }
 
     // Initialize new process
@@ -87,7 +87,7 @@ task_struct* alloc_new_task(bool IsUserProcess)
     new_task->task_state    = READY_STATE;
 
 #if DEBUG_SCHEDULING
-    kprintf("\nPID:%d\tCR3: %p", new_task->pid, mms->pml4_t);
+    kprintf("\nPID:%d\tCR3: %p", new_task->pid, new_task->mm->pml4_t);
 #endif
 
     return new_task;
@@ -121,7 +121,7 @@ void empty_task_struct(task_struct *cur_task)
     mms->stack_vm   = NULL;
     
     memset((void*)cur_task->kernel_stack, 0, KERNEL_STACK_SIZE);
-    memset8((uint64_t*)cur_task->file_descp, 0, MAXFD);
+    memset((void*)cur_task->file_descp, 0, MAXFD*8);
     cur_task->next        = NULL;
     cur_task->last        = NULL;
     cur_task->parent      = NULL;
@@ -264,7 +264,7 @@ void increment_brk(task_struct *proc, uint64_t bytes)
     }
 }
 
-void* kmmap(uint64_t start_addr, int bytes)
+void* kmmap(uint64_t start_addr, int bytes, uint64_t flags)
 {
     int no_of_pages = 0;
     uint64_t end_vaddr;
@@ -278,7 +278,7 @@ void* kmmap(uint64_t start_addr, int bytes)
     no_of_pages = ((end_vaddr-1) >> 12) - ((start_addr) >> 12) + 1;
 
     // Allocate VPages
-    virt_alloc_pages(no_of_pages);
+    virt_alloc_pages(no_of_pages, flags);
 
     // Restore old top Vaddr
     set_top_virtaddr(cur_top_vaddr);

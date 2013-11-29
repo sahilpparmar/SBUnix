@@ -60,11 +60,11 @@ void scroll(int32_t lines)
         source = START_VADDR + (lines * SIZEOF_LINE);
         dest = START_VADDR;
         size = (MAX_ROW - lines) * SIZEOF_LINE;
-        memcpy8((void *)dest, (void *)source, (uint64_t)size/8);
+        memcpy((void *)dest, (void *)source, (uint64_t)size);
 
         dest = START_VADDR + size;
         size = lines * SIZEOF_LINE;
-        memset8((uint64_t *)dest, 0x0, (uint64_t)size/8);  
+        memset((void *)dest, 0x0, (uint64_t)size);  
     }
 
     get_cursor_pos(&rows, &cols);

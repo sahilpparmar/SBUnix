@@ -1,6 +1,7 @@
 #include <defs.h>
 #include <stdio.h>
 #include <syscall.h>
+#include <sys/paging.h>
 #include <sys/proc_mngr.h>
 #include <sys/elf.h>
 #include <sys/tarfs.h>
@@ -128,7 +129,7 @@ uint64_t sys_execvpe(char *file, char *argv[], char *envp[])
         new_task->pid  = cur_task->pid;
         new_task->ppid = cur_task->ppid;
         new_task->parent = cur_task->parent;
-        memcpy8(new_task->file_descp, cur_task->file_descp, MAXFD);
+        memcpy((void*)new_task->file_descp, (void*)cur_task->file_descp, MAXFD*8);
 
         // Replace current child with new exec process
         replace_child_task(cur_task, new_task);
@@ -221,7 +222,7 @@ int sys_sleep(int msec)
     task->sleep_time = msec/10;
     task->task_state = SLEEP_STATE;
     __asm__ __volatile__("int $32;");
-     
+
     return task->sleep_time;
 }
 
@@ -230,16 +231,16 @@ int sys_munmap(uint64_t* addr, uint64_t length)
     vma_struct *iter, *temp = NULL;
     uint64_t end_addr, no_of_pages, i;
     bool myflag = 0, retflag = 0; 
- 
+
     //check if address is 4k aligned
     if (((uint64_t )addr & 0xfff) != 0)
         return -1;
-    
+
     end_addr = (uint64_t)((void *)addr + length);
     end_addr = ((((end_addr - 1) >> 12) + 1) << 12);
-    
+
     iter = CURRENT_TASK->mm->vma_list;
-    
+
     //iterate through vma list and free all anon-type vma
     //check if there are any other vmas mappped on this page
     //if not then free the page
@@ -247,22 +248,22 @@ int sys_munmap(uint64_t* addr, uint64_t length)
     for (iter = CURRENT_TASK->mm->vma_list; iter->vm_next != NULL; ) {
         temp = iter;
         iter = iter->vm_next;
-    
+
         if (iter->vm_start >= (uint64_t)addr || iter->vm_end > (uint64_t)addr)
             break;
     }    
-    
+
     //kprintf("\n address of this vma %p address of temp %p end addr %p\n", iter->vm_start, temp->vm_start, end_addr);
 
     while (iter != NULL) { 
-        
+
         if (iter->vm_start < end_addr && iter->vm_type == ANON) {
             //delete this vma 
             //TODO: need to add this to freelist of vma 
             temp->vm_next = iter->vm_next; 
             iter          = iter->vm_next; 
             retflag       = 1;
-        
+
         } else if(iter->vm_type != ANON) {
             myflag = 1; 
             temp   = iter;
@@ -270,20 +271,19 @@ int sys_munmap(uint64_t* addr, uint64_t length)
         } else {
             break; 
         }
-       
+
         if (iter ==  NULL || iter->vm_end > end_addr)       
             break;
-    }    
-   
+    }
+
     if (myflag == 0) {
-        
-         no_of_pages = (end_addr - (uint64_t )addr)/PAGESIZE;
-         
-         for (i = 0; i < no_of_pages; ++i) {
-             //free this page 
-             free_virt_page(addr);
-             addr = (void *)addr + PAGESIZE; 
-         }    
+        no_of_pages = (end_addr - (uint64_t )addr) / PAGESIZE;
+
+        for (i = 0; i < no_of_pages; ++i) {
+            //free this page 
+            free_virt_page(addr);
+            addr = (void *)addr + PAGESIZE; 
+        }
     }
 
     if (retflag == 1) {
@@ -296,8 +296,8 @@ int sys_munmap(uint64_t* addr, uint64_t length)
 int sys_open(uint64_t* dir_path, uint64_t flags)
 {
     char* file_path = (char *)dir_path;
-    
-    //allocate new filedescriptor
+
+    // allocate new filedescriptor
     FD* file_d = (FD *)kmalloc(sizeof(FD));
     fnode_t *aux_node, *currnode = root_node;
 
@@ -307,38 +307,35 @@ int sys_open(uint64_t* dir_path, uint64_t flags)
     kstrcpy(path, file_path); 
 
     temp = kstrtok(path, "/");  
-    
-    while(temp != NULL)
-    {
+
+    while (temp != NULL) {
         aux_node = currnode;
-        for(i = 2; i < currnode->end; ++i){
-            if(kstrcmp(temp, currnode->f_child[i]->f_name) == 0) {
+        for (i = 2; i < currnode->end; ++i) {
+            if (kstrcmp(temp, currnode->f_child[i]->f_name) == 0) {
                 currnode = (fnode_t *)currnode->f_child[i];
                 break;       
             }        
         }
-        
-        if(i == aux_node->end){
+
+        if (i == aux_node->end) {
             return -1;
         }
-        
+
         temp = kstrtok(NULL, "/");          
     }
-   
 
     file_d->filenode = currnode;
     file_d->curr = 0;
-    
-    
+
     //traverse file descriptor array and insert this entry
-    for(i = 3; i < MAXFD; ++i) {
-        if(CURRENT_TASK->file_descp[i] == NULL) {
+    for (i = 3; i < MAXFD; ++i) {
+        if (CURRENT_TASK->file_descp[i] == NULL) {
             CURRENT_TASK->file_descp[i] = (uint64_t *)file_d;
             return i;        
         }
     }
-   
-   return -1;
+
+    return -1;
 }
 
 void sys_close(int fd)
@@ -396,8 +393,6 @@ uint64_t* sys_mmap(uint64_t* addr, uint64_t nbytes, uint64_t flags)
         iter->vm_next = node; 
     }
 
-    kmmap((uint64_t)addr, nbytes); 
-
     return (void *)addr;
 }
 
@@ -441,17 +436,11 @@ int sys_write(int n, uint64_t addr, int len)
 
 uint64_t sys_brk(uint64_t no_of_pages)
 {
-    uint64_t new_vaddr;
-    uint64_t cur_top_vaddr = get_top_virtaddr();
-
-    set_top_virtaddr(CURRENT_TASK->mm->end_brk);
-    new_vaddr = (uint64_t)virt_alloc_pages(no_of_pages);
+    uint64_t new_vaddr = CURRENT_TASK->mm->end_brk;
 
     //kprintf("\n New Heap Page Alloc:%p", new_vaddr);
     increment_brk(CURRENT_TASK, PAGESIZE * no_of_pages);
 
-    // Restore old top Vaddr
-    set_top_virtaddr(cur_top_vaddr);
     return new_vaddr;
 }
 

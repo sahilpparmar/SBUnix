@@ -210,18 +210,21 @@ void timer_handler()
         // Schedule next READY process
         next = get_next_ready_task();
 
-        LOAD_CR3(next->mm->pml4_t);
+        // Context Switch only if next process is different than current process
+        if (prev != next) {
 
-        __asm__ __volatile__("movq %[next_rsp], %%rsp" : : [next_rsp] "m" (next->rsp_register));
+            LOAD_CR3(next->mm->pml4_t);
 
-        if (next->IsUserProcess) {
-            set_tss_rsp0((uint64_t)&next->kernel_stack[KERNEL_STACK_SIZE-1]);
-            switch_to_ring3;
-        }
+            __asm__ __volatile__("movq %[next_rsp], %%rsp" : : [next_rsp] "m" (next->rsp_register));
 
+            if (next->IsUserProcess) {
+                set_tss_rsp0((uint64_t)&next->kernel_stack[KERNEL_STACK_SIZE-1]);
+                switch_to_ring3;
+            }
 #if DEBUG_SCHEDULING
-        //kprintf(" %d[%d]", next->pid, next->task_state);
+            //kprintf(" %d[%d]", next->pid, next->task_state);
 #endif
+        }
     }
     __asm__ __volatile__("mov $0x20, %al;" "out %al, $0x20");
 }
@@ -260,13 +263,8 @@ void schedule_process(task_struct* new_task, uint64_t entry_point, uint64_t stac
     add_to_ready_list(new_task);
 }
 
-//TODO: Fix COW FORK
-#define COW_FORK 1
-
 task_struct* copy_task_struct(task_struct* parent_task)
 {
-    uint64_t i = 0;
-
     task_struct* child_task  = alloc_new_task(TRUE);
     uint64_t parent_pml4_t   = parent_task->mm->pml4_t;
     uint64_t child_pml4_t    = child_task->mm->pml4_t;
@@ -278,17 +276,14 @@ task_struct* copy_task_struct(task_struct* parent_task)
     child_task->mm->pml4_t   = child_pml4_t;
     child_task->mm->vma_list = NULL; 
 
-    for (i  = 3; i < MAXFD; ++i) {
-        if(parent_task->file_descp[i] != NULL) {
-            //kprintf("\n check");    
+    for (int i = 0; i < MAXFD; ++i) {
+        if (parent_task->file_descp[i] != NULL) {
             FD* file_d                = (FD *)kmalloc(sizeof(FD));
             file_d->filenode          = ((FD *)(parent_task->file_descp[i]))->filenode;
             file_d->curr              = ((FD *)(parent_task->file_descp[i]))->curr;
             child_task->file_descp[i] = (uint64_t *)file_d;
-
         }
     }
-
 
     child_task->ppid   = parent_task->pid;
     child_task->parent = parent_task;
@@ -312,21 +307,26 @@ task_struct* copy_task_struct(task_struct* parent_task)
 
         // Allocate page tables if physical memory is allocated
         if (end - start) {
-            uint64_t vaddr = PAGE_ALIGN(start), paddr; 
+            uint64_t vaddr, paddr; 
+            uint64_t *pte_entry, page_flags;
 
-#if COW_FORK 
-            // Allocate separate physical memory for only stack VMA
+            // Deep Copy allocation for stack VMA only
             if (parent_vma_l->vm_type == STACK) {
-#endif
+
                 uint64_t k_vaddr = get_top_virtaddr();
                 uint64_t *k_pte_entry;
 
-                while (vaddr < end) {
+                vaddr = PAGE_ALIGN(end) - 0x1000;
+                while (vaddr >= start) {
                     LOAD_CR3(parent_pml4_t);
+
+                    pte_entry = get_pte_entry(vaddr);
+                    if (!IS_PRESENT_PAGE(*pte_entry))
+                        break;
 
                     // Allocate a new page in kernel
                     paddr = phys_alloc_block();
-                    map_virt_phys_addr(k_vaddr, paddr, PAGING_PRESENT_WRITABLE);
+                    map_virt_phys_addr(k_vaddr, paddr, RW_USER_FLAGS);
                     
                     //kprintf("\nStack v:%p p:%p", vaddr, paddr);
                     // Copy parent page in kernel space
@@ -335,36 +335,40 @@ task_struct* copy_task_struct(task_struct* parent_task)
                     // Map paddr with child vaddr
                     LOAD_CR3(child_pml4_t);
                     //kprintf("\nStack v:%p p:%p", vaddr, paddr);
-                    map_virt_phys_addr(vaddr, paddr, PAGING_PRESENT_WRITABLE);
+                    map_virt_phys_addr(vaddr, paddr, RW_USER_FLAGS);
 
                     // Unmap k_vaddr
                     k_pte_entry  = get_pte_entry(k_vaddr);
                     *k_pte_entry = 0UL;
 
-                    vaddr = vaddr + PAGESIZE;
+                    vaddr = vaddr - PAGESIZE;
                 }
                 LOAD_CR3(parent_pml4_t);
-#if COW_FORK 
-            } else {
-                uint64_t pte_entry, page_flags;
 
-                //TODO: Need to check if page is "present" and set COW bit to parent page tables
+            } else {
+
+                vaddr = PAGE_ALIGN(start);
                 while (vaddr < end) {
                     LOAD_CR3(parent_pml4_t);
 
-                    pte_entry  = *get_pte_entry(vaddr);
-                    page_flags = pte_entry & 0xFFF;
-                    paddr      = pte_entry & PAGING_ADDR;
+                    pte_entry = get_pte_entry(vaddr);
 
-                    LOAD_CR3(child_pml4_t);
-                    //kprintf("\nv:%p p:%p f:%p", vaddr, paddr, page_flags);
-                    map_virt_phys_addr(vaddr, paddr, page_flags | PAGING_COW);
+                    if (IS_PRESENT_PAGE(*pte_entry)) {
+                        unset_writable_bit(pte_entry);
+                        set_cow_bit(pte_entry);
 
+                        paddr      = *pte_entry & PAGING_ADDR;
+                        page_flags = *pte_entry & PAGING_FLAGS;
+
+                        LOAD_CR3(child_pml4_t);
+                        //kprintf("\nv:%p p:%p f:%p", vaddr, paddr, page_flags);
+                        map_virt_phys_addr(vaddr, paddr, page_flags);
+                        phys_inc_block_ref(paddr);
+                    }
                     vaddr = vaddr + PAGESIZE;
                 }
             }
             LOAD_CR3(parent_pml4_t);
-#endif
         }
         parent_vma_l = parent_vma_l->vm_next;
     }

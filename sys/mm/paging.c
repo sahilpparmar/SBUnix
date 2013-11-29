@@ -35,21 +35,21 @@ uint64_t* get_ker_pml4_t()
 static uint64_t* alloc_pte(uint64_t *pde_table, int pde_off)
 {
     uint64_t pte_table = phys_alloc_block();
-    pde_table[pde_off] = pte_table | PAGING_PRESENT_WRITABLE;   
+    pde_table[pde_off] = pte_table | RW_KERNEL_FLAGS;   
     return (uint64_t*)VADDR(pte_table);
 } 
 
 static uint64_t* alloc_pde(uint64_t *pdpe_table, int pdpe_off)
 {
     uint64_t pde_table = phys_alloc_block();
-    pdpe_table[pdpe_off] = pde_table | PAGING_PRESENT_WRITABLE;   
+    pdpe_table[pdpe_off] = pde_table | RW_KERNEL_FLAGS;   
     return (uint64_t*)VADDR(pde_table);
 }
 
 static uint64_t* alloc_pdpe(uint64_t *pml4_table, int pml4_off)
 {
     uint64_t pdpe_table = phys_alloc_block();
-    pml4_table[pml4_off] = pdpe_table | PAGING_PRESENT_WRITABLE;   
+    pml4_table[pml4_off] = pdpe_table | RW_KERNEL_FLAGS;   
     return (uint64_t*)VADDR(pdpe_table);
 }
 
@@ -68,15 +68,15 @@ static void init_map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t no_
 
     phys_addr = (uint64_t) *(ker_pml4_t + pml4_off);
     // kprintf("%p",phys_addr);
-    if (phys_addr & PAGING_PRESENT) {
+    if (IS_PRESENT_PAGE(phys_addr)) {
         pdpe_table =(uint64_t*) VADDR(phys_addr); 
 
         phys_addr = (uint64_t) *(pdpe_table + pdpe_off);
-        if (phys_addr & PAGING_PRESENT) {
+        if (IS_PRESENT_PAGE(phys_addr)) {
             pde_table =(uint64_t*) VADDR(phys_addr); 
 
             phys_addr  = (uint64_t) *(pde_table + pde_off);
-            if (phys_addr & PAGING_PRESENT) {
+            if (IS_PRESENT_PAGE(phys_addr)) {
                 pte_table =(uint64_t*) VADDR(phys_addr); 
             } else {
                 pte_table = alloc_pte(pde_table, pde_off);
@@ -95,7 +95,7 @@ static void init_map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t no_
 
     if (no_of_pages + pte_off <= ENTRIES_PER_PTE) {
         for (i = pte_off; i < (pte_off + no_of_pages); i++) {
-            pte_table[i] = phys_addr | PAGING_PRESENT_WRITABLE; 
+            pte_table[i] = phys_addr | RW_KERNEL_FLAGS; 
             phys_addr += PAGESIZE;
         }
         // kprintf(" SIZE = %d PDPE Address %p, PDE Address %p, PTE Address %p", no_of_pages, pdpe_table , pde_table, pte_table);
@@ -104,7 +104,7 @@ static void init_map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t no_
 
         // kprintf(" SIZE = %d PDPE Address %p, PDE Address %p, PTE Address %p", lno_of_pages, pdpe_table ,pde_table, pte_table);
         for ( i = pte_off ; i < ENTRIES_PER_PTE; i++) {
-            pte_table[i] = phys_addr | PAGING_PRESENT_WRITABLE;
+            pte_table[i] = phys_addr | RW_KERNEL_FLAGS;
             phys_addr += PAGESIZE;
         }
         lno_of_pages = lno_of_pages - (ENTRIES_PER_PTE - pte_off);
@@ -114,7 +114,7 @@ static void init_map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t no_
             pte_table = alloc_pte(pde_table, pde_off+j);
             // kprintf(" SIZE = %d PDPE Address %p, PDE Address %p, PTE Address %p", lno_of_pages, pdpe_table ,pde_table, pte_table);
             for(k = 0; k < ENTRIES_PER_PTE; k++ ) { 
-                pte_table[k] = phys_addr | PAGING_PRESENT_WRITABLE;
+                pte_table[k] = phys_addr | RW_KERNEL_FLAGS;
                 phys_addr += PAGESIZE;
             }
         }
@@ -123,7 +123,7 @@ static void init_map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t no_
         
         // kprintf(" SIZE = %d PDPE Address %p, PDE Address %p, PTE Address %p", lno_of_pages, pdpe_table ,pde_table, pte_table);
         for(k = 0; k < lno_of_pages; k++ ) { 
-            pte_table[k] = phys_addr | PAGING_PRESENT_WRITABLE;
+            pte_table[k] = phys_addr | RW_KERNEL_FLAGS;
             phys_addr += PAGESIZE;
         }
     }
@@ -137,7 +137,7 @@ void init_paging(uint64_t kernmem, uint64_t physbase, uint64_t no_of_pages)
     ker_pml4_t = (uint64_t*) VADDR(ker_cr3);
     //kprintf("\tKernel PML4t:%p", ker_pml4_t);
 
-    ker_pml4_t[510] = ker_cr3 | PAGING_PRESENT_WRITABLE;   
+    ker_pml4_t[510] = ker_cr3 | RW_KERNEL_FLAGS;   
     
     // Kernal Memory Mapping 
     // Mappings for virtual address range [0xFFFFFFFF80200000, 0xFFFFFFFF80406000]
@@ -224,19 +224,19 @@ void map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t flags)
 
     entry = (uint64_t) *(pml4_entry);
 
-    if (entry & PAGING_PRESENT) {
+    if (IS_PRESENT_PAGE(entry)) {
         entry = (uint64_t) *(pdpe_entry);
         // kprintf("\tInside pdpe available");
 
-        if (entry & PAGING_PRESENT) { 
+        if (IS_PRESENT_PAGE(entry)) { 
             entry  = (uint64_t) *(pde_entry);
             // kprintf("\tInside pde available");
 
-            if (entry & PAGING_PRESENT) { 
+            if (IS_PRESENT_PAGE(entry)) { 
                 entry  = (uint64_t) *(pte_entry);
                 // kprintf("\tInside pte available");
 
-                if (entry & PAGING_PRESENT) { 
+                if (IS_PRESENT_PAGE(entry)) { 
                     // kprintf("\tPhysical page already mapped; so freeing physical page %p", paddr);
                     phys_free_block(paddr);
                 } else {
@@ -246,25 +246,24 @@ void map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t flags)
 
             } else {
                 // kprintf("\tInside pte creation");
-                *pde_entry = phys_alloc_block() | flags;
+                *pde_entry = phys_alloc_block() | RW_USER_FLAGS;
                 *pte_entry = paddr | flags;
             }
 
         } else {
             // kprintf("\tInside pde and pte creation");
-            *pdpe_entry = phys_alloc_block() | flags;
-            *pde_entry = phys_alloc_block() | flags;
+            *pdpe_entry = phys_alloc_block() | RW_USER_FLAGS;
+            *pde_entry = phys_alloc_block() | RW_USER_FLAGS;
             *pte_entry = paddr | flags;
         }
 
     } else {
         // kprintf("\tInside pdpe, pde and pte creation");
-        *pml4_entry = phys_alloc_block() | flags;
-        *pdpe_entry = phys_alloc_block() | flags;
-        *pde_entry = phys_alloc_block() | flags;
+        *pml4_entry = phys_alloc_block() | RW_USER_FLAGS;
+        *pdpe_entry = phys_alloc_block() | RW_USER_FLAGS;
+        *pde_entry = phys_alloc_block() | RW_USER_FLAGS;
         *pte_entry = paddr | flags;
     }
-
     //kprintf("\t1:%p 2:%p 3:%p 4:%p ", *pml4_entry, *pdpe_entry, *pde_entry, *pte_entry);
 }
 
@@ -277,14 +276,14 @@ uint64_t create_new_pml4()
     set_top_virtaddr(virtAddr + PAGESIZE);
     physAddr = phys_alloc_block();
 
-    map_virt_phys_addr(virtAddr, physAddr, PAGING_PRESENT_WRITABLE);
+    map_virt_phys_addr(virtAddr, physAddr, RW_USER_FLAGS);
     new_pml4_t = (uint64_t *) virtAddr;    
       
     // Reserve mapping for kernel page tables
     new_pml4_t[511] = ker_pml4_t[511];
     
     // Self referencing entry
-    new_pml4_t[510] = physAddr | PAGING_PRESENT_WRITABLE;
+    new_pml4_t[510] = physAddr | RW_USER_FLAGS;
 
     return physAddr;
 }
@@ -316,7 +315,7 @@ void empty_page_tables(uint64_t pml4_t)
 
                             for (pte = 0; pte < ENTRIES_PER_PTE; pte++) {
                                 pte_e = (uint64_t*) (PTE_SELF_REF | (pml4 << 30) | (pdpe << 21) | (pde << 12) | (pte << 3));
-                                if (IS_PRESENT_PAGE(*pte_e) && !IS_COW_PAGE(*pte_e)) {
+                                if (IS_PRESENT_PAGE(*pte_e)) {
                                     //kprintf("\tpte[%d]:%p", pte, *pte_e);
 
                                     //TODO (WAR): FIX THIS!!

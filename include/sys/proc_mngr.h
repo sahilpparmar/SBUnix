@@ -3,8 +3,9 @@
 
 #include <sys/types.h>
 
-#define KERNEL_STACK_SIZE 512
-#define USER_STACK_TOP 0xF0000000
+#define USER_STACK_TOP  0xF0000000
+#define USER_STACK_SIZE 0x10000     // 16*4KB
+#define KERNEL_STACK_SIZE 512       // (512*8) = 4KB
 #define DEBUG_SCHEDULING 0
 #define MAXFD 10
 
@@ -86,7 +87,7 @@ struct task_struct {
 extern task_struct* CURRENT_TASK;
 
 void create_idle_process();
-void* kmmap(uint64_t virt_addr, int bytes);
+void* kmmap(uint64_t start_addr, int bytes, uint64_t flags);
 void schedule_process(task_struct* new_task, uint64_t entry_point, uint64_t stack_top);
 void set_tss_rsp0(uint64_t rsp);
 void set_next_pid(pid_t fnext_pid);

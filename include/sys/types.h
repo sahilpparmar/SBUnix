@@ -4,7 +4,7 @@
 #define cli __asm__ __volatile__("cli");
 #define sti __asm__ __volatile__("sti");
 
-#define PAGESIZE 4096
+#define PAGESIZE 0x1000
 #define PAGE_2ALIGN 12     // 2 ^ PAGE_2ALIGN = PAGESIZE
 #define PAGE_ALIGN(ADDR) ((ADDR) >> 12 << 12)
 

@@ -8,6 +8,10 @@
 #include <io_common.h>
 #include <sys/irq_common.h>
 #include <sys/types.h>
+#include <sys/paging.h>
+#include <sys/virt_mm.h>
+#include <sys/phys_mm.h>
+#include <sys/proc_mngr.h>
 
 /* Divide by Zero handler */
 static void divide_by_zero_handler(registers_t regs)
@@ -34,68 +38,68 @@ static void page_fault_handler(registers_t regs)
 {
     uint64_t err_code = regs.err_no;
     uint64_t fault_addr;
+    bool IsFault = FALSE;
 
     READ_CR2(fault_addr);
-    kprintf("\nFault Addr:%p Error Code:%p", fault_addr, err_code);
-    panic("Page Fault!");
-#if 0
-    vm_struct* vma_to_map = NULL;
-    u8int okay_to_map = 0;
-    /* If the kernel faults or there's a fault in accessing a Present page, stop. */
-    kprintf("The faulting address = %p\n", faulting_address);
-    kprintf("The error code = %x\n", error_code);
 
-    /* Get the PTE entry for the faulting address */
-    u64int* ptr = (u64int*)PT_ENTRY(faulting_address);
-    pt_e* pte_entry = ptr + PT_OFFSET(faulting_address); 
-    kprintf("*pte_entry = %p\n", *pte_entry);
-    if(is_supervisor(*pte_entry) || faulting_address >= KERN_VIR_START) {
-        /* Page fault in kernel. Panic */
-        dump_regs();
-        panic("Page fault in kernel!");
-    } else if (is_present(*pte_entry) && is_readonly(*pte_entry) && is_cow(*pte_entry)) {
-        /* 
-         * Copy on write!
-         * Steps - 
-         * 1. Allocate a new physical page.
-         * 2. Read the faulting page and copy its contents to the new page.
-         * 3. Update the PTE entry to point to the new physical page.
-         * 4. Unset cow and readonly.
-         */
-        kmemcpy(backup_page, (void*)((u64int)faulting_address & 0xfffffffffffff000), PAGE_SIZE);
-        phys_vir_addr* page_ptr = get_free_phys_page();
-        set_base_addr(pte_entry, page_ptr->phys_addr);
-        kmemcpy((void*)((u64int)faulting_address & 0xfffffffffffff000), backup_page, PAGE_SIZE);
-        unset_cow(pte_entry);
-        unset_readonly(pte_entry);
-    } else if (!is_present(*pte_entry)){
-        /* Perhaps page faulted on a mallocked page */
-        vm_struct* vm_struct_ptr = CURRENT_TASK->vm_head;
-        while (vm_struct_ptr != NULL){
-            if (faulting_address >= vm_struct_ptr->vm_start && 
-                    faulting_address <= vm_struct_ptr->vm_end){
-                vma_to_map = vm_struct_ptr;
-                okay_to_map = 1;
+    if (fault_addr >= KERNEL_START_VADDR) {
+        // Page fault in kernel
+        kprintf("\nFault Addr:%p Error Code:%p", fault_addr, err_code);
+        panic("Page fault in kernel! Please Reboot");
+    } else if (err_code & 0x1) {
+        // Page is PRESENT
+        // Get the PTE entry for the fault address
+        uint64_t *pte_entry = get_pte_entry(fault_addr); 
+        uint64_t paddr = *pte_entry & PAGING_ADDR;
+
+        //kprintf("\npte_entry = %p\n", *pte_entry);
+
+        if (!IS_WRITABLE_PAGE(*pte_entry) && IS_COW_PAGE(*pte_entry)) {
+            // Check if the physical page is referred by more than virtual pages.
+            // If YES, allocate a new page, copy the contents and set writable permissions.
+            // If NO, use the same physical page, but remove the COW and READONLY bits
+            if (phys_get_block_ref(paddr) > 1) {
+                uint64_t new_paddr = phys_alloc_block();
+                uint64_t tvaddr = get_temp_vaddr(new_paddr);
+                memcpy((void*)tvaddr, (void*)PAGE_ALIGN(fault_addr), PAGESIZE);
+                *pte_entry = new_paddr | RW_USER_FLAGS;
+                free_temp_vaddr(tvaddr);
+                phys_dec_block_ref(paddr);
+            } else {
+                unset_cow_bit(pte_entry);
+                set_writable_bit(pte_entry);
+            }
+        } else {
+            IsFault = TRUE;
+        }
+
+    } else {
+        // Page is not PRESENT and thus was not allocated earlier.
+        // If fault addr is within VMA area, mmap the VMA area,
+        // Else kill the process and raise an SEGFAULT
+        vma_struct* vma_ptr = CURRENT_TASK->mm->vma_list;
+        uint64_t start, end;
+        while (vma_ptr != NULL) {
+            start = vma_ptr->vm_start; end = vma_ptr->vm_end;
+            if (fault_addr >= start && fault_addr <= end) {
+                kmmap(start, end - start, RW_USER_FLAGS);
+                //kprintf("\n[VMA]:%p-%p", start, end);
                 break;
             }
-            vm_struct_ptr = vm_struct_ptr->vm_next;
+            vma_ptr = vma_ptr->vm_next;
         }
-        if(okay_to_map){
-            kmmap((void*)vma_to_map->vm_start, 
-                    vma_to_map->vm_end-vma_to_map->vm_start,
-                    0, 0, 0, 0);
-        } else {
-            dump_regs();
-            panic("SEGFAULT - shouldn't kill the kernel, though!");
+        if (vma_ptr == NULL) {
+            IsFault = TRUE;
         }
-    } else {
-        dump_regs();
-        panic("Unhandled page fault!");
     }
-#endif
+
+    if (IsFault) {
+        kprintf("\nFault Addr:%p Error Code:%p", fault_addr, err_code);
+        panic("Segmentation Fault! (Should kill the Process)");
+    }
 }
 
-/* Common handler */
+// Common handler
 void isr_handler(registers_t regs)
 {
     switch (regs.int_no) {
