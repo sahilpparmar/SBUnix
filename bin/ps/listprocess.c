@@ -1,11 +1,12 @@
 #include <defs.h>
 #include <stdlib.h>
 
-char buf[10] = "PS Command";
-
 int main(int argc, char* argv[])
 {
-    printf("\nProcess %d (parent %d) says %s", getpid(), getppid(), buf);
+    printf("\nProcess %d (parent %d) is ", getpid(), getppid());
+
+    for (int i = 0; i < argc; i++)
+        printf("%s ", argv[i]);
 
     listprocess();
 

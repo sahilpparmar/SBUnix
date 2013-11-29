@@ -10,7 +10,6 @@
 #include <sys/kmalloc.h>
 #include <sys/proc_mngr.h>
 #include <sys/elf.h>
-#include <string.h>
 #include <sys/tarfs.h>
 #include <sys/dirent.h>
 #include <io_common.h>
@@ -57,12 +56,12 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
 
     // Context Switching code between tarfs processes
 #if 1
-    create_elf_proc("bin/init");
-    //create_elf_proc("bin/hello");
-    //create_elf_proc("bin/ps");
-    //create_elf_proc("bin/fork");
-    //create_elf_proc("bin/world");
-    //create_elf_proc("bin/sh");
+    create_elf_proc("bin/init", NULL);
+    //create_elf_proc("bin/hello", NULL);
+    //create_elf_proc("bin/ps", NULL);
+    //create_elf_proc("bin/fork", NULL);
+    //create_elf_proc("bin/world", NULL);
+    //create_elf_proc("bin/sh", NULL);
 #endif
     
     // Allow interrupts

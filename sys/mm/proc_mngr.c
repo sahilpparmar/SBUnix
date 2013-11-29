@@ -7,7 +7,7 @@
 #include <io_common.h>
 #include <sys/paging.h>
 #include <sys/types.h>
-#include <string.h>
+#include <sys/kstring.h>
 
 // The process lists. The task at the head of the READY_LIST should always be executed next
 task_struct* READY_LIST = NULL;
@@ -274,6 +274,7 @@ task_struct* copy_task_struct(task_struct* parent_task)
     memcpy((void*)child_task->mm, (void*)parent_task->mm, sizeof(mm_struct));
     child_task->mm->pml4_t = child_pml4_t;
     child_task->mm->vma_list = NULL; 
+    // TODO: Need to make a separate copy of file descriptors
 
     child_task->ppid   = parent_task->pid;
     child_task->parent = parent_task;

@@ -3,11 +3,10 @@
 
 #include <sys/types.h>
 
-#define KERNEL_STACK_SIZE 128
+#define KERNEL_STACK_SIZE 512
 #define USER_STACK_TOP 0xF0000000
 #define DEBUG_SCHEDULING 0
 #define MAXFD 10
-
 
 enum task_states {
     RUNNING_STATE,
@@ -63,8 +62,7 @@ struct mm_struct {
     uint64_t arg_start, arg_end, env_start, env_end;
 };
 
-struct task_struct
-{
+struct task_struct {
     pid_t pid;
     pid_t ppid;
     bool IsUserProcess;

@@ -1,6 +1,6 @@
 #include <defs.h>
 
-#define KERNEL_START_VADDR 0xFFFFFFFF80000000
+#define KERNEL_START_VADDR 0xFFFFFFFF80000000UL
 
 uint64_t get_top_virtaddr();
 void set_top_virtaddr(uint64_t vaddr);

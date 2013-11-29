@@ -2,7 +2,7 @@
 #include <sys/proc_mngr.h>
 #include <sys/elf.h>
 #include <sys/tarfs.h>
-#include <string.h>
+#include <sys/kstring.h>
 #include <stdio.h>
 
 void readelf(char* filename)
@@ -35,7 +35,7 @@ void readelf(char* filename)
     }
 }
 
-bool is_file_elf_exec(Elf64_Ehdr* header)
+static bool is_file_elf_exec(Elf64_Ehdr* header)
 {
     if (header == NULL)
         return FALSE;
@@ -47,8 +47,43 @@ bool is_file_elf_exec(Elf64_Ehdr* header)
     return FALSE;
 }
 
+static char args[10][100];
+
+static void copy_arg_to_stack(task_struct *task, int argc)
+{
+    uint64_t cur_pml4, *user_stack, *argv[10];
+    int len, i;
+
+    READ_CR3(cur_pml4);
+    LOAD_CR3(task->mm->pml4_t);
+
+    user_stack = (uint64_t*) task->mm->start_stack;
+    // Store the argument values
+    for (i = argc-1; i >= 0; i--) {
+        len = kstrlen(args[i]) + 1;
+        user_stack = (uint64_t*)((void*)user_stack - len);
+        memcpy((char*)user_stack, args[i], len);
+        argv[i] = user_stack;
+    }
+    // Store the argument pointers
+    for (i = argc-1; i >= 0; i--) {
+        user_stack--;
+        *user_stack = (uint64_t)argv[i];
+        //kprintf("\t%p=%s", user_stack, *user_stack);
+    }
+    // Store the arg count
+    user_stack--;
+    *user_stack = (uint64_t)argc;
+    //kprintf("\t%p=%d", user_stack, *user_stack);
+
+    // Reset stack top below arguments
+    task->mm->start_stack = (uint64_t)user_stack;
+
+    LOAD_CR3(cur_pml4);
+}
+
 // Loads CS and DS into VMAs and returns the entry point into process
-task_struct* load_elf(Elf64_Ehdr* header, task_struct *proc)
+static task_struct* load_elf(Elf64_Ehdr* header, task_struct *proc, char *filename, char *argv[])
 {
     Elf64_Phdr* program_header;
     mm_struct *mms = proc->mm;
@@ -58,6 +93,8 @@ task_struct* load_elf(Elf64_Ehdr* header, task_struct *proc)
 
     // Save current PML4 table
     READ_CR3(cur_pml4_t);
+
+    kstrcpyn(proc->comm, filename, sizeof(proc->comm)-1);
 
     // Offset at which program header table starts
     program_header = (Elf64_Phdr*) ((void*)header + header->e_phoff);
@@ -141,14 +178,26 @@ task_struct* load_elf(Elf64_Ehdr* header, task_struct *proc)
     mms->vma_count++;
     mms->stack_vm  = PAGESIZE;
     mms->total_vm += PAGESIZE;
-    mms->start_stack = end_vaddr - 8;
+    
+    // Initialize stack top to end of stack VMA
+    mms->start_stack = end_vaddr - 0x8;
+    
+    int argc = 0;
+    kstrcpy(args[argc++], filename);
+    if (argv) {
+        while (argv[argc-1]) {
+            kstrcpy(args[argc], argv[argc-1]);
+            argc++;
+        } 
+    }
+    copy_arg_to_stack(proc, argc);
 
     schedule_process(proc, header->e_entry, mms->start_stack);
 
     return proc;
 }
 
-task_struct* create_elf_proc(char *filename)
+task_struct* create_elf_proc(char *filename, char *argv[])
 {
     HEADER *header;
     Elf64_Ehdr* elf_header;
@@ -162,9 +211,7 @@ task_struct* create_elf_proc(char *filename)
 
         task_struct* new_proc = alloc_new_task(TRUE);
 
-        kstrcpyn(new_proc->comm, filename, sizeof(new_proc->comm)-1);
-
-        return load_elf(elf_header, new_proc);
+        return load_elf(elf_header, new_proc, filename, argv);
     }
     return NULL;
 }
