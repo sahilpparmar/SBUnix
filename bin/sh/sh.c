@@ -114,7 +114,7 @@ void modify_string(char *currdir)
 int main(int argc, char **argv)
 {
     //buffer is to hold the commands that the user will type in
-    char str[25], *newstr, ptr[20], args[20][20];
+    char str[25], *newstr, ptr[20], args[20][20], path_to_cmd[20];
     int i, j=0, k=0, fd;
     char* path = "bin/";
 
@@ -126,6 +126,11 @@ int main(int argc, char **argv)
         printf("\n"); 
         printf("[user@SBUnix ~%s]$", currdir);
         scanf("%s", ptr);
+        
+        if (ustrlen(ptr) == 0)
+            continue;
+        
+
 
         bg = ptr[ustrlen(ptr)-1];
         if (bg == '&')
@@ -144,8 +149,11 @@ int main(int argc, char **argv)
         }
 
         args[j][k]='\0';
+          if (strcmp(args[0], "help") == 0) {
 
-        if (strcmp(args[0], "pwd") == 0) {
+                printf("\nps\ncls\nls\ncd");
+
+        } else if (strcmp(args[0], "pwd") == 0) {
             
             printf("\n%s", currdir); 
 
@@ -210,11 +218,22 @@ int main(int argc, char **argv)
                         }
                         *str = NULL;
                         args[j][k]='\0';
-
+                    
                         strcpy(prog, path);
                         strcat(prog, args[0]);
+                        
+                        strcpy(path_to_cmd, "/rootfs/");
+                        strcat(path_to_cmd, prog);
 
-                        fork_and_execvpe();
+                        fd = open(path_to_cmd, 0);
+                        close(fd);
+                        //strcat(temp, );
+                        if (fd != -1) {
+                            fork_and_execvpe();
+                        } else { 
+                            printf("\t CMD does not exist");
+                        }
+                        //            fork_and_execvpe();
                     }
             
                 } else {
@@ -226,15 +245,23 @@ int main(int argc, char **argv)
             }
         
         } else {
-            
+
             strcpy(prog, path);
             strcat(prog, args[0]);
-            fork_and_execvpe();
-        
+            strcpy(path_to_cmd, "/rootfs/");
+            strcat(path_to_cmd, prog);
+
+            fd = open(path_to_cmd, 0);
+            close(fd);
+            if (fd != -1) {
+                fork_and_execvpe();
+            } else { 
+                printf("\tCMD does not exist");
+            }
         }
         *ptr = NULL;
     } 
 
-
+    //exit(1);
     return 0;
 }
