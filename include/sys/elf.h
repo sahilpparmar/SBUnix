@@ -53,8 +53,5 @@ typedef struct elf64_phdr
 } Elf64_Phdr;
 
 void readelf(char* filename);
-bool is_file_elf_exec(Elf64_Ehdr* header);
-task_struct* load_elf(Elf64_Ehdr* header, task_struct *proc);
-task_struct* create_elf_proc(char *filename);
-
+task_struct* create_elf_proc(char *filename, char *argv[]);
 

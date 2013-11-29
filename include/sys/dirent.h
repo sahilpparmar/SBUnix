@@ -33,7 +33,6 @@ struct file_dir {
 
 };
 
-
 struct file_descp {
     fnode_t* filenode;
     uint64_t curr;

@@ -7,8 +7,8 @@
 #include <io_common.h>
 #include <sys/paging.h>
 #include <sys/types.h>
-#include <string.h>
 #include <sys/dirent.h>
+#include <sys/kstring.h>
 
 // The process lists. The task at the head of the READY_LIST should always be executed next
 task_struct* READY_LIST = NULL;

@@ -6,13 +6,12 @@
 #include <sys/tarfs.h>
 #include <sys/virt_mm.h>
 #include <io_common.h>
-#include <string.h>
+#include <sys/kstring.h>
 #include <screen.h>
 #include <sys/types.h>
 #include <sys/dirent.h>
 #include <sys/kmalloc.h>
 #include <io_common.h>
-#include <string.h>
 
 // These will get invoked in kernel mode
 
@@ -21,7 +20,6 @@ int sys_clear()
     clear_screen();
     return 1;
 }
-
 
 DIR* sys_opendir(uint64_t* entry, uint64_t* directory)
 {
@@ -32,7 +30,7 @@ DIR* sys_opendir(uint64_t* entry, uint64_t* directory)
     fnode_t *auxnode, *currnode = root_node;
     char *temp = NULL; 
     int i;
-    char *path = (char *)kmalloc(sizeof(char) * strlen(dir_path));
+    char *path = (char *)kmalloc(sizeof(char) * kstrlen(dir_path));
     kstrcpy(path, dir_path); 
 
     temp = kstrtok(path, "/");  
@@ -41,13 +39,13 @@ DIR* sys_opendir(uint64_t* entry, uint64_t* directory)
     {
         auxnode = currnode; 
         
-        if(strcmp(temp,"..") == 0) {
+        if(kstrcmp(temp,"..") == 0) {
 
             currnode = (fnode_t *)currnode->f_child[1];
         } else {
     
             for(i = 2; i < currnode->end; ++i){
-                if(strcmp(temp, currnode->f_child[i]->f_name) == 0) {
+                if(kstrcmp(temp, currnode->f_child[i]->f_name) == 0) {
                     currnode = (fnode_t *)currnode->f_child[i];
                     break;       
                 }        
@@ -63,8 +61,7 @@ DIR* sys_opendir(uint64_t* entry, uint64_t* directory)
         temp = kstrtok(NULL, "/");          
     }
    
-
-    if(currnode->f_type == DIRECTORY) {
+    if (currnode->f_type == DIRECTORY) {
     
         dir->curr     = 2; 
         dir->filenode = currnode; 
@@ -75,7 +72,6 @@ DIR* sys_opendir(uint64_t* entry, uint64_t* directory)
     
         return dir;
 }
-
 
 struct dirent* sys_readdir(uint64_t* entry)
 {
@@ -88,7 +84,6 @@ struct dirent* sys_readdir(uint64_t* entry)
         return &dir->curr_dirent;
     }
 }
-
 
 int sys_closedir(uint64_t* entry)
 {
@@ -122,8 +117,8 @@ pid_t sys_fork()
 
 uint64_t sys_execvpe(char *file, char *argv[], char *envp[])
 {
-    //TODO: Need to load argv[] and envp[]
-    task_struct *new_task = create_elf_proc(file);
+    //TODO: Need to load envp[]
+    task_struct *new_task = create_elf_proc(file, argv);
 
     if (new_task) {
         task_struct *cur_task = CURRENT_TASK;
@@ -133,6 +128,7 @@ uint64_t sys_execvpe(char *file, char *argv[], char *envp[])
         new_task->pid  = cur_task->pid;
         new_task->ppid = cur_task->ppid;
         new_task->parent = cur_task->parent;
+        memcpy8(new_task->file_descp, cur_task->file_descp, MAXFD);
 
         // Replace current child with new exec process
         replace_child_task(cur_task, new_task);
@@ -163,6 +159,7 @@ uint64_t sys_wait(uint64_t status)
     // Reset last child exit
     cur_task->last_child_exit = 0;
 
+    //TODO: Need to add to WAIT_STATE instead
     sti;
     while (!cur_task->last_child_exit);
         
@@ -306,17 +303,16 @@ int sys_open(uint64_t* dir_path, uint64_t flags)
 
     char *temp = NULL; 
     int i;
-    char *path = (char *)kmalloc(sizeof(char) * strlen(file_path));
+    char *path = (char *)kmalloc(sizeof(char) * kstrlen(file_path));
     kstrcpy(path, file_path); 
 
     temp = kstrtok(path, "/");  
-    
     
     while(temp != NULL)
     {
         aux_node = currnode;
         for(i = 2; i < currnode->end; ++i){
-            if(strcmp(temp, currnode->f_child[i]->f_name) == 0) {
+            if(kstrcmp(temp, currnode->f_child[i]->f_name) == 0) {
                 currnode = (fnode_t *)currnode->f_child[i];
                 break;       
             }        
@@ -349,9 +345,7 @@ void sys_close(int fd)
 {
     //TODO add this filedescriptor to free list    
     CURRENT_TASK->file_descp[fd] = NULL;
-    
 }
-
 
 uint64_t* sys_mmap(uint64_t* addr, uint64_t nbytes, uint64_t flags)
 {

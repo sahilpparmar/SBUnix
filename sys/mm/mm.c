@@ -7,7 +7,7 @@
 #include <sys/kmalloc.h>
 #include <sys/types.h>
 #include <io_common.h>
-#include <string.h>
+#include <sys/kstring.h>
 
 static uint64_t next_pid = 0;
 
@@ -53,43 +53,44 @@ void add_to_vma_free_list(vma_struct* free_vma)
 
 task_struct* alloc_new_task(bool IsUserProcess)
 {
-    mm_struct* mms = NULL;
-    task_struct* new_proc = NULL;
+    task_struct* new_task = NULL;
 
-    if ((new_proc = get_free_task_struct()) == NULL) {
-        new_proc    = (task_struct*) kmalloc(sizeof(task_struct));
-        mms         = (mm_struct *) kmalloc(sizeof(mm_struct));
+    if ((new_task = get_free_task_struct()) == NULL) {
+        
+        mm_struct* mms = (mm_struct *) kmalloc(sizeof(mm_struct));
+        // Initialize mm_struct
         mms->pml4_t = create_new_pml4();
-        new_proc->mm = mms;
-    } else {
-        mms = new_proc->mm;
+        mms->vma_list   = NULL;
+        mms->vma_count  = NULL;
+        mms->hiwater_vm = NULL;
+        mms->total_vm   = NULL;
+        mms->stack_vm   = NULL;
+
+        new_task    = (task_struct*) kmalloc(sizeof(task_struct));
+        // Initialize task_struct
+        new_task->mm = mms;
+        new_task->next          = NULL;
+        new_task->last          = NULL;
+        new_task->parent        = NULL;
+        new_task->childhead     = NULL;
+        new_task->siblings      = NULL;
+        new_task->no_children   = 0;
+        new_task->last_child_exit = 0;
+        memset((void*)new_task->kernel_stack, 0, KERNEL_STACK_SIZE);
+        memset8((uint64_t*)new_task->file_descp, 0, MAXFD);
     }
 
-    // Initialize mm_struct
-    mms->vma_list   = NULL;
-    mms->vma_count  = NULL;
-    mms->hiwater_vm = NULL;
-    mms->total_vm   = NULL;
-    mms->stack_vm   = NULL;
-
     // Initialize new process
-    new_proc->pid           = next_pid++;
-    new_proc->ppid          = 0;
-    new_proc->IsUserProcess = IsUserProcess;
-    new_proc->task_state    = READY_STATE;
-    new_proc->next          = NULL;
-    new_proc->last          = NULL;
-    new_proc->parent        = NULL;
-    new_proc->childhead     = NULL;
-    new_proc->siblings      = NULL;
-    new_proc->no_children   = 0;
-    new_proc->last_child_exit = 0;
+    new_task->pid           = next_pid++;
+    new_task->ppid          = 0;
+    new_task->IsUserProcess = IsUserProcess;
+    new_task->task_state    = READY_STATE;
 
 #if DEBUG_SCHEDULING
-    kprintf("\nPID:%d\tCR3: %p", new_proc->pid, mms->pml4_t);
+    kprintf("\nPID:%d\tCR3: %p", new_task->pid, mms->pml4_t);
 #endif
 
-    return new_proc;
+    return new_task;
 }
 
 vma_struct* alloc_new_vma(uint64_t start_addr, uint64_t end_addr, uint64_t flags, uint64_t type)
@@ -120,6 +121,7 @@ void empty_task_struct(task_struct *cur_task)
     mms->stack_vm   = NULL;
     
     memset((void*)cur_task->kernel_stack, 0, KERNEL_STACK_SIZE);
+    memset8((uint64_t*)cur_task->file_descp, 0, MAXFD);
     cur_task->next        = NULL;
     cur_task->last        = NULL;
     cur_task->parent      = NULL;

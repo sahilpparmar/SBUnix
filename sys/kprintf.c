@@ -106,13 +106,6 @@ int32_t kprintf(const char *str, ...)
     return len;
 }
 
-// kscanf under construction
-
-
-
-
-
-
 // Copies 1 byte at a time
 void *memcpy(void *destination, void *source, uint64_t num) 
 {

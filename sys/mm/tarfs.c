@@ -1,6 +1,6 @@
 #include <sys/tarfs.h>
+#include <sys/kstring.h>
 #include <defs.h>
-#include <string.h>
 #include <stdio.h>
 
 void* lookup(char *file_name) {
@@ -14,7 +14,7 @@ void* lookup(char *file_name) {
         p = (char*)(header + 1);
         
         //kprintf("\n...File Name: %s..File Size: %d bytes..Type %s: ", header->name, size_of_file, header->typeflag);
-        if (strcmp(file_name, header->name) == 0) {   
+        if (kstrcmp(file_name, header->name) == 0) {   
             return (void*)p;
         }
        

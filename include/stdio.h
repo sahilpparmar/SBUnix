@@ -6,9 +6,7 @@ char *itoa(uint64_t val, char *str, int32_t base);
 void putchar(char mychar);
 int32_t puts(char *str);
 int32_t kprintf(const char *str, ...);
-
 int gets(uint64_t addr);
-void kscanf(const char *str, ...);
 
 // By default copies 1 byte at a time
 void *memcpy(void *destination, void *source, uint64_t num);
