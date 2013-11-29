@@ -30,7 +30,7 @@ int phys_get_block_ref(uint64_t paddr)
     return _mmngr_reference[frame];
 }
 
-static void mmap_set(int bit)
+void mmap_set(int bit)
 {
     _mmngr_memory_map[bit / 64] |= (1UL << (bit % 64));
 }
