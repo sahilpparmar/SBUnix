@@ -7,7 +7,7 @@ int main(int argc, char* argv[])
 
     DIR *tp; 
     struct dirent *temp;
-    char *path = "/rootfs/bin";
+    char *path = "/";
     tp = opendir(path); 
     
     printf("\n");

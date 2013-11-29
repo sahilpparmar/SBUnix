@@ -79,16 +79,14 @@ DIR* sys_opendir(uint64_t* entry, uint64_t* directory)
 
 struct dirent* sys_readdir(uint64_t* entry)
 {
-    
     DIR *dir = (DIR*)entry;
     if(dir->filenode->end < 3 || dir->curr == dir->filenode->end ||dir->curr == 0) { 
         return NULL;
-    } else{
+    } else {
         kstrcpy(dir->curr_dirent.name, dir->filenode->f_child[dir->curr]->f_name);
         dir->curr++;
         return &dir->curr_dirent;
     }
-
 }
 
 
@@ -304,7 +302,7 @@ int sys_open(uint64_t* dir_path, uint64_t flags)
     
     //allocate new filedescriptor
     FD* file_d = (FD *)kmalloc(sizeof(FD));
-    fnode_t *auxnode, *currnode = root_node;
+    fnode_t *aux_node, *currnode = root_node;
 
     char *temp = NULL; 
     int i;
@@ -316,7 +314,7 @@ int sys_open(uint64_t* dir_path, uint64_t flags)
     
     while(temp != NULL)
     {
-        auxnode = currnode;
+        aux_node = currnode;
         for(i = 2; i < currnode->end; ++i){
             if(strcmp(temp, currnode->f_child[i]->f_name) == 0) {
                 currnode = (fnode_t *)currnode->f_child[i];
@@ -324,7 +322,7 @@ int sys_open(uint64_t* dir_path, uint64_t flags)
             }        
         }
         
-        if(i == auxnode->end){
+        if(i == aux_node->end){
             return -1;
         }
         
