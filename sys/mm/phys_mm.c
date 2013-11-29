@@ -11,7 +11,7 @@ static uint64_t _mmngr_max_blocks;
 static uint64_t* _mmngr_memory_map;
 static uint64_t _mmngr_base_addr;
 
-static void mmap_set(int bit)
+void mmap_set(int bit)
 {
     _mmngr_memory_map[bit / 64] |= (1UL << (bit % 64));
 }

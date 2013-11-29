@@ -13,6 +13,7 @@
 #include <sys/tarfs.h>
 #include <sys/dirent.h>
 #include <io_common.h>
+#include <sys/ahci.h>
 
 #define K_MEM_PAGES 518
 #define INITIAL_STACK_SIZE 4096
@@ -66,7 +67,7 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
     
     // Allow interrupts
     sti;
-
+    //init_ahci();
     panic("\nKernel should never reach here");
     while(1);
 }
