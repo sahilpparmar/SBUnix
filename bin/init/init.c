@@ -3,7 +3,7 @@
 int main(int argc, char **argv)
 {
     if (fork() == 0) {
-        execvpe("bin/sh", NULL, NULL);
+        execvpe("/rootfs/bin/sh", NULL, NULL);
     }
 
     while(1);

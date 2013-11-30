@@ -6,7 +6,7 @@ char currdir[1024], args[20][20];
 char temp[512];
 DIR *curr_dir_ptr;
 static char bg_flag, prog[20];
-char *tempargs[10], *path = "bin/";
+char *tempargs[10], *path = "/rootfs/bin/";
 
 int strcmp(const char *s1, const char *s2)
 {
@@ -297,7 +297,7 @@ int main(int argc, char **argv)
             }
 
             tempargs[1] = NULL;
-            strcpy(prog, "bin/ls");
+            strcpy(prog, "/rootfs/bin/ls");
 
             fork_and_execvpe();
 
@@ -347,7 +347,7 @@ int main(int argc, char **argv)
                         strcpy(prog, path);
                         strcat(prog, args[0]);
 
-                        strcpy(path_to_cmd, "/rootfs/");
+                        //strcpy(path_to_cmd, "/rootfs/");
                         strcat(path_to_cmd, prog);
 
                         file_descp = open(path_to_cmd, 0);
@@ -373,7 +373,7 @@ int main(int argc, char **argv)
 
             strcpy(prog, path);
             strcat(prog, args[0]);
-            strcpy(path_to_cmd, "/rootfs/");
+            //strcpy(path_to_cmd, "/rootfs/");
             strcat(path_to_cmd, prog);
 
             file_descp = open(path_to_cmd, 0);
