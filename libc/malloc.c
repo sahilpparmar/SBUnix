@@ -44,9 +44,6 @@ void *alloc_new(int aligned_size)
     
     heap_end = (char*)((uint64_t)add + (uint64_t)(PAGESIZE * no_of_pages));
     max_mem += PAGESIZE * no_of_pages; 
-
-    //TODO: Need to uncomment following printf for printf in user malloc function to work
-    printf("");
     
     p_mcb               = (MCB_P)add; 
     p_mcb->is_available = IN_USE;

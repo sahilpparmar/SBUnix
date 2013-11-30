@@ -1,1 +1,5 @@
-Hello wold I am here to fuck you :)
+An operating system (OS) is a collection of software that manages computer hardware resources and provides common services for computer programs.
+The operating system is an essential component of the system software in a computer system.
+Application programs usually require an operating system to function.
+Time-sharing operating systems schedule tasks for efficient use of the system and 
+may also include accounting software for cost allocation of processor time, mass storage, printing, and other resources.

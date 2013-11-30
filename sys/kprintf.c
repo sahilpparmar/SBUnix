@@ -119,25 +119,12 @@ void *memcpy(void *destination, void *source, uint64_t num)
     return destination;
 }
 
-// Copies 8 bytes at a time
-void *memcpy8(void *destination, void *source, uint64_t num) 
-{
-    uint64_t *dest = (uint64_t *)destination;
-    uint64_t *src = (uint64_t *)source;
-
-    while(num--) {
-        *dest++ = *src++; 
-    }
-
-    return destination;
-}
-
 // Sets 1 byte at a time
 void *memset(void *ptr, uint8_t value, uint64_t num)
 {
     uint8_t *temp = (uint8_t *)ptr;
 
-    while(num--) {
+    while (num--) {
         *temp++ = value; 
     }
     return ptr;
@@ -148,7 +135,7 @@ uint64_t *memset8(uint64_t *ptr, uint64_t value, uint64_t num)
 {
     uint64_t *temp = (uint64_t *)ptr;
 
-    while(num--) {
+    while (num--) {
         *temp++ = value; 
     }
     return ptr;
@@ -158,7 +145,7 @@ int32_t pow(int base, int power)
 { 
     int i = 0, product = 1;
 
-    for(i = 0; i < power; ++i) {
+    for (i = 0; i < power; ++i) {
         product = product * base;
     }
 

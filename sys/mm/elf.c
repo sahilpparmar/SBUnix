@@ -1,5 +1,6 @@
 #include <defs.h>
 #include <sys/proc_mngr.h>
+#include <sys/paging.h>
 #include <sys/elf.h>
 #include <sys/tarfs.h>
 #include <sys/kstring.h>
@@ -108,12 +109,13 @@ static task_struct* load_elf(Elf64_Ehdr* header, task_struct *proc, char *filena
             size           = program_header->p_memsz;
             end_vaddr      = start_vaddr + size;    
              
-            if (program_header->p_type == 5)
+            if (program_header->p_flags == 5) {
                 vm_type = TEXT;
-            else if(program_header->p_type == 6)
+            } else if (program_header->p_flags == 6) {
                 vm_type = DATA;
-            else
-                vm_type = NOTYPE; 
+            } else {
+                vm_type = NOTYPE;
+            }   
 
             // Allocate a new vma
             node = alloc_new_vma(start_vaddr, end_vaddr, program_header->p_type, vm_type); 
@@ -130,7 +132,7 @@ static task_struct* load_elf(Elf64_Ehdr* header, task_struct *proc, char *filena
             // Load ELF sections into new Virtual Memory Area
             LOAD_CR3(mms->pml4_t);
 
-            kmmap(start_vaddr, size); 
+            kmmap(start_vaddr, size, vm_type == TEXT ? RX_USER_FLAGS : RW_USER_FLAGS);
 
             if (mms->vma_list == NULL) {
                 mms->vma_list = node;
@@ -164,20 +166,20 @@ static task_struct* load_elf(Elf64_Ehdr* header, task_struct *proc, char *filena
     mms->end_brk   = end_vaddr; 
     //kprintf("\tHeap Start:%p", mms->start_brk);
 
-    // Stack VMA of one page (TODO: Need to allocate a dynamically growing stack)
+    // Allocate Stack VMA
     for (iter = mms->vma_list; iter->vm_next != NULL; iter = iter->vm_next);
     end_vaddr = USER_STACK_TOP;
-    start_vaddr = USER_STACK_TOP - PAGESIZE;
+    start_vaddr = USER_STACK_TOP - USER_STACK_SIZE;
     iter->vm_next = alloc_new_vma(start_vaddr, end_vaddr, RW, STACK);
-    
-    // Map a physical page
+
+    // For now map only a single physical page
     LOAD_CR3(mms->pml4_t);
-    kmmap(start_vaddr, PAGESIZE);
+    kmmap(end_vaddr-PAGESIZE, PAGESIZE, RW_USER_FLAGS);
     LOAD_CR3(cur_pml4_t);
 
     mms->vma_count++;
-    mms->stack_vm  = PAGESIZE;
-    mms->total_vm += PAGESIZE;
+    mms->stack_vm  = USER_STACK_SIZE;
+    mms->total_vm += USER_STACK_SIZE;
     
     // Initialize stack top to end of stack VMA
     mms->start_stack = end_vaddr - 0x8;

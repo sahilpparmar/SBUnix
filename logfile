@@ -1,0 +1,544 @@
+ahci: ahci_reset_port: [0] reset port
+ahci: ahci_reset_port: [1] reset port
+ahci: ahci_reset_port: [2] reset port
+ahci: ahci_reset_port: [3] reset port
+ahci: ahci_reset_port: [4] reset port
+ahci: ahci_reset_port: [5] reset port
+ahci: ahci_mem_read: [-1] (addr 0x00000004), val 0x00000000
+ahci: ahci_mem_write: [-1] (addr 0x00000004), val 0x80000000
+ahci: ahci_check_irq: [-1] check irq 0
+ahci: ahci_irq_lower: [0] lower irq
+ahci: ahci_mem_read: [-1] (addr 0x00000000), val 0x40141F05
+ahci: ahci_mem_read: [-1] (addr 0x0000000C), val 0x0000003F
+ahci: ahci_port_write: [0] offset: 0x0 val: 0x7fdf000
+ahci: ahci_port_write: [0] offset: 0x8 val: 0x7fdf600
+ahci: ahci_port_read: [0] offset: 0x18 val: 0x6
+ahci: ahci_port_write: [0] offset: 0x14 val: 0x0
+ahci: ahci_check_irq: [-1] check irq 0
+ahci: ahci_irq_lower: [0] lower irq
+ahci: ahci_port_read: [0] offset: 0x10 val: 0x0
+ahci: ahci_port_read: [0] offset: 0x18 val: 0x6
+ahci: ahci_port_write: [0] offset: 0x18 val: 0x16
+ahci: ahci_trigger_irq: [0] trigger irq 0x1 -> 0
+ahci: ahci_check_irq: [-1] check irq 0
+ahci: ahci_irq_lower: [0] lower irq
+ahci: ahci_port_write: [0] offset: 0x18 val: 0x16
+ahci: ahci_port_read: [0] offset: 0x28 val: 0x113
+ahci: ahci_port_read: [0] offset: 0x30 val: 0x0
+ahci: ahci_port_read: [0] offset: 0x20 val: 0x130
+ahci: ahci_port_write: [0] offset: 0x18 val: 0x17
+ahci: ahci_port_read: [0] offset: 0x10 val: 0x1
+ahci: ahci_port_write: [0] offset: 0x10 val: 0x1
+ahci: ahci_check_irq: [-1] check irq 0
+ahci: ahci_irq_lower: [0] lower irq
+ahci: ahci_port_write: [0] offset: 0x34 val: 0x1
+ahci: ahci_port_write: [0] offset: 0x38 val: 0x1
+fis:
+00:27 80 a1 00 00 00 00 00 00 00 00 00 00 00 00 00 
+10:00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+20:00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+30:00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+40:00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+50:00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+60:00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+70:00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+80:cc cd fd 07 00 00 00 00 00 00 00 00 ff 01 00 00 
+ahci: ahci_trigger_irq: [0] trigger irq 0x40000000 -> 0
+ahci: ahci_check_irq: [-1] check irq 0
+ahci: ahci_irq_lower: [0] lower irq
+ahci: ahci_trigger_irq: [0] trigger irq 0x1 -> 0
+ahci: ahci_check_irq: [-1] check irq 0
+ahci: ahci_irq_lower: [0] lower irq
+ahci: ahci_port_read: [0] offset: 0x10 val: 0x40000001
+ahci: ahci_port_write: [0] offset: 0x10 val: 0x40000001
+ahci: ahci_check_irq: [-1] check irq 0
+ahci: ahci_irq_lower: [0] lower irq
+ahci: ahci_port_read: [0] offset: 0x18 val: 0xc017
+ahci: ahci_port_write: [0] offset: 0x18 val: 0xc016
+ahci: ahci_port_read: [0] offset: 0x18 val: 0x4016
+ahci: ahci_port_read: [0] offset: 0x30 val: 0x0
+ahci: ahci_port_write: [0] offset: 0x30 val: 0x0
+ahci: ahci_port_read: [0] offset: 0x10 val: 0x0
+ahci: ahci_port_write: [0] offset: 0x10 val: 0x0
+ahci: ahci_check_irq: [-1] check irq 0
+ahci: ahci_irq_lower: [0] lower irq
+ahci: ahci_port_read: [0] offset: 0x20 val: 0x441
+ahci: ahci_port_read: [0] offset: 0x18 val: 0x4016
+ahci: ahci_port_write: [0] offset: 0x18 val: 0x4017
+ahci: ahci_port_read: [0] offset: 0x10 val: 0x0
+ahci: ahci_port_write: [0] offset: 0x34 val: 0x1
+ahci: ahci_port_write: [0] offset: 0x38 val: 0x1
+fis:
+00:27 80 ec 00 00 00 00 00 00 00 00 00 00 00 00 00 
+10:00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+20:00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+30:00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+40:00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+50:00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+60:00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+70:00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+80:cc cd fd 07 00 00 00 00 00 00 00 00 ff 01 00 00 
+ahci: ahci_start_transfer: [0] reading 512 bytes on ata w/ sglist
+ahci: ahci_trigger_irq: [0] trigger irq 0x4 -> 0
+ahci: ahci_check_irq: [-1] check irq 0
+ahci: ahci_irq_lower: [0] lower irq
+ahci: ahci_trigger_irq: [0] trigger irq 0x1 -> 0
+ahci: ahci_check_irq: [-1] check irq 0
+ahci: ahci_irq_lower: [0] lower irq
+ahci: ahci_port_read: [0] offset: 0x10 val: 0x5
+ahci: ahci_port_write: [0] offset: 0x10 val: 0x5
+ahci: ahci_check_irq: [-1] check irq 0
+ahci: ahci_irq_lower: [0] lower irq
+ahci: ahci_port_read: [0] offset: 0x18 val: 0xc017
+ahci: ahci_port_write: [0] offset: 0x18 val: 0xc006
+ahci: ahci_port_write: [1] offset: 0x0 val: 0x7fdd800
+ahci: ahci_port_write: [1] offset: 0x8 val: 0x7fdde00
+ahci: ahci_port_read: [1] offset: 0x18 val: 0x6
+ahci: ahci_port_write: [1] offset: 0x14 val: 0x0
+ahci: ahci_check_irq: [-1] check irq 0
+ahci: ahci_irq_lower: [0] lower irq
+ahci: ahci_port_read: [1] offset: 0x10 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x18 val: 0x6
+ahci: ahci_port_write: [1] offset: 0x18 val: 0x16
+ahci: ahci_trigger_irq: [1] trigger irq 0x1 -> 0
+ahci: ahci_check_irq: [-1] check irq 0
+ahci: ahci_irq_lower: [0] lower irq
+ahci: ahci_port_write: [1] offset: 0x18 val: 0x16
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [0] offset: 0x18 val: 0x6
+ahci: ahci_port_write: [0] offset: 0x14 val: 0x0
+ahci: ahci_check_irq: [-1] check irq 0
+ahci: ahci_irq_lower: [0] lower irq
+ahci: ahci_port_read: [0] offset: 0x10 val: 0x0
+ahci: ahci_port_write: [0] offset: 0x0 val: 0xee800
+ahci: ahci_port_write: [0] offset: 0x8 val: 0xeee00
+ahci: ahci_port_read: [0] offset: 0x18 val: 0x6
+ahci: ahci_port_write: [0] offset: 0x18 val: 0x17
+ahci: ahci_port_write: [2] offset: 0x0 val: 0x7fdf000
+ahci: ahci_port_write: [2] offset: 0x8 val: 0x7fdf500
+ahci: ahci_port_read: [2] offset: 0x18 val: 0x6
+ahci: ahci_port_write: [2] offset: 0x14 val: 0x0
+ahci: ahci_check_irq: [-1] check irq 0
+ahci: ahci_irq_lower: [0] lower irq
+ahci: ahci_port_read: [2] offset: 0x10 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x18 val: 0x6
+ahci: ahci_port_write: [2] offset: 0x18 val: 0x16
+ahci: ahci_trigger_irq: [2] trigger irq 0x1 -> 0
+ahci: ahci_check_irq: [-1] check irq 0
+ahci: ahci_irq_lower: [0] lower irq
+ahci: ahci_port_write: [2] offset: 0x18 val: 0x16
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_write: [3] offset: 0x0 val: 0x7fdd000
+ahci: ahci_port_write: [3] offset: 0x8 val: 0x7fdd500
+ahci: ahci_port_read: [3] offset: 0x18 val: 0x6
+ahci: ahci_port_write: [3] offset: 0x14 val: 0x0
+ahci: ahci_check_irq: [-1] check irq 0
+ahci: ahci_irq_lower: [0] lower irq
+ahci: ahci_port_read: [3] offset: 0x10 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x18 val: 0x6
+ahci: ahci_port_write: [3] offset: 0x18 val: 0x16
+ahci: ahci_trigger_irq: [3] trigger irq 0x1 -> 0
+ahci: ahci_check_irq: [-1] check irq 0
+ahci: ahci_irq_lower: [0] lower irq
+ahci: ahci_port_write: [3] offset: 0x18 val: 0x16
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_write: [4] offset: 0x0 val: 0x7fdb800
+ahci: ahci_port_write: [4] offset: 0x8 val: 0x7fdbd00
+ahci: ahci_port_read: [4] offset: 0x18 val: 0x6
+ahci: ahci_port_write: [4] offset: 0x14 val: 0x0
+ahci: ahci_check_irq: [-1] check irq 0
+ahci: ahci_irq_lower: [0] lower irq
+ahci: ahci_port_read: [4] offset: 0x10 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x18 val: 0x6
+ahci: ahci_port_write: [4] offset: 0x18 val: 0x16
+ahci: ahci_trigger_irq: [4] trigger irq 0x1 -> 0
+ahci: ahci_check_irq: [-1] check irq 0
+ahci: ahci_irq_lower: [0] lower irq
+ahci: ahci_port_write: [4] offset: 0x18 val: 0x16
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_write: [5] offset: 0x0 val: 0x7fdb000
+ahci: ahci_port_write: [5] offset: 0x8 val: 0x7fdb600
+ahci: ahci_port_read: [5] offset: 0x18 val: 0x6
+ahci: ahci_port_write: [5] offset: 0x14 val: 0x0
+ahci: ahci_check_irq: [-1] check irq 0
+ahci: ahci_irq_lower: [0] lower irq
+ahci: ahci_port_read: [5] offset: 0x10 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x18 val: 0x6
+ahci: ahci_port_write: [5] offset: 0x18 val: 0x16
+ahci: ahci_trigger_irq: [5] trigger irq 0x1 -> 0
+ahci: ahci_check_irq: [-1] check irq 0
+ahci: ahci_irq_lower: [0] lower irq
+ahci: ahci_port_write: [5] offset: 0x18 val: 0x16
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x18 val: 0x4016
+ahci: ahci_port_write: [1] offset: 0x18 val: 0x4006
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [1] offset: 0x18 val: 0x6
+ahci: ahci_port_write: [1] offset: 0x14 val: 0x0
+ahci: ahci_check_irq: [-1] check irq 0
+ahci: ahci_irq_lower: [0] lower irq
+ahci: ahci_port_read: [1] offset: 0x10 val: 0x1
+ahci: ahci_port_write: [1] offset: 0x10 val: 0x1
+ahci: ahci_check_irq: [-1] check irq 0
+ahci: ahci_irq_lower: [0] lower irq
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x18 val: 0x4016
+ahci: ahci_port_write: [2] offset: 0x18 val: 0x4006
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [2] offset: 0x18 val: 0x6
+ahci: ahci_port_write: [2] offset: 0x14 val: 0x0
+ahci: ahci_check_irq: [-1] check irq 0
+ahci: ahci_irq_lower: [0] lower irq
+ahci: ahci_port_read: [2] offset: 0x10 val: 0x1
+ahci: ahci_port_write: [2] offset: 0x10 val: 0x1
+ahci: ahci_check_irq: [-1] check irq 0
+ahci: ahci_irq_lower: [0] lower irq
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x18 val: 0x4016
+ahci: ahci_port_write: [3] offset: 0x18 val: 0x4006
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [3] offset: 0x18 val: 0x6
+ahci: ahci_port_write: [3] offset: 0x14 val: 0x0
+ahci: ahci_check_irq: [-1] check irq 0
+ahci: ahci_irq_lower: [0] lower irq
+ahci: ahci_port_read: [3] offset: 0x10 val: 0x1
+ahci: ahci_port_write: [3] offset: 0x10 val: 0x1
+ahci: ahci_check_irq: [-1] check irq 0
+ahci: ahci_irq_lower: [0] lower irq
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x18 val: 0x4016
+ahci: ahci_port_write: [4] offset: 0x18 val: 0x4006
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [4] offset: 0x18 val: 0x6
+ahci: ahci_port_write: [4] offset: 0x14 val: 0x0
+ahci: ahci_check_irq: [-1] check irq 0
+ahci: ahci_irq_lower: [0] lower irq
+ahci: ahci_port_read: [4] offset: 0x10 val: 0x1
+ahci: ahci_port_write: [4] offset: 0x10 val: 0x1
+ahci: ahci_check_irq: [-1] check irq 0
+ahci: ahci_irq_lower: [0] lower irq
+ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
+ahci: ahci_port_read: [5] offset: 0x18 val: 0x4016
+ahci: ahci_port_write: [5] offset: 0x18 val: 0x4006
+ahci: ahci_port_read: [5] offset: 0x18 val: 0x6
+ahci: ahci_port_write: [5] offset: 0x14 val: 0x0
+ahci: ahci_check_irq: [-1] check irq 0
+ahci: ahci_irq_lower: [0] lower irq
+ahci: ahci_port_read: [5] offset: 0x10 val: 0x1
+ahci: ahci_port_write: [5] offset: 0x10 val: 0x1
+ahci: ahci_check_irq: [-1] check irq 0
+ahci: ahci_irq_lower: [0] lower irq

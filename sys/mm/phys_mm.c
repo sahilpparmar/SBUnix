@@ -8,10 +8,29 @@
 static uint64_t _mmngr_memory_size;
 static uint64_t _mmngr_used_blocks;
 static uint64_t _mmngr_max_blocks;
-static uint64_t* _mmngr_memory_map;
 static uint64_t _mmngr_base_addr;
+static uint64_t* _mmngr_memory_map;
+static uint8_t* _mmngr_reference;
 
-static void mmap_set(int bit)
+void phys_inc_block_ref(uint64_t paddr)
+{
+    int frame = (paddr - _mmngr_base_addr) >> PAGE_2ALIGN;
+    _mmngr_reference[frame]++;
+}
+
+void phys_dec_block_ref(uint64_t paddr)
+{
+    int frame = (paddr - _mmngr_base_addr) >> PAGE_2ALIGN;
+    _mmngr_reference[frame]--;
+}
+
+int phys_get_block_ref(uint64_t paddr)
+{
+    int frame = (paddr - _mmngr_base_addr) >> PAGE_2ALIGN;
+    return _mmngr_reference[frame];
+}
+
+void mmap_set(int bit)
 {
     _mmngr_memory_map[bit / 64] |= (1UL << (bit % 64));
 }
@@ -52,7 +71,7 @@ static int mmap_first_free()
 
 void phys_init(uint64_t physBase, uint64_t physfree, uint64_t physSize) {
 
-    uint64_t bitmap_t;
+    uint64_t no_bytes;
     
     // Start Physical Pages from 4MB
     _mmngr_base_addr   = physBase + 0x300000UL;
@@ -61,17 +80,20 @@ void phys_init(uint64_t physBase, uint64_t physfree, uint64_t physSize) {
     _mmngr_used_blocks = 0;
 
     // Set all physical memory to 0
-    memset8((uint64_t *)_mmngr_base_addr, 0x0, _mmngr_memory_size/8);
+    memset8((uint64_t*)_mmngr_base_addr, 0x0, _mmngr_memory_size/8);
 
     kprintf("\nPhysical Blocks Base:%p, Size:%p, Max:%p", _mmngr_base_addr, _mmngr_memory_size, _mmngr_max_blocks);
 
     // Set Bitmap to all 0
-    bitmap_t = _mmngr_max_blocks/64 + 1;
     _mmngr_memory_map = (uint64_t *) (KERNEL_START_VADDR + physfree);
-    memset8((uint64_t *)_mmngr_memory_map, 0x0, bitmap_t);
-}
+    no_bytes = _mmngr_max_blocks/8 + 1;
+    memset((void *)_mmngr_memory_map, 0x0, no_bytes);
 
-int flag = 0;
+    _mmngr_reference = (uint8_t*)_mmngr_memory_map + no_bytes + 1;
+    memset((void*)_mmngr_reference, 0x0, _mmngr_max_blocks);
+
+    //kprintf("\n%p %p %p", _mmngr_memory_map, _mmngr_reference, _mmngr_reference+_mmngr_max_blocks);
+}
 
 uint64_t phys_alloc_block() {
 
@@ -89,24 +111,28 @@ uint64_t phys_alloc_block() {
 
     paddr = _mmngr_base_addr + (frame << PAGE_2ALIGN);
     _mmngr_used_blocks++;
+    phys_inc_block_ref(paddr);
     
     //kprintf("\tNewPaddr: %p", paddr);
     return paddr;
 }
 
-void phys_free_block(uint64_t addr) {
+void phys_free_block(uint64_t paddr) {
 
-    int frame = (addr - _mmngr_base_addr) >> PAGE_2ALIGN;
+    int frame = (paddr - _mmngr_base_addr) >> PAGE_2ALIGN;
 
-    if (addr < _mmngr_base_addr || addr > (_mmngr_base_addr + _mmngr_memory_size)) {
-        kprintf("\nInvalid Paddr: %p", addr);
+    //kprintf("\tFree:%p(%d)", paddr, phys_get_block_ref(paddr));
+
+    if (paddr < _mmngr_base_addr || paddr > (_mmngr_base_addr + _mmngr_memory_size)) {
+        kprintf("\nInvalid Paddr: %p", paddr);
         panic("Trying to Free out of range Physical Block");
     }
 
-    zero_out_phys_block(addr);
-
-    mmap_unset(frame);
-
-    _mmngr_used_blocks--;
+    phys_dec_block_ref(paddr);
+    if (phys_get_block_ref(paddr) == 0) {
+        zero_out_phys_block(paddr);
+        mmap_unset(frame);
+        _mmngr_used_blocks--;
+    }
 }
 
