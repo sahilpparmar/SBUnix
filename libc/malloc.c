@@ -77,12 +77,9 @@ void* malloc(int elem_size)
         sz    = sizeof(MCB_t);
 
         //printf("\nheap_end : %p\treqd size: %p",heap_end, ((char *)p_mcb + aligned_size + sz));
-        while( heap_end >= ((char *)p_mcb + aligned_size + sz))
-        {
-            if ( p_mcb->is_available == FREE)
-            {
-                if(p_mcb->size >= (aligned_size + sz))
-                {
+        while (heap_end >= ((char *)p_mcb + aligned_size + sz)) {
+            if (p_mcb->is_available == FREE) {
+                if (p_mcb->size >= (aligned_size + sz)) {
                     flag = REUSE_MCB;
                     break;
                 }
@@ -90,14 +87,11 @@ void* malloc(int elem_size)
             p_mcb = (MCB_P) ((char *)p_mcb + p_mcb->size);
         }
 
-        if( flag != NO_MCB)
-        {
+        if (flag != NO_MCB) {
             p_mcb->is_available = IN_USE;
 
-            if( flag == REUSE_MCB)
-            {
-                if( p_mcb->size > aligned_size + sz) 
-                {
+            if (flag == REUSE_MCB) {
+                if (p_mcb->size > aligned_size + sz) {
                     temp        = p_mcb->size; 
                     p_mcb->size = aligned_size + sz;
 
@@ -106,7 +100,7 @@ void* malloc(int elem_size)
                 mcb_count++;
             }
             allocated_mem += aligned_size;
-            return ( (char *) p_mcb + sz);
+            return ((char *) p_mcb + sz);
         }
 
         /*when no hole is found to match the request*/

@@ -10,17 +10,19 @@
 #include <sys/dirent.h>
 #include <sys/kstring.h>
 
-// The process lists. The task at the head of the READY_LIST should always be executed next
-task_struct* READY_LIST = NULL;
+// Task list. The next READY task on the list will be executed.
+static task_struct* next_task_list = NULL;
+// Current running task
 task_struct* CURRENT_TASK = NULL;
-task_struct* idle_task = NULL;
+// Idle task. This will run only when there is no READY task to be run
+static task_struct* idle_task = NULL;
 
 static task_struct* prev = NULL;
 static task_struct* next = NULL;
 
 bool InitScheduling;
 
-// Idle kernel thread
+// Idle kernel task
 static void idle_process(void)
 {
     kprintf("\nInside Idle Process %d", sys_getpid());
@@ -35,9 +37,9 @@ void create_idle_process()
     schedule_process(idle_task, (uint64_t)idle_process, (uint64_t)&idle_task->kernel_stack[KERNEL_STACK_SIZE-1]);
 }
 
-static void add_to_ready_list(task_struct* new_task)
+static void add_to_task_list(task_struct* new_task)
 {
-    task_struct* ready_list_ptr = READY_LIST;
+    task_struct* ready_list_ptr = next_task_list;
 
     if (new_task->task_state == IDLE_STATE) {
         return;
@@ -49,7 +51,7 @@ static void add_to_ready_list(task_struct* new_task)
     }
 
     if (ready_list_ptr == NULL) {
-        READY_LIST = new_task;
+        next_task_list = new_task;
     } else {
         while (ready_list_ptr->next != NULL) {
             ready_list_ptr = ready_list_ptr->next;
@@ -63,7 +65,7 @@ static task_struct* get_next_ready_task()
 {
     task_struct* last, *next;
 
-    CURRENT_TASK = READY_LIST;
+    CURRENT_TASK = next_task_list;
     last = next = NULL;
 
     // Find a process with READY_STATE
@@ -84,9 +86,9 @@ static task_struct* get_next_ready_task()
         // READY process found
         if (last != NULL) {
             last->next = CURRENT_TASK->next;
-            CURRENT_TASK->next = READY_LIST;
+            CURRENT_TASK->next = next_task_list;
         } else {
-            READY_LIST = READY_LIST->next;
+            next_task_list = next_task_list->next;
         }
     }
     return next;
@@ -95,7 +97,7 @@ static task_struct* get_next_ready_task()
 // Keeps track of the sleep time for the sleeping processes
 static void sleep_time_check()
 {
-    task_struct* timer_list_ptr = READY_LIST;
+    task_struct* timer_list_ptr = next_task_list;
 
     while (timer_list_ptr != NULL) {
         if (timer_list_ptr->task_state == SLEEP_STATE) {
@@ -208,8 +210,8 @@ void timer_handler()
             prev = CURRENT_TASK;
             prev->rsp_register = cur_rsp;
 
-            // Add prev to the end of the READY_LIST for states other than EXIT
-            add_to_ready_list(prev);
+            // Add prev to the end of the next_task_list for states other than EXIT
+            add_to_task_list(prev);
 
             // Schedule next READY process
             next = get_next_ready_task();
@@ -226,7 +228,7 @@ void timer_handler()
                     switch_to_ring3;
                 }
 #if DEBUG_SCHEDULING
-                //kprintf(" %d[%d]", next->pid, next->task_state);
+                kprintf(" %d[%d]", next->pid, next->task_state);
 #endif
             }
         }
@@ -264,8 +266,8 @@ void schedule_process(task_struct* new_task, uint64_t entry_point, uint64_t stac
     // 4) Set rsp to KERNEL_STACK_SIZE-16
     new_task->rsp_register = (uint64_t)&new_task->kernel_stack[KERNEL_STACK_SIZE-22];
 
-    // 5) Add to the READY_LIST 
-    add_to_ready_list(new_task);
+    // 5) Add to the next_task_list 
+    add_to_task_list(new_task);
 }
 
 task_struct* copy_task_struct(task_struct* parent_task)
@@ -298,6 +300,8 @@ task_struct* copy_task_struct(task_struct* parent_task)
     
     while (parent_vma_l) {
         uint64_t start, end;
+        uint64_t vaddr, paddr; 
+        uint64_t *pte_entry, page_flags;
 
         start = parent_vma_l->vm_start;
         end   = parent_vma_l->vm_end;  
@@ -310,71 +314,65 @@ task_struct* copy_task_struct(task_struct* parent_task)
             child_vma_l          = child_vma_l->vm_next;
         }
 
-        // Allocate page tables if physical memory is allocated
-        if (end - start) {
-            uint64_t vaddr, paddr; 
-            uint64_t *pte_entry, page_flags;
+        // Deep Copy allocation for stack VMA only
+        if (parent_vma_l->vm_type == STACK) {
 
-            // Deep Copy allocation for stack VMA only
-            if (parent_vma_l->vm_type == STACK) {
+            uint64_t k_vaddr = get_top_virtaddr();
+            uint64_t *k_pte_entry;
 
-                uint64_t k_vaddr = get_top_virtaddr();
-                uint64_t *k_pte_entry;
-
-                vaddr = PAGE_ALIGN(end) - 0x1000;
-                while (vaddr >= start) {
-                    LOAD_CR3(parent_pml4_t);
-
-                    pte_entry = get_pte_entry(vaddr);
-                    if (!IS_PRESENT_PAGE(*pte_entry))
-                        break;
-
-                    // Allocate a new page in kernel
-                    paddr = phys_alloc_block();
-                    map_virt_phys_addr(k_vaddr, paddr, RW_USER_FLAGS);
-                    
-                    //kprintf("\nStack v:%p p:%p", vaddr, paddr);
-                    // Copy parent page in kernel space
-                    memcpy((void*)k_vaddr, (void*)vaddr, PAGESIZE);
-
-                    // Map paddr with child vaddr
-                    LOAD_CR3(child_pml4_t);
-                    //kprintf("\nStack v:%p p:%p", vaddr, paddr);
-                    map_virt_phys_addr(vaddr, paddr, RW_USER_FLAGS);
-
-                    // Unmap k_vaddr
-                    k_pte_entry  = get_pte_entry(k_vaddr);
-                    *k_pte_entry = 0UL;
-
-                    vaddr = vaddr - PAGESIZE;
-                }
+            vaddr = PAGE_ALIGN(end) - 0x1000;
+            while (vaddr >= start) {
                 LOAD_CR3(parent_pml4_t);
 
-            } else {
+                pte_entry = get_pte_entry(vaddr);
+                if (!IS_PRESENT_PAGE(*pte_entry))
+                    break;
 
-                vaddr = PAGE_ALIGN(start);
-                while (vaddr < end) {
-                    LOAD_CR3(parent_pml4_t);
+                // Allocate a new page in kernel
+                paddr = phys_alloc_block();
+                map_virt_phys_addr(k_vaddr, paddr, RW_USER_FLAGS);
 
-                    pte_entry = get_pte_entry(vaddr);
+                //kprintf("\nStack v:%p p:%p", vaddr, paddr);
+                // Copy parent page in kernel space
+                memcpy((void*)k_vaddr, (void*)vaddr, PAGESIZE);
 
-                    if (IS_PRESENT_PAGE(*pte_entry)) {
-                        unset_writable_bit(pte_entry);
-                        set_cow_bit(pte_entry);
+                // Map paddr with child vaddr
+                LOAD_CR3(child_pml4_t);
+                //kprintf("\nStack v:%p p:%p", vaddr, paddr);
+                map_virt_phys_addr(vaddr, paddr, RW_USER_FLAGS);
 
-                        paddr      = *pte_entry & PAGING_ADDR;
-                        page_flags = *pte_entry & PAGING_FLAGS;
+                // Unmap k_vaddr
+                k_pte_entry  = get_pte_entry(k_vaddr);
+                *k_pte_entry = 0UL;
 
-                        LOAD_CR3(child_pml4_t);
-                        //kprintf("\nv:%p p:%p f:%p", vaddr, paddr, page_flags);
-                        map_virt_phys_addr(vaddr, paddr, page_flags);
-                        phys_inc_block_ref(paddr);
-                    }
-                    vaddr = vaddr + PAGESIZE;
-                }
+                vaddr = vaddr - PAGESIZE;
             }
-            LOAD_CR3(parent_pml4_t);
+
+        } else {
+            // Share same physical pages by setting COW and READONLY bits
+
+            vaddr = PAGE_ALIGN(start);
+            while (vaddr < end) {
+                LOAD_CR3(parent_pml4_t);
+
+                pte_entry = get_pte_entry(vaddr);
+
+                if (IS_PRESENT_PAGE(*pte_entry)) {
+                    unset_writable_bit(pte_entry);
+                    set_cow_bit(pte_entry);
+
+                    paddr      = *pte_entry & PAGING_ADDR;
+                    page_flags = *pte_entry & PAGING_FLAGS;
+
+                    LOAD_CR3(child_pml4_t);
+                    //kprintf("\nv:%p p:%p f:%p", vaddr, paddr, page_flags);
+                    map_virt_phys_addr(vaddr, paddr, page_flags);
+                    phys_inc_block_ref(paddr);
+                }
+                vaddr = vaddr + PAGESIZE;
+            }
         }
+        LOAD_CR3(parent_pml4_t);
         parent_vma_l = parent_vma_l->vm_next;
     }
 

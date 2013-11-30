@@ -200,13 +200,6 @@ pid_t sys_fork()
 uint64_t sys_execvpe(char *file, char *argv[], char *envp[])
 {
     //TODO: Need to load envp[]
-    int argc = 0;
-    if (argv) {
-        while (argv[argc]) {
-            //kprintf("\n syscall %s",argv[argc]); 
-            argc++;
-        } 
-    }
     task_struct *new_task = create_elf_proc(file, argv);
 
     if (new_task) {
@@ -246,14 +239,14 @@ uint64_t sys_wait(uint64_t status)
     }
 
     // Reset last child exit
-    cur_task->last_child_exit = 0;
+    cur_task->wait_on_child_pid = 0;
     cur_task->task_state = WAIT_STATE;
 
     // Enable interrupt for scheduling next process
     __asm__ __volatile__ ("int $32");
         
     if (status_p) *status_p = 0;
-    return (uint64_t)cur_task->last_child_exit;
+    return (uint64_t)cur_task->wait_on_child_pid;
 }
 
 uint64_t sys_waitpid(uint64_t fpid, uint64_t fstatus, uint64_t foptions)
@@ -269,10 +262,10 @@ uint64_t sys_waitpid(uint64_t fpid, uint64_t fstatus, uint64_t foptions)
 
     if (pid > 0) {
         // If pid > 0, wait for the child with 'pid' to exit
-        cur_task->last_child_exit = pid;
+        cur_task->wait_on_child_pid = pid;
     } else {
         // If pid <= 0, wait for any one of the children to exit
-        cur_task->last_child_exit = 0;
+        cur_task->wait_on_child_pid = 0;
     }
     cur_task->task_state = WAIT_STATE;
 
@@ -280,7 +273,7 @@ uint64_t sys_waitpid(uint64_t fpid, uint64_t fstatus, uint64_t foptions)
     __asm__ __volatile__ ("int $32");
         
     if (status_p) *status_p = 0;
-    return (uint64_t)cur_task->last_child_exit;
+    return (uint64_t)cur_task->wait_on_child_pid;
 }
 
 void sys_exit()
@@ -300,6 +293,7 @@ void sys_exit()
     // Empty current task
     empty_task_struct(cur_task);
     cur_task->task_state = EXIT_STATE;
+    //kprintf("\n[E]%s", cur_task->comm);
 
     // Enable interrupt for scheduling next process
     __asm__ __volatile__ ("int $32");

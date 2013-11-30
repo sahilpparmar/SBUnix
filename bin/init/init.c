@@ -2,11 +2,12 @@
 
 int main(int argc, char **argv)
 {
-    if (fork() == 0) {
+    pid_t pid;
+    if ((pid = fork()) == 0) {
         execvpe("/rootfs/bin/sh", NULL, NULL);
+    } else {
+        waitpid(pid, NULL, 0);
     }
-
-    wait(NULL);
     return 1;
 }
 

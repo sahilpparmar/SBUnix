@@ -25,13 +25,7 @@ void* virt_alloc_pages(uint32_t no_of_vpages, uint64_t flags)
     uint64_t physaddr = NULL;
     int i = 0;
 
-    if (no_of_vpages > phys_get_free_block_count()) {
-        panic("\nNO FREE Pages!! Please Reboot your System");
-        return NULL;
-    } else {
-        ret_addr = (void*)topVirtAddr; 
-    }
-
+    ret_addr = (void*)topVirtAddr; 
     for (i = 0; i < no_of_vpages; ++i) {
         physaddr = phys_alloc_block();
         map_virt_phys_addr(topVirtAddr, physaddr, flags); 
