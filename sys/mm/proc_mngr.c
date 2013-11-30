@@ -18,6 +18,8 @@ task_struct* idle_task = NULL;
 static task_struct* prev = NULL;
 static task_struct* next = NULL;
 
+bool InitScheduling;
+
 // Idle kernel thread
 static void idle_process(void)
 {
@@ -107,6 +109,11 @@ static void sleep_time_check()
     }
 }
 
+/* tick: counts the PC timer ticks at the rate of 1.18 MHz.
+ * sec : counter for counting number of seconds completed. 1 sec = 100 ticks.
+ * min : counter for counting number of minutes completed. 1 min = 60 seconds.
+ * hr  : counter for counting number of hours completed.
+ */
 static uint32_t sec, min, hr, tick;
 
 void init_timer(uint32_t freq)
@@ -136,23 +143,15 @@ void print_timer()
     // Save current video address
     cur_video_addr = get_video_addr();
 
-    /* tick: counts the PC timer ticks at the rate of 1.18 MHz.
-     * sec : counter for counting number of seconds completed. 1 sec = 100 ticks.
-     * min : counter for counting number of minutes completed. 1 min = 60 seconds.
-     * hr  : counter for counting number of hours completed.
-     */
-    tick++;
-    if (tick%100 == 0) {
-        sec++;
-        if (sec == 60) {
-            min++;
-            sec = 0;
-            if (min == 60) {
-                hr++;
-                min = 0;
-                if (hr == 24) {
-                    hr = 0;
-                }
+    sec++;
+    if (sec == 60) {
+        min++;
+        sec = 0;
+        if (min == 60) {
+            hr++;
+            min = 0;
+            if (hr == 24) {
+                hr = 0;
             }
         }
     }
@@ -176,54 +175,60 @@ void print_timer()
 
 void timer_handler()
 {
-    print_timer();
+    tick++;
+    if (tick == 100) {
+        tick = 0;
+        print_timer();
+    }
     
-    sleep_time_check();
-    
-    if (CURRENT_TASK == NULL) {
-        next = get_next_ready_task();
+    if (InitScheduling) {
+        sleep_time_check();
 
-        LOAD_CR3(next->mm->pml4_t);
-
-        // Switch the kernel stack to that of the first process
-        __asm__ __volatile__("movq %[next_rsp], %%rsp" : : [next_rsp] "m" (next->rsp_register));
-
-        if (next->IsUserProcess) {
-            set_tss_rsp0((uint64_t)&next->kernel_stack[KERNEL_STACK_SIZE-1]);
-            switch_to_ring3;
-        }
-
-#if DEBUG_SCHEDULING
-        kprintf("\nScheduler Initiated with PID: %d[%d]", next->pid, next->task_state);
-#endif
-
-    } else {
-        uint64_t cur_rsp;
-        __asm__ __volatile__("movq %%rsp, %[cur_rsp]": [cur_rsp] "=r"(cur_rsp));
-
-        prev = CURRENT_TASK;
-        prev->rsp_register = cur_rsp;
-
-        // Add prev to the end of the READY_LIST for states other than EXIT
-        add_to_ready_list(prev);
-
-        // Schedule next READY process
-        next = get_next_ready_task();
-
-        // Context Switch only if next process is different than current process
-        if (prev != next) {
+        if (CURRENT_TASK == NULL) {
+            next = get_next_ready_task();
 
             LOAD_CR3(next->mm->pml4_t);
 
+            // Switch the kernel stack to that of the first process
             __asm__ __volatile__("movq %[next_rsp], %%rsp" : : [next_rsp] "m" (next->rsp_register));
 
             if (next->IsUserProcess) {
                 set_tss_rsp0((uint64_t)&next->kernel_stack[KERNEL_STACK_SIZE-1]);
                 switch_to_ring3;
             }
+
 #if DEBUG_SCHEDULING
-            //kprintf(" %d[%d]", next->pid, next->task_state);
+            kprintf("\nScheduler Initiated with PID: %d[%d]", next->pid, next->task_state);
 #endif
+
+        } else {
+            uint64_t cur_rsp;
+            __asm__ __volatile__("movq %%rsp, %[cur_rsp]": [cur_rsp] "=r"(cur_rsp));
+
+            prev = CURRENT_TASK;
+            prev->rsp_register = cur_rsp;
+
+            // Add prev to the end of the READY_LIST for states other than EXIT
+            add_to_ready_list(prev);
+
+            // Schedule next READY process
+            next = get_next_ready_task();
+
+            // Context Switch only if next process is different than current process
+            if (prev != next) {
+
+                LOAD_CR3(next->mm->pml4_t);
+
+                __asm__ __volatile__("movq %[next_rsp], %%rsp" : : [next_rsp] "m" (next->rsp_register));
+
+                if (next->IsUserProcess) {
+                    set_tss_rsp0((uint64_t)&next->kernel_stack[KERNEL_STACK_SIZE-1]);
+                    switch_to_ring3;
+                }
+#if DEBUG_SCHEDULING
+                //kprintf(" %d[%d]", next->pid, next->task_state);
+#endif
+            }
         }
     }
     __asm__ __volatile__("mov $0x20, %al;" "out %al, $0x20");
