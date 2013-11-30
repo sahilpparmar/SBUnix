@@ -21,6 +21,7 @@
 char stack[INITIAL_STACK_SIZE];
 uint32_t* loader_stack;
 extern char kernmem, physbase;
+extern bool InitScheduling;
 
 void start(uint32_t* modulep, void* physbase, void* physfree)
 {
@@ -50,25 +51,34 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
     __asm__ __volatile__("movq %0, %%rbp" : :"a"(&stack[0]));
     __asm__ __volatile__("movq %0, %%rsp" : :"a"(&stack[INITIAL_STACK_SIZE]));
 
-    // Schedule an Idle Kernel Process 
-    create_idle_process();
     // Initialize tarfs structure of fs
     init_tarfs();
 
+    // Schedule an Idle Kernel Process 
+    create_idle_process();
+
     // Context Switching code between tarfs processes
-#if 1
     create_elf_proc("/rootfs/bin/init", NULL);
-    //create_elf_proc("/rootfs/bin/hello", NULL);
-    //create_elf_proc("/rootfs/bin/ps", NULL);
-    //create_elf_proc("bin/fork", NULL);
-    //create_elf_proc("/rootfs/bin/world", NULL);
-    //create_elf_proc("bin/sh", NULL);
+#if 0
+    create_elf_proc("/rootfs/bin/hello", NULL);
+    create_elf_proc("/rootfs/bin/ps", NULL);
+    create_elf_proc("/rootfs/bin/fork", NULL);
+    create_elf_proc("/rootfs/bin/world", NULL);
+    create_elf_proc("/rootfs/bin/sh", NULL);
 #endif
     
+    // Disable Process Scheduling
+    InitScheduling = FALSE;
+
     // Allow interrupts
     sti;
-    //init_ahci();
-    panic("\nKernel should never reach here");
+
+    // Init AHCI
+    init_ahci();
+
+    // Enable Process Scheduling
+    InitScheduling = TRUE;
+
     while(1);
 }
 

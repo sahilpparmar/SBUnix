@@ -6,6 +6,8 @@
 #include <sys/kmalloc.h>
 #include <stdio.h>
 
+fnode_t* root_node;
+
 void* file_lookup(char *dir_path)
 {
 

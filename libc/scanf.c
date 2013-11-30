@@ -15,7 +15,6 @@ uint64_t read(uint64_t fd, void *buf, uint64_t nbytes)
 void scanf(const char *str, ...)
 {
     int len;
-    int32_t num;
     va_list ap;
     const char *ptr = NULL;
     va_start(ap, str);
@@ -24,19 +23,22 @@ void scanf(const char *str, ...)
             switch (*++ptr) {
                 case 's':
                     len = read(stdin, read_buf, 0);
-                    memcpy((void *) va_arg(ap, char *) , (void *)read_buf, len); 
+                    memcpy((void *) va_arg(ap, char*), (void *)read_buf, len); 
                     break;
                 case 'd':
-                    len = read(stdin, read_buf, 0);
-                    num = atoi(read_buf);
-                    // TODO: Directly assign, dont memcpy
-                    memcpy((void *) va_arg(ap, int32_t *), (void *) &num, len);
+                {
+                    int32_t *dec = (int32_t*) va_arg(ap, int32_t*);
+                    read(stdin, read_buf, 0);
+                    *dec = atoi(read_buf);
                     break;
+                }
                 case 'c':
-                    len = read(stdin, read_buf, 0);
-                    // TODO: Directly assign, dont memcpy
-                    memcpy( (void *) va_arg(ap, char *), (void *)read_buf, 1);
+                {
+                    char *ch = (char *) va_arg(ap, char*);
+                    read(stdin, read_buf, 0);
+                    *ch = read_buf[0]; 
                     break;
+                }
                 default:
                     break;
             }
