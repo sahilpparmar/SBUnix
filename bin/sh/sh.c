@@ -146,7 +146,7 @@ void fork_and_execvpe()
 
     if (pid!=0) {
         if (bg_flag != '&')
-            wait(NULL);
+            waitpid(pid, NULL, 0);
     } else {
         execvpe(prog, tempargs, NULL);
         exit(1);
