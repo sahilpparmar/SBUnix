@@ -151,7 +151,7 @@ uint64_t sys_execvpe(char *file, char *argv[], char *envp[])
     int argc = 0;
     if (argv) {
         while (argv[argc]) {
-            kprintf("\n syscall %s",argv[argc]); 
+            //kprintf("\n syscall %s",argv[argc]); 
             argc++;
         } 
     }

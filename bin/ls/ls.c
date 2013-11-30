@@ -8,7 +8,7 @@ int main(int argc, char* argv[])
     DIR *tp; 
     struct dirent *temp;
     
-    printf("", &argv[1]);
+    //printf("", &argv[1]);
 
     tp = opendir(argv[1]); 
     printf("\n"); 

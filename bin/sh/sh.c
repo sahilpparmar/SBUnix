@@ -2,11 +2,11 @@
 #include <defs.h>
 #include <sys/dirent.h>
 
-char currdir[1024];//, args[20][20];
+char currdir[1024], args[20][20];
 char temp[512];
 DIR *curr_dir_ptr;
 static char bg_flag, prog[20];
-char *tempargs[10];
+char *tempargs[10], *path = "bin/";
 
 int strcmp(const char *s1, const char *s2)
 {
@@ -85,18 +85,19 @@ void *kmemset(void *ptr, uint8_t value, uint64_t num)
 
 void export_to_path()
 {
-//    char *path_str;
-//
-//    if (args[1][0] == 'P' && args[1][1] == 'A' && args[1][2] == 'T' && args[1][3] == 'H') {
-//
-//        if (args[1][ustrlen(args[1])-1] != '/') {
-//            args[1][ustrlen(args[1])] = '/';
-//        }
-//        path_str = args[1];
-//        path_str += 5;
-//        strcpy(path, path_str);
-//    }
-//    //printf("\n path: %s \t str: %s args: %s", path, path_str, args[1]);
+    char *path_str;
+
+    if (args[1][0] == 'P' && args[1][1] == 'A' && args[1][2] == 'T' && args[1][3] == 'H') {
+
+        if (args[1][ustrlen(args[1])-1] != '/') {
+            args[1][ustrlen(args[1])] = '/';
+        }
+        
+        path_str = args[1];
+        path_str += 5;
+        strcpy(path, path_str);
+    }
+    //printf("\n path: %s \t str: %s args: %s", path, path_str, args[1]);
 }
 
 void modify_string(char *currdir)
@@ -140,7 +141,6 @@ void modify_string(char *currdir)
 
 void fork_and_execvpe()
 {
-    //printf("\ninside func: %s", tempargs[0]); 
     
     int pid = fork();
 
@@ -148,7 +148,6 @@ void fork_and_execvpe()
         if (bg_flag != '&')
             wait(NULL);
     } else {
-   //     printf("", &tempargs[0]); 
         execvpe(prog, tempargs, NULL);
         exit(1);
     }
@@ -166,10 +165,10 @@ void *umemset(void *ptr, uint8_t value, uint64_t num)
 
 int main(int argc, char **argv)
 {
-    char str[25], *newstr, ptr[20], args[20][20], path_to_cmd[20];
+    char str[25], *newstr, ptr[20], path_to_cmd[20];
     int i, j=0, k=0, file_descp, ptr_length, lendir = 0, str_length;
-    char* exec_path, *path;
-    path = "bin/";
+    char* exec_path;
+    //path = "bin/";
 
     printf("\n\t\t\t\t*******NEW SHELL*******");
     //By default current directory stream will be pointing to DIR stream of '/'
@@ -205,8 +204,15 @@ int main(int argc, char **argv)
         }
 
         args[j][k]='\0';
+
         
-        if (strcmp(args[0], "help") == 0) {             
+        
+        if(strcmp(args[0], "export") == 0) {
+            /****1) export path****/   
+               //printf("b4:%s",args[1]);
+               export_to_path();
+        
+        } else if (strcmp(args[0], "help") == 0) {             
             /****2) To handle help command ****/
             printf("\nps\ncls\nls\ncd\nexport PATH");
 
@@ -287,7 +293,7 @@ int main(int argc, char **argv)
 
                 tempargs[0] = (char *)malloc(ustrlen(currdir) + 1); 
                 strcpy(tempargs[0], currdir);
-                printf("\n tempargs: %s, currir %s", tempargs[0], currdir);
+                //printf("\n tempargs: %s, currir %s", tempargs[0], currdir);
             }
 
             tempargs[1] = NULL;
@@ -346,7 +352,7 @@ int main(int argc, char **argv)
 
                         file_descp = open(path_to_cmd, 0);
                         close(file_descp);
-                        //strcat(temp, );
+                        
                         if (file_descp != -1) {
                             fork_and_execvpe();
                         } else { 
