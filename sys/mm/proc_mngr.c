@@ -107,6 +107,11 @@ static void sleep_time_check()
     }
 }
 
+/* tick: counts the PC timer ticks at the rate of 1.18 MHz.
+ * sec : counter for counting number of seconds completed. 1 sec = 100 ticks.
+ * min : counter for counting number of minutes completed. 1 min = 60 seconds.
+ * hr  : counter for counting number of hours completed.
+ */
 static uint32_t sec, min, hr, tick;
 
 void init_timer(uint32_t freq)
@@ -136,23 +141,15 @@ void print_timer()
     // Save current video address
     cur_video_addr = get_video_addr();
 
-    /* tick: counts the PC timer ticks at the rate of 1.18 MHz.
-     * sec : counter for counting number of seconds completed. 1 sec = 100 ticks.
-     * min : counter for counting number of minutes completed. 1 min = 60 seconds.
-     * hr  : counter for counting number of hours completed.
-     */
-    tick++;
-    if (tick%100 == 0) {
-        sec++;
-        if (sec == 60) {
-            min++;
-            sec = 0;
-            if (min == 60) {
-                hr++;
-                min = 0;
-                if (hr == 24) {
-                    hr = 0;
-                }
+    sec++;
+    if (sec == 60) {
+        min++;
+        sec = 0;
+        if (min == 60) {
+            hr++;
+            min = 0;
+            if (hr == 24) {
+                hr = 0;
             }
         }
     }
@@ -176,7 +173,11 @@ void print_timer()
 
 void timer_handler()
 {
-    print_timer();
+    tick++;
+    if (tick == 100) {
+        tick = 0;
+        print_timer();
+    }
     
     sleep_time_check();
     

@@ -6,6 +6,7 @@ int main(int argc, char **argv)
         execvpe("bin/sh", NULL, NULL);
     }
 
-    while(1);
+    wait(NULL);
     return 1;
 }
+

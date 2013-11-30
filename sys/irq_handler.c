@@ -178,26 +178,18 @@ static void keyboard_handler(registers_t regs)
             if (flag == 1) {
                 if (val == '\n') {
                     buf[counter++] = '\0';
+                    putchar(val);
                     flag = 0;
                 } else if (val == '\b') {
-                    if (get_video_addr() <= last_addr)
-                        {
-                            counter--;
-                            counter++;
-                        }
-                    else { 
-
+                    if (get_video_addr() > last_addr) {
                         putchar(val);
                         counter--;
                     }
                 } else {
                     buf[counter++] = val;
-                    
                     putchar(val);
                 }
-                
             }
-            
         }
     }       
 }

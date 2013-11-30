@@ -6,6 +6,7 @@
 #include <sys/kmalloc.h>
 #include <stdio.h>
 
+fnode_t* root_node;
 
 void make_node(struct file *node, struct file *parent, char *name, uint64_t start, uint64_t end, int type)
 {

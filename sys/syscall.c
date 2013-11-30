@@ -16,68 +16,56 @@
 
 // These will get invoked in kernel mode
 
-int sys_clear()
-{
-    clear_screen();
-    return 1;
-}
+extern fnode_t* root_node;
 
 DIR* sys_opendir(uint64_t* entry, uint64_t* directory)
 {
-    
     char* dir_path = (char *)entry;
     DIR* dir = (DIR *)directory;
-
     fnode_t *auxnode, *currnode = root_node;
     char *temp = NULL; 
-    int i;
     char *path = (char *)kmalloc(sizeof(char) * kstrlen(dir_path));
+    int i;
+
     kstrcpy(path, dir_path); 
-
     temp = kstrtok(path, "/");  
-    
-    while(temp != NULL)
-    {
-        auxnode = currnode; 
-        
-        if(kstrcmp(temp,"..") == 0) {
 
+    while (temp != NULL) {
+        auxnode = currnode;
+
+        if (kstrcmp(temp,"..") == 0) {
             currnode = (fnode_t *)currnode->f_child[1];
         } else {
-    
-            for(i = 2; i < currnode->end; ++i){
-                if(kstrcmp(temp, currnode->f_child[i]->f_name) == 0) {
+
+            for (i = 2; i < currnode->end; ++i){
+                if (kstrcmp(temp, currnode->f_child[i]->f_name) == 0) {
                     currnode = (fnode_t *)currnode->f_child[i];
                     break;       
                 }        
             }
-        
-            if(i == auxnode->end) {
+            if (i == auxnode->end) {
                 dir->curr     = NULL;
                 dir->filenode = NULL;
                 return dir;
             }
         } 
-
         temp = kstrtok(NULL, "/");          
     }
-   
+
     if (currnode->f_type == DIRECTORY) {
-    
         dir->curr     = 2; 
         dir->filenode = currnode; 
     } else {
         dir->curr     = NULL;
         dir->filenode = NULL;
     }
-    
-        return dir;
+    return dir;
 }
 
 struct dirent* sys_readdir(uint64_t* entry)
 {
     DIR *dir = (DIR*)entry;
-    if(dir->filenode->end < 3 || dir->curr == dir->filenode->end ||dir->curr == 0) { 
+    if (dir->filenode->end < 3 || dir->curr == dir->filenode->end || dir->curr == 0) { 
         return NULL;
     } else {
         kstrcpy(dir->curr_dirent.name, dir->filenode->f_child[dir->curr]->f_name);
@@ -99,29 +87,94 @@ int sys_closedir(uint64_t* entry)
    }
 }
 
-//TODO: Use if needed OR remove this at final submission
-#if 0
-void copy_preserved_registers(task_struct *task)
+int sys_open(uint64_t* dir_path, uint64_t flags)
 {
-    // Copy all preserved registers from current task to 
-    __asm__ __volatile__ (
-        "pushq %%rbx;"
-        "pushq %%rbp;"
-        "pushq %%r12;"
-        "pushq %%r13;"
-        "pushq %%r14;"
-        "pushq %%r15;"
-        "popq  %0;"
-        "popq  %1;"
-        "popq  %2;"
-        "popq  %3;"
-        "popq  %4;"
-        "popq  %5;"
-        : "=m" (task->kernel_stack[KERNEL_STACK_SIZE-20]), "=m" (task->kernel_stack[KERNEL_STACK_SIZE-19]), "=m" (task->kernel_stack[KERNEL_STACK_SIZE-18]),
-          "=m" (task->kernel_stack[KERNEL_STACK_SIZE-17]), "=m" (task->kernel_stack[KERNEL_STACK_SIZE-11]), "=m" (task->kernel_stack[KERNEL_STACK_SIZE-8])
-    );
+    char* file_path = (char *)dir_path;
+
+    // allocate new filedescriptor
+    FD* file_d = (FD *)kmalloc(sizeof(FD));
+    fnode_t *aux_node, *currnode = root_node;
+
+    char *temp = NULL; 
+    int i;
+    char *path = (char *)kmalloc(sizeof(char) * kstrlen(file_path));
+    kstrcpy(path, file_path); 
+
+    temp = kstrtok(path, "/");  
+
+    while (temp != NULL) {
+        aux_node = currnode;
+        for (i = 2; i < currnode->end; ++i) {
+            if (kstrcmp(temp, currnode->f_child[i]->f_name) == 0) {
+                currnode = (fnode_t *)currnode->f_child[i];
+                break;       
+            }        
+        }
+
+        if (i == aux_node->end) {
+            return -1;
+        }
+
+        temp = kstrtok(NULL, "/");          
+    }
+
+    file_d->filenode = currnode;
+    file_d->curr = 0;
+
+    //traverse file descriptor array and insert this entry
+    for (i = 3; i < MAXFD; ++i) {
+        if (CURRENT_TASK->file_descp[i] == NULL) {
+            CURRENT_TASK->file_descp[i] = (uint64_t *)file_d;
+            return i;        
+        }
+    }
+
+    return -1;
 }
-#endif
+
+void sys_close(int fd)
+{
+    //TODO add this filedescriptor to free list    
+    CURRENT_TASK->file_descp[fd] = NULL;
+}
+
+uint64_t sys_read(uint64_t fd_type, uint64_t addr, uint64_t length)
+{
+    if (fd_type == stdin) {
+        length = gets(addr);
+
+    } else if(fd_type > 2) {
+        
+        if ((CURRENT_TASK->file_descp[fd_type]) == NULL) {
+            length = -1;
+        } else {
+            uint64_t start, end;
+            int currlength = 0;
+    
+            currlength = (int)((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr;
+            start      = ((FD *)(CURRENT_TASK->file_descp[fd_type]))->filenode->start;
+            end        = ((FD *)(CURRENT_TASK->file_descp[fd_type]))->filenode->end;
+           
+            if((end - (uint64_t)((void *)start + currlength)) < length) {
+                length = (end - (uint64_t)((void *)start + currlength));
+            }
+            
+            memcpy((uint64_t *)addr, (uint64_t *)((void *)start + currlength), length);
+        
+            ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr += length;
+        } 
+    }
+    
+    return length;
+}
+
+int sys_write(int n, uint64_t addr, int len)
+{
+    int l = 0;
+    if (n == stdout || n == stderr)
+        l = puts((char*) addr);
+    return l;
+}
 
 pid_t sys_fork()
 {
@@ -183,10 +236,10 @@ uint64_t sys_wait(uint64_t status)
 
     // Reset last child exit
     cur_task->last_child_exit = 0;
+    cur_task->task_state = WAIT_STATE;
 
-    //TODO: Need to add to WAIT_STATE instead
-    sti;
-    while (!cur_task->last_child_exit);
+    // Enable interrupt for scheduling next process
+    __asm__ __volatile__ ("int $32");
         
     if (status_p) *status_p = 0;
     return (uint64_t)cur_task->last_child_exit;
@@ -203,17 +256,17 @@ uint64_t sys_waitpid(uint64_t fpid, uint64_t fstatus, uint64_t foptions)
         return -1;
     }
 
-    // Reset last child exit
-    cur_task->last_child_exit = 0;
-
-    sti;
     if (pid > 0) {
         // If pid > 0, wait for the child with 'pid' to exit
-        while (cur_task->last_child_exit != pid);
+        cur_task->last_child_exit = pid;
     } else {
         // If pid <= 0, wait for any one of the children to exit
-        while (!cur_task->last_child_exit);
+        cur_task->last_child_exit = 0;
     }
+    cur_task->task_state = WAIT_STATE;
+
+    // Enable interrupt for scheduling next process
+    __asm__ __volatile__ ("int $32");
         
     if (status_p) *status_p = 0;
     return (uint64_t)cur_task->last_child_exit;
@@ -226,6 +279,11 @@ void sys_exit()
     // Remove the task from parent's child list
     if (cur_task->parent) {
         remove_child_from_parent(cur_task);
+    }
+
+    // Assign all the child processes as ZOMBIE 
+    if (cur_task->childhead) {
+        remove_parent_from_child(cur_task);
     }
 
     // Empty current task
@@ -250,122 +308,14 @@ int sys_sleep(int msec)
     return task->sleep_time;
 }
 
-int sys_munmap(uint64_t* addr, uint64_t length)
+uint64_t sys_brk(uint64_t no_of_pages)
 {
-    vma_struct *iter, *temp = NULL;
-    uint64_t end_addr, no_of_pages, i;
-    bool myflag = 0, retflag = 0; 
+    uint64_t new_vaddr = CURRENT_TASK->mm->end_brk;
 
-    //check if address is 4k aligned
-    if (((uint64_t )addr & 0xfff) != 0)
-        return -1;
+    //kprintf("\n New Heap Page Alloc:%p", new_vaddr);
+    increment_brk(CURRENT_TASK, PAGESIZE * no_of_pages);
 
-    end_addr = (uint64_t)((void *)addr + length);
-    end_addr = ((((end_addr - 1) >> 12) + 1) << 12);
-
-    iter = CURRENT_TASK->mm->vma_list;
-
-    //iterate through vma list and free all anon-type vma
-    //check if there are any other vmas mappped on this page
-    //if not then free the page
-
-    for (iter = CURRENT_TASK->mm->vma_list; iter->vm_next != NULL; ) {
-        temp = iter;
-        iter = iter->vm_next;
-
-        if (iter->vm_start >= (uint64_t)addr || iter->vm_end > (uint64_t)addr)
-            break;
-    }    
-
-    //kprintf("\n address of this vma %p address of temp %p end addr %p\n", iter->vm_start, temp->vm_start, end_addr);
-
-    while (iter != NULL) { 
-
-        if (iter->vm_start < end_addr && iter->vm_type == ANON) {
-            //delete this vma 
-            //TODO: need to add this to freelist of vma 
-            temp->vm_next = iter->vm_next; 
-            iter          = iter->vm_next; 
-            retflag       = 1;
-
-        } else if(iter->vm_type != ANON) {
-            myflag = 1; 
-            temp   = iter;
-            iter   = iter->vm_next;
-        } else {
-            break; 
-        }
-
-        if (iter ==  NULL || iter->vm_end > end_addr)       
-            break;
-    }
-
-    if (myflag == 0) {
-        no_of_pages = (end_addr - (uint64_t )addr) / PAGESIZE;
-
-        for (i = 0; i < no_of_pages; ++i) {
-            //free this page 
-            free_virt_page(addr);
-            addr = (void *)addr + PAGESIZE; 
-        }
-    }
-
-    if (retflag == 1) {
-        return 0;
-    } else {
-        return -1;
-    }
-}
-
-int sys_open(uint64_t* dir_path, uint64_t flags)
-{
-    char* file_path = (char *)dir_path;
-
-    // allocate new filedescriptor
-    FD* file_d = (FD *)kmalloc(sizeof(FD));
-    fnode_t *aux_node, *currnode = root_node;
-
-    char *temp = NULL; 
-    int i;
-    char *path = (char *)kmalloc(sizeof(char) * kstrlen(file_path));
-    kstrcpy(path, file_path); 
-
-    temp = kstrtok(path, "/");  
-
-    while (temp != NULL) {
-        aux_node = currnode;
-        for (i = 2; i < currnode->end; ++i) {
-            if (kstrcmp(temp, currnode->f_child[i]->f_name) == 0) {
-                currnode = (fnode_t *)currnode->f_child[i];
-                break;       
-            }        
-        }
-
-        if (i == aux_node->end) {
-            return -1;
-        }
-
-        temp = kstrtok(NULL, "/");          
-    }
-
-    file_d->filenode = currnode;
-    file_d->curr = 0;
-
-    //traverse file descriptor array and insert this entry
-    for (i = 3; i < MAXFD; ++i) {
-        if (CURRENT_TASK->file_descp[i] == NULL) {
-            CURRENT_TASK->file_descp[i] = (uint64_t *)file_d;
-            return i;        
-        }
-    }
-
-    return -1;
-}
-
-void sys_close(int fd)
-{
-    //TODO add this filedescriptor to free list    
-    CURRENT_TASK->file_descp[fd] = NULL;
+    return new_vaddr;
 }
 
 uint64_t* sys_mmap(uint64_t* addr, uint64_t nbytes, uint64_t flags)
@@ -374,19 +324,16 @@ uint64_t* sys_mmap(uint64_t* addr, uint64_t nbytes, uint64_t flags)
     bool myflag = 0;
 
     if (addr == 0x0) {
-
-        //if address is not specified by the user then 
-        //allocate new address above the vm_end of last vma
+        // if address is not specified by the user then 
+        // allocate new address above the vm_end of last vma
         for (iter = CURRENT_TASK->mm->vma_list; iter->vm_next != NULL; iter = iter->vm_next);
 
-        //page aligning the addr
+        // page aligning the addr
         addr = (uint64_t *)((((iter->vm_end - 1) >> 12) + 1) << 12);
     
     } else {
-
-        //check if allocating new page does not conflicts with memory mapped by other VMAs
+        // check if allocating new page does not conflicts with memory mapped by other VMAs
         if (verify_addr(CURRENT_TASK,(uint64_t)addr, (uint64_t)((void *)addr + nbytes)) == 0) {
-            kprintf("\n not valid addr"); 
             return NULL;   
         }
     } 
@@ -398,7 +345,7 @@ uint64_t* sys_mmap(uint64_t* addr, uint64_t nbytes, uint64_t flags)
 
     iter = CURRENT_TASK->mm->vma_list;
 
-    /*check position where we can insert this new vma in vma list*/
+    // check position where we can insert this new vma in vma list
     while (iter->vm_next != NULL) {
 
         temp = iter;            
@@ -420,52 +367,71 @@ uint64_t* sys_mmap(uint64_t* addr, uint64_t nbytes, uint64_t flags)
     return (void *)addr;
 }
 
-uint64_t sys_read(uint64_t fd_type, uint64_t addr, uint64_t length)
+int sys_munmap(uint64_t* addr, uint64_t length)
 {
-    if (fd_type == stdin) {
-        length = gets(addr);
+    vma_struct *iter, *temp = NULL;
+    uint64_t end_addr, no_of_pages, i;
+    bool myflag = 0, retflag = 0; 
 
-    } else if(fd_type > 2) {
-        
-        if((CURRENT_TASK->file_descp[fd_type]) == NULL) {
-            length = -1;
+    // check if address is 4k aligned
+    if (((uint64_t )addr & 0xfff) != 0)
+        return -1;
+
+    end_addr = (uint64_t)((void *)addr + length);
+    end_addr = ((((end_addr - 1) >> 12) + 1) << 12);
+
+    iter = CURRENT_TASK->mm->vma_list;
+
+    // iterate through vma list and free all anon-type vma
+    // check if there are any other vmas mappped on this page
+    // if not then free the page
+
+    for (iter = CURRENT_TASK->mm->vma_list; iter->vm_next != NULL; ) {
+        temp = iter;
+        iter = iter->vm_next;
+
+        if (iter->vm_start >= (uint64_t)addr || iter->vm_end > (uint64_t)addr)
+            break;
+    }    
+
+    //kprintf("\n address of this vma %p address of temp %p end addr %p\n", iter->vm_start, temp->vm_start, end_addr);
+
+    while (iter != NULL) { 
+
+        if (iter->vm_start < end_addr && iter->vm_type == ANON) {
+            // delete this vma 
+            temp->vm_next = iter->vm_next; 
+            add_to_vma_free_list(iter);
+            iter          = iter->vm_next; 
+            retflag       = 1;
+
+        } else if(iter->vm_type != ANON) {
+            myflag = 1; 
+            temp   = iter;
+            iter   = iter->vm_next;
         } else {
-            uint64_t start, end;
-            int currlength = 0;
-    
-            currlength = (int)((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr;
-            start      = ((FD *)(CURRENT_TASK->file_descp[fd_type]))->filenode->start;
-            end        = ((FD *)(CURRENT_TASK->file_descp[fd_type]))->filenode->end;
-           
-            if((end - (uint64_t)((void *)start + currlength)) < length) {
-                length = (end - (uint64_t)((void *)start + currlength));
-            }
-            
-            memcpy((uint64_t *)addr, (uint64_t *)((void *)start + currlength), length);
-        
-            ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr += length;
-        } 
+            break; 
+        }
+
+        if (iter ==  NULL || iter->vm_end > end_addr)       
+            break;
     }
-    
-    return length;
-}
 
-int sys_write(int n, uint64_t addr, int len)
-{
-    int l = 0;
-    if (n == stdout || n == stderr)
-        l = puts((char*) addr);
-    return l;
-}
+    if (myflag == 0) {
+        no_of_pages = (end_addr - (uint64_t )addr) / PAGESIZE;
 
-uint64_t sys_brk(uint64_t no_of_pages)
-{
-    uint64_t new_vaddr = CURRENT_TASK->mm->end_brk;
+        for (i = 0; i < no_of_pages; ++i) {
+            // free this page 
+            free_virt_page(addr);
+            addr = (void *)addr + PAGESIZE; 
+        }
+    }
 
-    //kprintf("\n New Heap Page Alloc:%p", new_vaddr);
-    increment_brk(CURRENT_TASK, PAGESIZE * no_of_pages);
-
-    return new_vaddr;
+    if (retflag == 1) {
+        return 0;
+    } else {
+        return -1;
+    }
 }
 
 pid_t sys_getpid()
@@ -478,7 +444,13 @@ pid_t sys_getppid()
     return CURRENT_TASK->ppid;
 }
 
-const char *t_state[6] = { "RUNNING" , "READY  " , "SLEEP  " , "WAIT   " , "IDLE   " , "EXIT  " };
+int sys_clear()
+{
+    clear_screen();
+    return 1;
+}
+
+const char *t_state[NUM_TASK_STATES] = { "RUNNING" , "READY  " , "SLEEP  " , "WAIT   " , "IDLE   " , "EXIT   ", "ZOMBIE "};
 
 void sys_listprocess()
 {
@@ -489,8 +461,9 @@ void sys_listprocess()
             "\n  #  |  PID  |  PPID  |   State   |  Process Name "
             "\n ----| ----- | ------ | --------- | --------------- ");
 
-    while(cur) {
-        kprintf("\n  %d  |   %d   |   %d    |  %s  |  %s  ", ++i, cur->pid, cur->ppid, t_state[cur->task_state], cur->comm);
+    while (cur) {
+        kprintf("\n  %d  |   %d   |   %d    |  %s  |  %s  ",
+                ++i, cur->pid, cur->ppid, t_state[cur->task_state], cur->comm);
         cur = cur->next;
     }
 }    

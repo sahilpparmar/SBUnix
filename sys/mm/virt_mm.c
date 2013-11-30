@@ -57,21 +57,6 @@ void free_virt_page(void *vaddr)
     *pte_entry = 0;
 }
 
-void zero_out_phys_block(uint64_t paddr)
-{
-    uint64_t vaddr = get_top_virtaddr();
-    uint64_t *k_pte_entry;
-
-    map_virt_phys_addr(vaddr, paddr, RW_KERNEL_FLAGS);
-
-    // Copy parent page in kernel space
-    memset((void*)vaddr, 0, PAGESIZE);
-
-    // Unmap k_vaddr
-    k_pte_entry = get_pte_entry(vaddr);
-    *k_pte_entry = 0UL;
-}
-
 uint64_t get_temp_vaddr(uint64_t paddr)
 {
     uint64_t vaddr = get_top_virtaddr();
@@ -87,3 +72,13 @@ void free_temp_vaddr(uint64_t vaddr)
     *k_pte_entry = 0UL;
 }
 
+void zero_out_phys_block(uint64_t paddr)
+{
+    uint64_t vaddr = get_temp_vaddr(paddr);
+
+    // Copy parent page in kernel space
+    memset((void*)vaddr, 0, PAGESIZE);
+
+    // Unmap k_vaddr
+    free_temp_vaddr(vaddr);
+}

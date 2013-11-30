@@ -54,4 +54,5 @@ typedef struct elf64_phdr
 
 void readelf(char* filename);
 task_struct* create_elf_proc(char *filename, char *argv[]);
+void* init_tarfs();
 

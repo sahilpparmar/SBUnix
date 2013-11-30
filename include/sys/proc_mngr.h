@@ -15,7 +15,9 @@ enum task_states {
     SLEEP_STATE,
     WAIT_STATE,
     IDLE_STATE,
-    EXIT_STATE
+    EXIT_STATE,
+    ZOMBIE_STATE,
+    NUM_TASK_STATES
 };
 
 enum vmatype {
@@ -92,6 +94,7 @@ void schedule_process(task_struct* new_task, uint64_t entry_point, uint64_t stac
 void set_tss_rsp0(uint64_t rsp);
 void set_next_pid(pid_t fnext_pid);
 void add_child_to_parent(task_struct *child_task);
+void remove_parent_from_child(task_struct *parent_task);
 void remove_child_from_parent(task_struct *child_task);
 void replace_child_task(task_struct *old_task, task_struct *new_task);
 bool verify_addr(task_struct *proc, uint64_t addr, uint64_t size);
