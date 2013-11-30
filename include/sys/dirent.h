@@ -38,4 +38,5 @@ DIR* opendir(char *dir_path);
 struct dirent* readdir(DIR* node);
 int closedir(DIR* node);
 int open(char *path, int flags);
+void* file_lookup(char *dir_path);
 

@@ -22,7 +22,7 @@ int main(int argc, char* argv[])
         //for (int i = 0; i < len; i++)
         //    printf("%c", str[i]);
 
-        execvpe("bin/world", args, NULL);
+        execvpe("/rootfs/bin/world", args, NULL);
     } else {
         //printf("\nParent %p %p\n", fd, str);
         //int len = read(fd, str, 0x60);

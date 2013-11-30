@@ -7,7 +7,7 @@
 #include <sys/types.h>
 #include <sys/virt_mm.h>
 #include <sys/phys_mm.h>
-
+#include <sys/kstring.h>
 
 void start_cmd(HBA_PORT *port);
 void stop_cmd(HBA_PORT *port);
@@ -23,38 +23,38 @@ uint64_t *pages_for_ahci_end_virtual;
 int write(HBA_PORT *port, DWORD startl, DWORD starth, DWORD count, QWORD buf)  
 {
     port->is = 0xffff;              // Clear pending interrupt bits
-    //int spin = 0;           // Spin lock timeout counter
+    
     int slot = find_cmdslot(port);
     if (slot == -1)
         return 0;
     
-    uint64_t addr = 0;
-    addr = (((addr | port->clbu) << 32) | port->clb);
-    HBA_CMD_HEADER *cmdheader = (HBA_CMD_HEADER*)(AHCI_KERN_BASE + addr);
+    uint64_t clb_addr = 0;
+    clb_addr = (((clb_addr | port->clbu) << 32) | port->clb);
 
-    //HBA_CMD_HEADER *cmdheader = (HBA_CMD_HEADER*)(port->clb);
+    HBA_CMD_HEADER *cmdheader = (HBA_CMD_HEADER*)(AHCI_KERN_BASE + clb_addr);
+
     cmdheader += slot;
     
     cmdheader->cfl = sizeof(FIS_REG_H2D)/sizeof(DWORD);     // Command FIS size
-    cmdheader->w = 1;               // Read from device
-    cmdheader->c = 1;               // Read from device
-    //cmdheader->p = 1;               // Read from device
+    cmdheader->w = 1;               // Write to device
+    cmdheader->c = 1;               
+    
     // 8K bytes (16 sectors) per PRDT
     cmdheader->prdtl = 1;    // PRDT entries count
 
-    addr=0;
-    addr=(((addr | cmdheader->ctbau)<<32)|cmdheader->ctba);
-    HBA_CMD_TBL *cmdtbl = (HBA_CMD_TBL*)(AHCI_KERN_BASE + addr);
-
-    //memset(cmdtbl, 0, sizeof(HBA_CMD_TBL) + (cmdheader->prdtl-1)*sizeof(HBA_PRDT_ENTRY));
-    int i = 0; 
+    uint64_t ctb_addr=0;
+    ctb_addr =(((ctb_addr | cmdheader->ctbau)<<32)|cmdheader->ctba);
     
+    HBA_CMD_TBL *cmdtbl = (HBA_CMD_TBL*)(AHCI_KERN_BASE + ctb_addr);
+    memset((uint64_t *)(AHCI_KERN_BASE + ctb_addr), 0, sizeof(HBA_CMD_TBL));
+    
+    
+    // 8K bytes (16 sectors) per PRDT
     // Last entry
+    cmdtbl->prdt_entry[0].dbau = (DWORD)((buf >> 32) & 0xFFFFFFFF);
+    cmdtbl->prdt_entry[0].dbc = 4096-1;   // 512 bytes per sector
+    cmdtbl->prdt_entry[0].i = 0;
 
-    cmdtbl->prdt_entry[i].dba = (DWORD)(buf & 0xFFFFFFFF);
-    cmdtbl->prdt_entry[i].dbau = (DWORD)((buf >> 32) & 0xFFFFFFFF);
-    cmdtbl->prdt_entry[i].dbc = 4096-1;   // 512 bytes per sector
-    cmdtbl->prdt_entry[i].i = 0;
 
     // Setup command
     FIS_REG_H2D *cmdfis = (FIS_REG_H2D*)(&cmdtbl->cfis);
@@ -76,80 +76,66 @@ int write(HBA_PORT *port, DWORD startl, DWORD starth, DWORD count, QWORD buf)
     cmdfis->counth = 0;
 
     kprintf("[slot]{%d}", slot);
-    port->ci = 1;    // Issue command
-
+    port->ci = 1 << slot;    // Issue command
+    
     // Wait for completion
     while (1)
     {
         // In some longer duration reads, it may be helpful to spin on the DPS bit 
         // in the PxIS port field as well (1 << 5)
         if ((port->ci & (1<<slot)) == 0) 
-            break;
+            {
+                break;
+            }
         if (port->is & HBA_PxIS_TFES)   // Task file error
         {
             kprintf("Write disk error\n");
             return 0;
         }
     }
+    
     // Check again
     if (port->is & HBA_PxIS_TFES)
     {
         kprintf("Write disk error\n");
         return 0;
     }
-
     return 1;
 }
 
 
-
 int read(HBA_PORT *port, DWORD startl, DWORD starth, DWORD count, QWORD buf)  
 {
-    kprintf("\n Start Read");
     
     port->is = 0xffff;              // Clear pending interrupt bits
-    
     int slot = find_cmdslot(port);
     if (slot == -1)
         return 0;
-    uint64_t addr = 0;
     
-    // kprintf("\n clb %x clbu %x", port->clb, port->clbu);
-    
-    addr = (((addr | port->clbu) << 32) | port->clb);
+    uint64_t clb_addr = 0;
+    clb_addr = (((clb_addr | port->clbu) << 32) | port->clb);
+    HBA_CMD_HEADER *cmdheader = (HBA_CMD_HEADER*)(AHCI_KERN_BASE + clb_addr);
 
-    kprintf(" \n addr : %p ",addr);
-    HBA_CMD_HEADER *cmdheader = (HBA_CMD_HEADER*)(AHCI_KERN_BASE + addr);
-
-    //HBA_CMD_HEADER *cmdheader = (HBA_CMD_HEADER*)(port->clb);
     cmdheader += slot;
-    
     cmdheader->cfl = sizeof(FIS_REG_H2D)/sizeof(DWORD);     // Command FIS size
     cmdheader->w = 0;               // Read from device
-    cmdheader->c = 1;               // Read from device
-//    cmdheader->p = 1;               // Read from device
+    cmdheader->c = 1;           
     
-    // 8K bytes (16 sectors) per PRDT
     cmdheader->prdtl = 1;    // PRDT entries count
 
-    addr=0;
-    addr=(((addr | cmdheader->ctbau)<<32)|cmdheader->ctba);
-    kprintf(" \n addr : %p ",addr);
-    HBA_CMD_TBL *cmdtbl = (HBA_CMD_TBL*)(AHCI_KERN_BASE + addr);
-
-    memset((uint64_t *)(AHCI_KERN_BASE + addr), 0, sizeof(HBA_CMD_TBL));
+    uint64_t ctb_addr=0;
+    ctb_addr=(((ctb_addr | cmdheader->ctbau)<<32)|cmdheader->ctba);
+    
+    HBA_CMD_TBL *cmdtbl = (HBA_CMD_TBL*)(AHCI_KERN_BASE + ctb_addr);
+    memset((uint64_t *)(AHCI_KERN_BASE + ctb_addr), 0, sizeof(HBA_CMD_TBL));
     
     
     // 8K bytes (16 sectors) per PRDT
     // Last entry
-    
-    //  kprintf("\n Cmd Header Section Entered");
-
     cmdtbl->prdt_entry[0].dba = (DWORD)(buf & 0xFFFFFFFF);
     cmdtbl->prdt_entry[0].dbau = (DWORD)((buf >> 32) & 0xFFFFFFFF);
     cmdtbl->prdt_entry[0].dbc = 4096-1;   // 512 bytes per sector
     cmdtbl->prdt_entry[0].i = 0;
-
 
     // Setup command
     FIS_REG_H2D *cmdfis = (FIS_REG_H2D*)(&cmdtbl->cfis);
@@ -172,17 +158,14 @@ int read(HBA_PORT *port, DWORD startl, DWORD starth, DWORD count, QWORD buf)
 
     kprintf("[slot]{%d}", slot);
     port->ci = 1 << slot;    // Issue command
-//    kprintf("\n[Port ci ][%d]", port->ci);
     
     // Wait for completion
-    
     while (1)
     {
         // In some longer duration reads, it may be helpful to spin on the DPS bit 
         // in the PxIS port field as well (1 << 5)
         if ((port->ci & (1<<slot)) == 0) 
             {
-    //            kprintf("in while 1");
                 break;
             }
         if (port->is & HBA_PxIS_TFES)   // Task file error
@@ -231,7 +214,7 @@ static int check_type(HBA_PORT *port)
     BYTE ipm = (ssts >> 8) & 0x0F;
     BYTE det = ssts & 0x0F;
 
-    kprintf ("\n ipm %d det %d sig %d", ipm, det, port->sig); 
+//    kprintf ("\n ipm %d det %d sig %d", ipm, det, port->sig); 
     if (det != HBA_PORT_DET_PRESENT)    // Check drive status
         return AHCI_DEV_NULL;
     if (ipm != HBA_PORT_IPM_ACTIVE)
@@ -285,67 +268,52 @@ void stop_cmd(HBA_PORT *port)
 void port_rebase(HBA_PORT *port, int portno){
 
     int i;
-    
+    uint64_t clb_addr, fbu_addr, ctb_addr;
     stop_cmd(port);
 
-    port->clb = (((uint64_t)pages_for_ahci_start & 0xffffffff));
-    //kprintf("\naddress is clb= %p\n",port->clb);
-    
+    port->clb  = (((uint64_t)pages_for_ahci_start & 0xffffffff));
     port->clbu = 0;
-    //kprintf("\naddress is clbu= %p\n",port->clbu);
-    
-    port->fb =  (((uint64_t)pages_for_ahci_start + (uint64_t) ((32<<10)/8))& 0xffffffff);
-    //kprintf("\naddress is fb = %p\n",port->fb);
-   
-    port->fbu =  ((((uint64_t)pages_for_ahci_start + (uint64_t) ((32<<10)/8))>>32)& 0xffffffff);
-    //kprintf("\naddress is fbu = %p\n",port->fbu);
-   
+    port->fb   = (((uint64_t)pages_for_ahci_start + (uint64_t) ((32<<10)/8))& 0xffffffff);
+    port->fbu  = ((((uint64_t)pages_for_ahci_start + (uint64_t) ((32<<10)/8))>>32)& 0xffffffff);
 
-    port->serr =1;//For each implemented port, clear the PxSERR register, by writing 1 to each mplemented location
-    port->is=0;//
-    port->ie = 1;
+    port->serr = 1;   //For each implemented port, clear the PxSERR register, by writing 1 to each mplemented location
+    port->is   = 0;
+    port->ie   = 1;
     
-    // while(1);
-    uint64_t addres=0;
-    addres=(((addres|port->clbu)<<32)|port->clb);
-    addres =  addres + AHCI_KERN_BASE;
+    clb_addr = 0;
+    clb_addr = ((( clb_addr | port->clbu ) << 32 ) | port->clb );
+    clb_addr =  clb_addr + AHCI_KERN_BASE;
+    memset((void *)clb_addr, 0, 1024);
     
+    fbu_addr = 0;
+    fbu_addr = ((( fbu_addr | port->fbu ) << 32 ) | port->fb );
+    fbu_addr = fbu_addr + AHCI_KERN_BASE;
+    memset((void*)fbu_addr, 0, 256);
     
-    memset((void *)addres, 0, 1024);
+    clb_addr = 0;
+    clb_addr = ((( clb_addr | port->clbu ) << 32 ) | port->clb );
+    clb_addr = ( clb_addr + AHCI_KERN_BASE);
     
-    addres=0;
-    addres=(((addres | port->fbu)<<32)|port->fb);
-    addres = addres + AHCI_KERN_BASE;
-    memset((void*)addres, 0, 256);
-    
-    addres=0;
-    addres=(((addres | port->clbu)<<32)|port->clb);
-    addres = (addres+ AHCI_KERN_BASE);
-    HBA_CMD_HEADER *cmdheader = (HBA_CMD_HEADER *)addres;
-    i = 0;
-    for (i=0; i<32; i++)
-    {
+    HBA_CMD_HEADER *cmdheader = (HBA_CMD_HEADER *) clb_addr;
+    for (i = 0; i < 32; i++) {
         cmdheader[i].prdtl = 8; // 8 prdt entries per command table
         // 256 bytes per command table, 64+16+48+16*8
         // Command table offset: 40K + 8K*portno + cmdheader_index*256
-        cmdheader[i].ctba =  (((uint64_t)pages_for_ahci_start + (uint64_t) ((40<<10)/8) + (uint64_t)((i<<8)/8))& 0xffffffff);
-        cmdheader[i].ctbau= ((((uint64_t)pages_for_ahci_start + (uint64_t) ((40<<10)/8) + (uint64_t)((i<<8)/8))>>32)& 0xffffffff);
-        //kprintf("vaddress ctba %d = %p , %p \n", i, cmdheader[i].ctba, cmdheader[i].ctbau);
+        cmdheader[i].ctba  = (((uint64_t)pages_for_ahci_start + (uint64_t) (( 40 << 10 )/8) + (uint64_t)(( i << 8 ) / 8)) & 0xffffffff);
+        cmdheader[i].ctbau = ((((uint64_t)pages_for_ahci_start + (uint64_t) (( 40 << 10)/8) + (uint64_t)(( i << 8 ) / 8)) >> 32)& 0xffffffff);
 
-        addres=0;
-        addres=(((addres | cmdheader[i].ctbau)<<32)|cmdheader[i].ctba);
-        addres =  addres+ AHCI_KERN_BASE;
-//        kprintf("vaddress ctba %d = %p\n", i, addres);
+        ctb_addr = 0;
+        ctb_addr = ((( ctb_addr | cmdheader[i].ctbau ) << 32 ) | cmdheader[i].ctba );
+        ctb_addr =  ctb_addr + AHCI_KERN_BASE;
 
-        memset((void*)addres, 0, 256);
-        //      memset((void*)cmdheader[i].ctba, 0, 256);
+        memset((void*)ctb_addr, 0, 256);
     }
     
     start_cmd(port);
 
     port->is = 0;   
     port->ie = 0xffffffff;
-    kprintf("\n End Rebase");
+
 }
 
 void probe_port(HBA_MEM *abar_temp)
@@ -353,6 +321,7 @@ void probe_port(HBA_MEM *abar_temp)
     // Search disk in impelemented ports
     DWORD pi = abar_temp->pi;
     int i = 0;
+
     while (i<32)
     {
         if (pi & 1)
@@ -365,14 +334,20 @@ void probe_port(HBA_MEM *abar_temp)
 
                 port_rebase(abar_temp->ports, i);
 //                kprintf("Address : %p ",(uint64_t)((char*)fs_buf) - AHCI_KERN_BASE);
-                read(&abar_temp->ports[0], 0, 0, 1, (uint64_t)(0x803000));//(uint64_t)((char*)fs_buf) - AHCI_KERN_BASE);
+//                read(&abar_temp->ports[0], 0, 0, 1, (uint64_t)(0x803000));//(uint64_t)((char*)fs_buf) - AHCI_KERN_BASE);
                 
-                char *b = (char *)0xffffffff00803000;
+                char b[512] = "aaaa";//(char *)0xffffffff00809000;
+                //kprintf("\n B Value = %s\n", b);
+                //b = "Sohiliszzzzzzzz";
+                for(int i =0;i<508;i++)
+                    kstrcat(b,"s");
+                //memcpy((void *)b,"s",512);
                 kprintf("\n B Value = %s\n", b);
-//                b = "Sohiliszzzzzzzz";
-//                int a = write(&abar_temp->ports[0], 3, 0, 1, 0x809000);//(uint64_t)((char*)fs_buf) - AHCI_KERN_BASE);
-//                kprintf(" Write = %d", a);
-//                kprintf("\n B Value = %s\n", b);
+                int a = write(&abar_temp->ports[0], 0, 0, 1,(uint64_t)((char*)b) - AHCI_KERN_BASE);
+                kprintf(" Write = %d", a);
+                //char c[512] = (char *)(0xffffffff0080F000);
+                read(&abar_temp->ports[0], 0, 0, 1, (uint64_t)((char*)b) - AHCI_KERN_BASE);//(uint64_t)((char*)fs_buf) - AHCI_KERN_BASE);
+                kprintf("\n B Value = %s\n", b);
                 //char *buf = (char *)(AHCI_KERN_BASE + (uint64_t)(pages_for_ahci_start + 4096/8));
                 //kprintf("\nafter read %d",((HBA_PORT *)&abar_temp->ports[i])->ssts);
             //kprintf("\nRead Data %s", *buf);
@@ -445,10 +420,4 @@ void init_ahci()
     abar = (HBA_MEM *)virtAddr;
     kprintf("\n Capablity : %p  PI : %p VI : %p Interrupt Status : %p", abar->cap, abar->pi,abar->vs,abar->is);
     probe_port(abar);
-    /*uint64_t *a = (uint64_t *)0xffffffff00800000;
-    *a = 100;
-    kprintf("Value = %d", *a);
-    uint64_t *b = (uint64_t *)0xffffffff00801000;
-    *b = 100;
-    kprintf("\n B Value = %d\n", *b);*/
 }

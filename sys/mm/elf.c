@@ -5,6 +5,7 @@
 #include <sys/tarfs.h>
 #include <sys/kstring.h>
 #include <stdio.h>
+#include <sys/dirent.h>
 
 void readelf(char* filename)
 {
@@ -205,7 +206,7 @@ task_struct* create_elf_proc(char *filename, char *argv[])
     Elf64_Ehdr* elf_header;
 
     // lookup for the file in tarfs
-    header = (HEADER*) lookup(filename); 
+    header = (HEADER*) file_lookup(filename); 
 
     elf_header = (Elf64_Ehdr *)header;
     

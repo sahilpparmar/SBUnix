@@ -57,11 +57,11 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
 
     // Context Switching code between tarfs processes
 #if 1
-    create_elf_proc("bin/init", NULL);
-    //create_elf_proc("bin/hello", NULL);
-    //create_elf_proc("bin/ps", NULL);
+    create_elf_proc("/rootfs/bin/init", NULL);
+    //create_elf_proc("/rootfs/bin/hello", NULL);
+    //create_elf_proc("/rootfs/bin/ps", NULL);
     //create_elf_proc("bin/fork", NULL);
-    //create_elf_proc("bin/world", NULL);
+    //create_elf_proc("/rootfs/bin/world", NULL);
     //create_elf_proc("bin/sh", NULL);
 #endif
     

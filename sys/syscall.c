@@ -33,8 +33,12 @@ DIR* sys_opendir(uint64_t* entry, uint64_t* directory)
     while (temp != NULL) {
         auxnode = currnode;
 
-        if (kstrcmp(temp,"..") == 0) {
+        if (kstrcmp(temp, ".") == 0) {
+            currnode = (fnode_t *)currnode->f_child[0];
+
+        } else if (kstrcmp(temp,"..") == 0) {
             currnode = (fnode_t *)currnode->f_child[1];
+        
         } else {
 
             for (i = 2; i < currnode->end; ++i){
@@ -196,6 +200,13 @@ pid_t sys_fork()
 uint64_t sys_execvpe(char *file, char *argv[], char *envp[])
 {
     //TODO: Need to load envp[]
+    int argc = 0;
+    if (argv) {
+        while (argv[argc]) {
+            //kprintf("\n syscall %s",argv[argc]); 
+            argc++;
+        } 
+    }
     task_struct *new_task = create_elf_proc(file, argv);
 
     if (new_task) {

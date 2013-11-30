@@ -8,6 +8,48 @@
 
 fnode_t* root_node;
 
+void* file_lookup(char *dir_path)
+{
+
+    char* file_path = (char *)dir_path;
+
+    fnode_t *aux_node, *currnode = root_node;
+
+    char *temp = NULL; 
+    int i;
+    char *path = (char *)kmalloc(sizeof(char) * kstrlen(file_path));
+    kstrcpy(path, file_path); 
+
+    temp = kstrtok(path, "/");  
+    
+    if (temp == NULL)
+        return NULL;
+    
+    //kprintf("\n step1 %s", temp);
+
+    while (temp != NULL) {
+        
+        aux_node = currnode;
+        for (i = 2; i < currnode->end; ++i) {
+            if (kstrcmp(temp, currnode->f_child[i]->f_name) == 0) {
+                currnode = (fnode_t *)currnode->f_child[i];
+                break;       
+            }        
+        }
+
+        if (i == aux_node->end) {
+            return NULL;
+        }
+
+        temp = kstrtok(NULL, "/");          
+    }
+
+    if (currnode->f_type == FILE)
+        return (void *)currnode->start; 
+    else
+        return NULL;
+}
+
 void make_node(struct file *node, struct file *parent, char *name, uint64_t start, uint64_t end, int type)
 {
     kstrcpy(node->f_name, name);
