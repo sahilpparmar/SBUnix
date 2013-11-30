@@ -165,7 +165,7 @@ void *umemset(void *ptr, uint8_t value, uint64_t num)
 
 int main(int argc, char **argv)
 {
-    char str[25], *newstr, ptr[20], path_to_cmd[20];
+    char str[25], *newstr, ptr[20];
     int i, j=0, k=0, file_descp, ptr_length, lendir = 0, str_length;
     char* exec_path;
     //path = "bin/";
@@ -348,9 +348,9 @@ int main(int argc, char **argv)
                         strcat(prog, args[0]);
 
                         //strcpy(path_to_cmd, "/rootfs/");
-                        strcat(path_to_cmd, prog);
+                        //strcat(path_to_cmd, prog);
 
-                        file_descp = open(path_to_cmd, 0);
+                        file_descp = open(prog, 0);
                         close(file_descp);
                         
                         if (file_descp != -1) {
@@ -374,9 +374,9 @@ int main(int argc, char **argv)
             strcpy(prog, path);
             strcat(prog, args[0]);
             //strcpy(path_to_cmd, "/rootfs/");
-            strcat(path_to_cmd, prog);
+            //strcat(path_to_cmd, prog);
 
-            file_descp = open(path_to_cmd, 0);
+            file_descp = open(prog, 0);
             close(file_descp);
             if (file_descp != -1) {
                 fork_and_execvpe();
