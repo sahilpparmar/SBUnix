@@ -460,21 +460,6 @@ ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
 ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
 ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
 ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
-ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
-ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
-ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
-ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
-ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
-ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
-ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
-ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
-ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
-ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
-ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
-ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
-ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
-ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
-ahci: ahci_port_read: [1] offset: 0x28 val: 0x0
 ahci: ahci_port_read: [1] offset: 0x18 val: 0x4016
 ahci: ahci_port_write: [1] offset: 0x18 val: 0x4006
 ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
@@ -489,10 +474,6 @@ ahci: ahci_port_read: [1] offset: 0x10 val: 0x1
 ahci: ahci_port_write: [1] offset: 0x10 val: 0x1
 ahci: ahci_check_irq: [-1] check irq 0
 ahci: ahci_irq_lower: [0] lower irq
-ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
-ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
-ahci: ahci_port_read: [3] offset: 0x28 val: 0x0
-ahci: ahci_port_read: [2] offset: 0x28 val: 0x0
 ahci: ahci_port_read: [5] offset: 0x28 val: 0x0
 ahci: ahci_port_read: [4] offset: 0x28 val: 0x0
 ahci: ahci_port_read: [3] offset: 0x28 val: 0x0

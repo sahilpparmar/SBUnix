@@ -251,13 +251,13 @@ void schedule_process(task_struct* new_task, uint64_t entry_point, uint64_t stac
     kprintf("\tStackTop:%p", stack_top);
 #endif
 
-    // 2) Leave 9 spaces for POPA => KERNEL_STACK_SIZE-6 to KERNEL_STACK_SIZE-14
+    // 2) Leave 9 spaces for POPA => KERNEL_STACK_SIZE-6 to KERNEL_STACK_SIZE-20
 
     // 3) Set return address to POPA in irq0()
-    new_task->kernel_stack[KERNEL_STACK_SIZE-15] = (uint64_t)irq0 + 0x14;
+    new_task->kernel_stack[KERNEL_STACK_SIZE-21] = (uint64_t)irq0 + 0x20;
 
     // 4) Set rsp to KERNEL_STACK_SIZE-16
-    new_task->rsp_register = (uint64_t)&new_task->kernel_stack[KERNEL_STACK_SIZE-16];
+    new_task->rsp_register = (uint64_t)&new_task->kernel_stack[KERNEL_STACK_SIZE-22];
 
     // 5) Add to the READY_LIST 
     add_to_ready_list(new_task);

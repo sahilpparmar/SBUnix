@@ -10,28 +10,24 @@ int main(int argc, char* argv[])
 
     //char *str = (char*)malloc(100);
     //int fd = open("/rootfs/newfolder/timepass/helloworldfile.txt", 0);
-    //int len = read(fd, str, 0x60);
+    //int len = read(fd, str, 0x10);
     //for (int i = 0; i < len; i++)
     //    printf("%c", str[i]);
     
     if ((pid = fork()) == 0) {
         printf("\nFork return: %d Process %d (parent %d): child", pid, getpid(), getppid());
 
-    //    printf("\nChild %p %p\n", &fd, &str);
-    //    int len = read(fd, (void*)str, 0x60);
-    //    for (int i = 0; i < len; i++)
-    //        printf("%c", str[i]);
+        //printf("\nChild %p %p\n", fd, str);
+        //int len = read(fd, (void*)str, 0x60);
+        //for (int i = 0; i < len; i++)
+        //    printf("%c", str[i]);
 
-    //    len = read(fd, (void*)str, 0x60);
-    //    for (int i = 0; i < len; i++)
-    //        printf("%c", str[i]);
-
-        execvpe("bin/ps", args, NULL);
+        execvpe("bin/world", args, NULL);
     } else {
-    //    printf("\nParent %p %p\n", fd, str);
-    //    int len = read(fd, str, 0x60);
-    //    for (int i = 0; i < len; i++)
-    //        printf("%c", str[i]);
+        //printf("\nParent %p %p\n", fd, str);
+        //int len = read(fd, str, 0x60);
+        //for (int i = 0; i < len; i++)
+        //    printf("%c", str[i]);
         printf("\nFork return: %d Process %d (parent %d): parent", pid, getpid(), getppid());
     }
 

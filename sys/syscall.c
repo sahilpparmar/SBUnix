@@ -99,6 +99,30 @@ int sys_closedir(uint64_t* entry)
    }
 }
 
+//TODO: Use if needed OR remove this at final submission
+#if 0
+void copy_preserved_registers(task_struct *task)
+{
+    // Copy all preserved registers from current task to 
+    __asm__ __volatile__ (
+        "pushq %%rbx;"
+        "pushq %%rbp;"
+        "pushq %%r12;"
+        "pushq %%r13;"
+        "pushq %%r14;"
+        "pushq %%r15;"
+        "popq  %0;"
+        "popq  %1;"
+        "popq  %2;"
+        "popq  %3;"
+        "popq  %4;"
+        "popq  %5;"
+        : "=m" (task->kernel_stack[KERNEL_STACK_SIZE-20]), "=m" (task->kernel_stack[KERNEL_STACK_SIZE-19]), "=m" (task->kernel_stack[KERNEL_STACK_SIZE-18]),
+          "=m" (task->kernel_stack[KERNEL_STACK_SIZE-17]), "=m" (task->kernel_stack[KERNEL_STACK_SIZE-11]), "=m" (task->kernel_stack[KERNEL_STACK_SIZE-8])
+    );
+}
+#endif
+
 pid_t sys_fork()
 {
     // Take a pointer to this process' task struct for later reference.
@@ -109,7 +133,7 @@ pid_t sys_fork()
 
     // Add it to the end of the ready queue
     schedule_process(child_task, parent_task->kernel_stack[KERNEL_STACK_SIZE-6], parent_task->kernel_stack[KERNEL_STACK_SIZE-3]);
-    
+
     // Set return (rax) for child process to be 0
     child_task->kernel_stack[KERNEL_STACK_SIZE-7] = 0UL;
 
