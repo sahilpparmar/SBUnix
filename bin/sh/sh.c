@@ -2,11 +2,39 @@
 #include <defs.h>
 #include <sys/dirent.h>
 
-char currdir[1024], args[20][20];
+char currdir[1024], args[10][100];
 char temp[512];
 DIR *curr_dir_ptr;
-static char bg_flag, prog[20];
-char *tempargs[10], path[30] = "/rootfs/bin/";
+static char bg_flag, prog[100];
+char *execargs[10], path[100] = "/rootfs/bin/";
+
+
+int32_t a_to_i(char *p)
+{
+    int k = 0, sign =1;
+
+    if (p[0] == '-') {
+        sign = -1;
+        p++;
+    } else if (p[0] == '+') {
+        sign = 1;
+        p++;
+    }
+    while (*p) {
+        if ( (int)(*p) >= 48 && (int)(*p) <= 57) {
+            k = (k<<3)+(k<<1)+(*p)-'0';
+            p++;
+        } else {
+            return 0;
+        }
+
+    }
+
+    return k*sign;
+}
+
+
+
 
 int strcmp(const char *s1, const char *s2)
 {
@@ -82,6 +110,22 @@ void *kmemset(void *ptr, uint8_t value, uint64_t num)
     return ptr;
 }
 
+static bool Is_file_exist()
+{
+    int fd  = open(prog, 0);
+    if (fd == -1)
+        return FALSE;
+    close(fd);
+    return TRUE;
+}
+
+void copy_args_to_execargs()
+{
+    int i = 0;
+    for (i = 0; args[i+1][0] != '\0'; i++)
+        execargs[i] = (char*)args[i+1];
+    execargs[i] = NULL;
+}
 
 void export_to_path()
 {
@@ -98,7 +142,6 @@ void export_to_path()
         path_str += 5;
         strcpy(path, path_str);
     }
-    //printf("\n path: %s \t str: %s args: %s", path, path_str, args[1]);
 }
 
 void modify_string(char *currdir)
@@ -142,14 +185,13 @@ void modify_string(char *currdir)
 
 void fork_and_execvpe()
 {
-    
     int pid = fork();
 
     if (pid!=0) {
         if (bg_flag != '&')
             wait(NULL);
     } else {
-        execvpe(prog, tempargs, NULL);
+        execvpe(prog, execargs, NULL);
         exit(1);
     }
 }
@@ -169,25 +211,26 @@ int main(int argc, char **argv)
     char str[25], *newstr, ptr[20], path_cmd[20];
     int i, j=0, k=0, file_descp, ptr_length, lendir = 0, str_length;
     char* exec_path;
-    //path = "bin/";
 
     printf("\n\t\t\t\t*******NEW SHELL*******");
     //By default current directory stream will be pointing to DIR stream of '/'
     curr_dir_ptr = opendir("/");
-    while(1)
-    {
+    while(1) {
         j = 0, k = 0;
-        umemset(args, 0, 400);
+        umemset(args, 0, sizeof(args));
+        execargs[0] = NULL;
 
-        //printf("\n"); 
-        printf("[user@SBUnix ~%s]$", currdir);
+        printf("\n[user@SBUnix ~%s]$", currdir);
 
         scanf("%s", ptr);
         ptr_length = ustrlen(ptr);
 
-        if (ptr_length == 0)
+        if (ptr_length == 0) {
             continue;
-
+        } else if (strcmp(ptr, "echo $PATH")==0) {
+            printf("PATH: %s", path);
+            continue;
+        }
         /*****1) To check if process is to be run in background ****/
         bg_flag = ptr[ptr_length - 1];
         if (bg_flag == '&')
@@ -200,26 +243,32 @@ int main(int argc, char **argv)
                 args[j][k]= '\0';
                 j++;
                 k=0;
-            } else 
+            } else {
                 args[j][k++] = ptr[i];
+            }
         }
 
         args[j][k]='\0';
-
-        
-        
-        if(strcmp(args[0], "export") == 0) {
+        if (strcmp(args[0], "sleep") == 0) {
+            if ( args[1][0] != '-') {
+                sleep(a_to_i(args[1]));
+            } else {
+                printf("\nPlease enter positive integer in seconds");
+           }
+         } else if (strcmp(args[0], "cls") == 0) {
+                cls();
+        } else if(strcmp(args[0], "export") == 0) {
             /****1) export path****/   
                //printf("b4:%s",args[1]);
                export_to_path();
         
         } else if (strcmp(args[0], "help") == 0) {             
             /****2) To handle help command ****/
-            printf("\nps\ncls\nls\ncd\nexport PATH");
+            printf("ps\ncls\nls\ncd\nexport PATH");
 
         } else if (strcmp(args[0], "pwd") == 0) {
             /****3) To handle PWD command ****/
-            printf("\n%s", currdir); 
+            printf("%s", currdir); 
 
         } else if (strcmp(args[0], "cd") == 0) {
             /****4) To handle CD command ****/
@@ -232,7 +281,7 @@ int main(int argc, char **argv)
 
                 if (curr_dir_ptr == NULL) {
 
-                    printf("\n %s: No such file or directory", args[1]); 
+                    printf("%s: No such directory", args[1]); 
                     currdir[lendir] = '\0';
                     curr_dir_ptr    = opendir(currdir); 
 
@@ -254,7 +303,7 @@ int main(int argc, char **argv)
 
                 if (curr_dir_ptr == NULL) {
 
-                    printf("\n %s: No such file or directory", currdir); 
+                    printf("%s: No such directory", currdir); 
                     currdir[lendir] = '\0';
                     curr_dir_ptr    = opendir(currdir); 
 
@@ -283,25 +332,22 @@ int main(int argc, char **argv)
                     currdir[lendir] = '\0';
 
                 }                
-
-                //If argument is absolute path, pass it directly to execvpe
-                tempargs[0] = (char *)malloc(ustrlen(args[1]) + 1); 
-                strcpy(tempargs[0], args[1]);
-
+                execargs[0] = (char *)args[1]; 
             } else {            
                 //No argument by user
                 //List contents of current directory
-
-                tempargs[0] = (char *)malloc(ustrlen(currdir) + 1); 
-                strcpy(tempargs[0], currdir);
-                //printf("\n tempargs: %s, currir %s", tempargs[0], currdir);
+                execargs[0] = (char *)currdir; 
             }
 
-            tempargs[1] = NULL;
-            strcpy(prog, "/rootfs/bin/ls");
+            execargs[1] = NULL;
+            strcpy(prog, path);
+            strcat(prog, "ls");
 
-            fork_and_execvpe();
-
+            if (Is_file_exist()) {
+                fork_and_execvpe();
+            } else {
+                printf("CMD does not exist");
+            }
 
         } else if (ptr[0] == 's' && ptr[1] == 'h' && ptr[2] == ' ' && ptr_length > 3)  {              /****6) To check for executable ****/
 
@@ -317,6 +363,7 @@ int main(int argc, char **argv)
                 //check if path is valid path
 
                 read(file_descp, ptr, 100); 
+                close(file_descp);
                 if (ptr[0] == '#' && ptr[1] == '`') {
                     newstr = ptr;
                     newstr += 2;
@@ -332,6 +379,9 @@ int main(int argc, char **argv)
 
                         j = 0, k = 0;
 
+                        umemset(args, 0, sizeof(args));
+                        execargs[0] = NULL;
+
                         for (i = 0; i < str_length ; i++) {
                             if (str[i] == ' ') {
                                 args[j][k]= '\0';
@@ -342,45 +392,49 @@ int main(int argc, char **argv)
                         }
                         *str = NULL;
                         args[j][k]='\0';
-
                         strcpy(prog, path);
                         strcat(prog, args[0]);
-                        file_descp = open(prog, 0);
-                        close(file_descp);
                         
-                        if (file_descp != -1) {
+                        if (Is_file_exist()) {
+                            copy_args_to_execargs();
                             fork_and_execvpe();
                         } else { 
-                            printf("\t CMD does not exist");
+                            printf("CMD does not exist");
                         }
                     }
 
                 } else {
-                    printf("\nFile not an executable");
+                    printf("File not an executable");
                 }
 
             } else {
-                printf("\nFile does not exist");
+                printf("File does not exist");
             }
 
         } else {
             /****7) Run a binary ****/
+            char *cmd = NULL;
+            cmd = args[0];
+            
+            if (args[0][0] == '.' && args[0][1] == '/')
+                cmd += 2;
+            
+            if (args[0][0] == '/') {
+                strcpy(prog, args[0]);
+            } else { 
+                strcpy(prog, path);
+                strcat(prog, cmd);
+            }
 
-            strcpy(prog, path);
-            strcat(prog, args[0]);
-            //strcpy(path_to_cmd, "/rootfs/");
-
-            file_descp = open(prog, 0);
-            close(file_descp);
-            if (file_descp != -1) {
+            if (Is_file_exist()) {
+                copy_args_to_execargs();
                 fork_and_execvpe();
             } else { 
-                printf("\tCMD does not exist");
+                printf("CMD does not exist");
             }
         }
         *ptr = NULL;
     } 
 
-    //exit(1);
     return 0;
 }
