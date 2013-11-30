@@ -335,7 +335,7 @@ void probe_port(HBA_MEM *abar_temp)
                 port_rebase(abar_temp->ports, i);
 //                kprintf("Address : %p ",(uint64_t)((char*)fs_buf) - AHCI_KERN_BASE);
 //                read(&abar_temp->ports[0], 0, 0, 1, (uint64_t)(0x803000));//(uint64_t)((char*)fs_buf) - AHCI_KERN_BASE);
-                
+#if 0                
                 char b[512] = "aaaa";//(char *)0xffffffff00809000;
                 //kprintf("\n B Value = %s\n", b);
                 //b = "Sohiliszzzzzzzz";
@@ -351,7 +351,7 @@ void probe_port(HBA_MEM *abar_temp)
                 //char *buf = (char *)(AHCI_KERN_BASE + (uint64_t)(pages_for_ahci_start + 4096/8));
                 //kprintf("\nafter read %d",((HBA_PORT *)&abar_temp->ports[i])->ssts);
             //kprintf("\nRead Data %s", *buf);
-
+#endif
                 return;
             }
             else if (dt == AHCI_DEV_SATAPI)
@@ -421,3 +421,4 @@ void init_ahci()
     kprintf("\n Capablity : %p  PI : %p VI : %p Interrupt Status : %p", abar->cap, abar->pi,abar->vs,abar->is);
     probe_port(abar);
 }
+
