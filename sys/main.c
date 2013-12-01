@@ -14,6 +14,7 @@
 #include <sys/dirent.h>
 #include <io_common.h>
 #include <sys/ahci.h>
+#include <sys/fs.h>
 
 #define K_MEM_PAGES 518
 #define INITIAL_STACK_SIZE 4096
@@ -75,6 +76,10 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
 
     // Init AHCI
     init_ahci();
+
+    // Reads an existing super block and creates one if not present 
+    super_block *s_block = read_first_superblock();
+    kprintf("\nNumber of Inodes : %d\t", s_block->s_ninodes);
 
     // Enable Process Scheduling
     InitScheduling = TRUE;
