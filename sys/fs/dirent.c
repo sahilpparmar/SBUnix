@@ -60,7 +60,7 @@ void make_node(struct file *node, struct file *parent, char *name, uint64_t star
     
     node->f_child[0] = node;
     node->f_child[1] = parent;    
-
+    
     //return (void *)node;
 }
 

@@ -122,9 +122,11 @@ int sys_open(uint64_t* dir_path, uint64_t flags)
         temp = kstrtok(NULL, "/");          
     }
 
-    file_d->filenode = currnode;
-    file_d->curr = 0;
 
+    file_d->filenode = currnode;
+    file_d->curr     = 0;
+    file_d->f_perm   = flags;
+    
     //traverse file descriptor array and insert this entry
     for (i = 3; i < MAXFD; ++i) {
         if (CURRENT_TASK->file_descp[i] == NULL) {
@@ -151,7 +153,11 @@ uint64_t sys_read(uint64_t fd_type, uint64_t addr, uint64_t length)
         
         if ((CURRENT_TASK->file_descp[fd_type]) == NULL) {
             length = -1;
+        } else if((((FD *)CURRENT_TASK->file_descp[fd_type])->f_perm != O_RDONLY && ((FD *)CURRENT_TASK->file_descp[fd_type])->f_perm != O_RDWR)){
+            kprintf("\n Not valid permissions"); 
+            length = -1; 
         } else {
+            
             uint64_t start, end;
             int currlength = 0;
     

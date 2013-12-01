@@ -4,6 +4,7 @@
 #define MAXCHILD 10
 
 enum ftype {DIRECTORY, FILE};
+enum perm {O_RDONLY, O_WRONLY, O_RDWR, O_APPEND, O_CREAT, O_TRUNC};
 
 typedef struct file fnode_t;
 typedef struct file_dir DIR;
@@ -16,6 +17,7 @@ struct file {
     fnode_t* f_child[MAXCHILD];
     uint64_t curr_child;
     bool f_type;
+    uint64_t f_inode_no;
 };
 
 struct dirent {
@@ -32,6 +34,8 @@ struct file_dir {
 struct file_descp {
     fnode_t* filenode;
     uint64_t curr;
+    uint64_t f_perm;
+
 };
 
 DIR* opendir(char *dir_path);
