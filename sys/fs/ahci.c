@@ -466,8 +466,6 @@ void init_disk(bool forceCreate)
     // Reads an existing super block and creates one if not present 
     s_star = read_first_superblock(forceCreate);
     
-    //temporary testing funciton
-    test_read();
     //populates the logical tree structure by parsing inodes
     populate_struct(s_star);
 

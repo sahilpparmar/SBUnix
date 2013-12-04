@@ -50,9 +50,12 @@ bool write_inode(ext_inode* inode_entry, uint64_t inode_no);
 
 int32_t alloc_new_block();
 void free_block(int32_t block_no);
-bool read_block(void* block_entry, uint64_t block_no);
-bool write_block(void* block_entry, uint64_t block_no);
+bool read_block(void* block_entry, uint64_t block_no, uint64_t block_off, uint64_t size);
+bool write_block(void* block_entry, uint64_t block_no, uint64_t block_off, uint64_t size);
 
 void read_sector(void* read_addr, uint64_t sector_no, uint64_t sec_off, uint64_t size);
 void write_sector(void* write_addr, uint64_t sector_no, uint64_t sec_off, uint64_t size);
-void test_read();
+
+void copy_blocks_to_vma(ext_inode* inode_entry, uint64_t vma_start);
+void copy_vma_to_blocks(ext_inode* inode_entry, int32_t inode_no, uint64_t vma_start, uint64_t new_size);
+

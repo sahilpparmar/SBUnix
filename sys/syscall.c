@@ -10,21 +10,21 @@
 #include <sys/kstring.h>
 #include <screen.h>
 #include <sys/types.h>
+#include <sys/fs.h>
 #include <sys/dirent.h>
 #include <sys/kmalloc.h>
 #include <io_common.h>
-#include <sys/fs.h>
 
 // These will get invoked in kernel mode
 
 extern fnode_t* root_node;
 
-void* vmalogic(uint64_t* addr, uint64_t nbytes, uint64_t flags, uint64_t type, uint64_t file_d)
+vma_struct* vmalogic(uint64_t addr, uint64_t nbytes, uint64_t flags, uint64_t type, uint64_t file_d)
 {
     vma_struct *node, *iter, *temp;
     bool myflag = 0;
 
-    node = alloc_new_vma((uint64_t)addr, (uint64_t)((void *)addr + nbytes), flags, type, file_d); 
+    node = alloc_new_vma(addr, addr + nbytes, flags, type, file_d); 
     //kprintf("\n node start %p, end%p fd %d", node->vm_start, node->vm_end, node->vm_file_descp);
 
     
@@ -39,7 +39,7 @@ void* vmalogic(uint64_t* addr, uint64_t nbytes, uint64_t flags, uint64_t type, u
         temp = iter;            
         iter = iter->vm_next;
 
-        if (temp->vm_end < (uint64_t)addr && iter->vm_start > (uint64_t )((void *)addr + nbytes)) {
+        if (temp->vm_end < addr && (iter->vm_start > addr + nbytes)) {
             myflag = 1;
             break;
         }
@@ -52,8 +52,7 @@ void* vmalogic(uint64_t* addr, uint64_t nbytes, uint64_t flags, uint64_t type, u
         iter->vm_next = node; 
     }
 
-    return (void *)addr;
-
+    return node;
 }
 
 DIR* sys_opendir(uint64_t* entry, uint64_t* directory)
@@ -129,25 +128,23 @@ int sys_closedir(uint64_t* entry)
     }
 }
 
-int sys_open(uint64_t* dir_path, uint64_t flags)
+int sys_open(char* dir_path, uint64_t flags)
 {
-    char* file_path = (char *)dir_path;
     fnode_t *temp_node;
     // allocate new filedescriptor
     FD* file_d = (FD *)kmalloc(sizeof(FD));
     fnode_t *aux_node = NULL, *currnode = root_node;
     
     vma_struct *iter;
-    uint64_t* addr;
+    uint64_t addr;
     char *temp = NULL; 
-    int i, inode_no = 1, creat_flag = 0;
-    char *path = (char *)kmalloc(sizeof(char) * kstrlen(file_path));
-    kstrcpy(path, file_path); 
+    int i, inode_no, creat_flag = 0;
+    char *path = (char *)kmalloc(sizeof(char) * kstrlen(dir_path));
+    kstrcpy(path, dir_path); 
 
     temp = kstrtok(path, "/");  
 
-    if( kstrcmp(temp, "rootfs") == 0) {
-
+    if (kstrcmp(temp, "rootfs") == 0) {
 
         while (temp != NULL) {
             aux_node = currnode;
@@ -165,9 +162,8 @@ int sys_open(uint64_t* dir_path, uint64_t flags)
             temp = kstrtok(NULL, "/");          
         }
 
-
         file_d->filenode = currnode;
-        file_d->curr     = 0;
+        file_d->curr     = currnode->start;
         file_d->f_perm   = flags;
 
         //traverse file descriptor array and insert this entry
@@ -181,12 +177,6 @@ int sys_open(uint64_t* dir_path, uint64_t flags)
         return -1;
 
     } else if ( kstrcmp(temp, "Disk") == 0) {
-
-        //find address for allocating new vma
-        for (iter = CURRENT_TASK->mm->vma_list; iter->vm_next != NULL; iter = iter->vm_next);
-        // page aligning the addr
-        addr = (uint64_t *)((((iter->vm_end - 1) >> 12) + 1) << 12);
-
 
         while (temp != NULL) {
             aux_node = currnode;
@@ -209,36 +199,31 @@ int sys_open(uint64_t* dir_path, uint64_t flags)
             temp = kstrtok(NULL, "/");          
         }
 
-        if (flags == O_APPEND && aux_node != currnode) {
-            //if the file is open for appending then in above loop
-            //currnode will not be equal to aux node
+        // find address for allocating new vma
+        for (iter = CURRENT_TASK->mm->vma_list; iter->vm_next != NULL; iter = iter->vm_next);
+        // page aligning the addr
+        addr = (uint64_t)((((iter->vm_end - 1) >> 12) + 1) << 12);
 
-            //allocate new space for inode struct, call readinode
-            //get size of inode and allocate new vma of that size
-            ext_inode *temp_inode = (ext_inode *)kmalloc(sizeof(ext_inode));
-            //read_inode(currnode->f_inode_no, temp_inode);
+        ext_inode* inode_entry = kmalloc(sizeof(ext_inode));                
 
-            file_d->filenode = currnode;
-            file_d->curr     = (uint64_t)((void *)addr + 10); //temp_inode->i_size;
-            file_d->f_perm   = flags;
-            file_d->inode_struct = (uint64_t)temp_inode; 
-
-            //traverse file descriptor array and insert this entry
-            for (i = 3; i < MAXFD; ++i) {
-                if (CURRENT_TASK->file_descp[i] == NULL) {
-                    CURRENT_TASK->file_descp[i] = (uint64_t *)file_d;
-                    vmalogic(addr, 10, RW, FILETYPE, i);
-                    //vmalogic(addr, temp_inode->i_size, RW, FILETYPE, i); 
-                    
-                    return i;        
-                }
-            }
-
-        } else if (creat_flag == 1) { 
+        if (creat_flag == 1) { 
             //if file is opened for first time, creat flag will be set to 1         
             //go to disk, create new file of default minimum size
             //return inode number
+
             temp_node = (fnode_t *)kmalloc(sizeof(fnode_t));                
+            
+            inode_no = alloc_new_inode();
+
+            if (inode_no == -1) {
+                return -1;
+            }
+            kstrcpyn(inode_entry->i_name, (char*)dir_path, sizeof(inode_entry->i_name)-1);
+            inode_entry->i_size = 0;
+            inode_entry->i_block_count = 0;
+            write_inode(inode_entry, inode_no);
+
+            file_d->inode_struct = (uint64_t) inode_entry;
 
             //add as child of currnode 
             make_node(temp_node, currnode, temp, 0, 0, FILE, inode_no);  
@@ -247,10 +232,9 @@ int sys_open(uint64_t* dir_path, uint64_t flags)
             currnode->end += 1; 
 
             file_d->filenode = temp_node;
-            file_d->curr     = (uint64_t)addr;
+            file_d->curr     = addr;
             file_d->f_perm   = flags;
-                
-            //kprintf("\n addr %p", addr);
+
             //traverse file descriptor array and insert this entry
             for (i = 3; i < MAXFD; ++i) {
                 if (CURRENT_TASK->file_descp[i] == NULL) {
@@ -259,25 +243,68 @@ int sys_open(uint64_t* dir_path, uint64_t flags)
                     return i;        
                 }
             }
-        } 
+        } else if (aux_node != currnode) {
+            //if the file is open for appending then in above loop
+            //currnode will not be equal to aux node
+
+            read_inode(inode_entry, currnode->f_inode_no);
+            file_d->inode_struct = (uint64_t) inode_entry; 
+
+            file_d->filenode = currnode;
+            file_d->f_perm   = flags;
+
+            //traverse file descriptor array and insert this entry
+            for (i = 3; i < MAXFD; ++i) {
+                if (CURRENT_TASK->file_descp[i] == NULL) {
+                    CURRENT_TASK->file_descp[i] = (uint64_t *)file_d;
+
+                    vma_struct *new_vma = vmalogic(addr, inode_entry->i_size, RW, FILETYPE, i);
+                    kmmap(new_vma->vm_start, new_vma->vm_end - new_vma->vm_start, RW_USER_FLAGS);
+                    
+                    copy_blocks_to_vma(inode_entry, new_vma->vm_start);
+
+                    if (flags == O_APPEND) {
+                        file_d->curr     = addr + inode_entry->i_size;
+                    } else {
+                        file_d->curr     = addr;
+                    }
+
+                    return i;        
+                }
+            }
+        }
         return -1;
     }
 
     return -1;
 }
 
-
-
-
 void sys_close(int fd)
 {
+    ext_inode *inode_t = (ext_inode*) ((FD*) CURRENT_TASK->file_descp[fd])->inode_struct;
+    int32_t inode_no = ((FD*) CURRENT_TASK->file_descp[fd])->filenode->f_inode_no;
+
+    if (inode_t != NULL) {
+        vma_struct *vma_l = CURRENT_TASK->mm->vma_list;
+
+        for (;vma_l != NULL; vma_l = vma_l->vm_next) {
+            if (vma_l->vm_file_descp == fd) {
+                break;
+            }
+        }
+        copy_vma_to_blocks(inode_t, inode_no, vma_l->vm_start, vma_l->vm_end - vma_l->vm_start);
+
+        //TODO Need to remove the VMA
+    }
+    
     //TODO add this filedescriptor to free list    
     CURRENT_TASK->file_descp[fd] = NULL;
+
 }
 
 uint64_t sys_read(uint64_t fd_type, uint64_t addr, uint64_t length)
 {
-    uint64_t start = 0, end = 0, currlength = 0;
+    uint64_t end = 0, currlength = 0;
 
     if (fd_type == stdin) {
         length = gets(addr);
@@ -286,22 +313,17 @@ uint64_t sys_read(uint64_t fd_type, uint64_t addr, uint64_t length)
 
         if ((CURRENT_TASK->file_descp[fd_type]) == NULL) {
             length = -1;
-        //} else if((((FD *)CURRENT_TASK->file_descp[fd_type])->f_perm != O_RDONLY && ((FD *)CURRENT_TASK->file_descp[fd_type])->f_perm != O_RDWR)){
-        //    kprintf("\n Not valid permissions"); 
-        //    length = -1; 
 
         } else if(((FD *)CURRENT_TASK->file_descp[fd_type])->filenode->f_inode_no != 0) { 
-                //This file descriptor is associated with file on disk 
+            //This file descriptor is associated with file on disk 
 
             vma_struct *iter; 
 
             currlength = (uint64_t)((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr;
-            kprintf("\n currlength %p", currlength);
             
-            //get start and end of vma 
+            // get start and end of vma 
             for (iter = CURRENT_TASK->mm->vma_list; iter != NULL; iter = iter->vm_next) {
                 if(iter->vm_file_descp == fd_type){
-                    start = iter->vm_start;
                     end   = iter->vm_end;
                     break; 
                 }
@@ -309,20 +331,17 @@ uint64_t sys_read(uint64_t fd_type, uint64_t addr, uint64_t length)
             
         } else {
 
-
             currlength = (uint64_t)((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr;
-            start      = ((FD *)(CURRENT_TASK->file_descp[fd_type]))->filenode->start;
             end        = ((FD *)(CURRENT_TASK->file_descp[fd_type]))->filenode->end;
-        }   
+        }
         
-        if ((end - start + currlength) < length) {
-            length = (end - (uint64_t)((void *)start + currlength));
+        if ((end - currlength) < length) {
+            length = (end - currlength);
         }
 
         memcpy((void *)addr, (void *)currlength, length);
 
         ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr += length;
-
     }
 
     return length;
@@ -348,99 +367,81 @@ int sys_write(uint64_t fd_type, uint64_t addr, int length)
 
             currlength = ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr;
             kprintf("\n curr %p", currlength);
-            //get start and end of vma 
+            //get end of vma 
             for (iter = CURRENT_TASK->mm->vma_list; iter != NULL; iter = iter->vm_next) {
                 if(iter->vm_file_descp == fd_type){
-                    //start = iter->vm_start;
                     end = iter->vm_end;
                     break; 
                 }
             }
             
-           
-           //adjust the end of vma if required
+            // adjust the end of vma if required
             if (currlength + length > end) {
-                iter->vm_end = currlength + length + 1;
+                kmmap(iter->vm_end, (currlength + length) - iter->vm_end, RW_USER_FLAGS);
+                iter->vm_end = currlength + length;
             }
            
-            
             //kprintf("\n currlength %p, addr %p, end %p, length %p", currlength, addr, iter->vm_end, length);            
             memcpy((uint64_t *)currlength, (uint64_t *)addr, length);
             
             ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr += length;
-
         } 
     }
 
     return length;
 }
 
-
 int sys_lseek(uint64_t fd_type, int offset, int whence) 
 {
     vma_struct* iter;
     if(((FD *)CURRENT_TASK->file_descp[fd_type])->filenode->f_inode_no == 0) {
-       //file descriptor belongs to tarfs 
-       // ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr = 0;
+        //file descriptor belongs to tarfs 
+        // ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr = 0;
 
     } else {
-    
-    
-    for (iter = CURRENT_TASK->mm->vma_list; iter != NULL; iter = iter->vm_next) {
-        if(iter->vm_file_descp == fd_type){
-            //start = iter->vm_start;
-            break; 
-        }
-    }
-    
-    kprintf("\n seek offset: %p start %p", offset, iter->vm_start);
-    
-    if(whence == SEEK_SET) {
-        if (offset < 0)
-            offset = 0;
-        
-        ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr = iter->vm_start + offset;
-         
-    } else if(whence == SEEK_CUR) {
-        
-        if(((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr + offset > iter->vm_end) {
-    
-            ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr = iter->vm_end;
-        } else {        
-            
-            ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr += offset;
+
+
+        for (iter = CURRENT_TASK->mm->vma_list; iter != NULL; iter = iter->vm_next) {
+            if(iter->vm_file_descp == fd_type){
+                //start = iter->vm_start;
+                break; 
+            }
         }
 
-    } else if(whence == SEEK_END) {
+        kprintf("\n seek offset: %p start %p", offset, iter->vm_start);
 
-        if (offset > 0)
-            offset = 0;
-            
-        ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr = iter->vm_end + offset;
-        
-        
-    }else{
-        offset = -1;
-    }
-   } 
+        if(whence == SEEK_SET) {
+            if (offset < 0)
+                offset = 0;
+
+            ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr = iter->vm_start + offset;
+
+        } else if(whence == SEEK_CUR) {
+
+            if(((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr + offset > iter->vm_end) {
+
+                ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr = iter->vm_end;
+            } else {        
+
+                ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr += offset;
+            }
+
+        } else if(whence == SEEK_END) {
+
+            if (offset > 0)
+                offset = 0;
+
+            ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr = iter->vm_end + offset;
+
+
+        }else{
+            offset = -1;
+        }
+    } 
     //kprintf("\n curr inside seek %p",((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr);
     return offset;
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 pid_t sys_fork()
 {
@@ -587,7 +588,7 @@ uint64_t sys_brk(uint64_t no_of_pages)
 
 
 
-uint64_t* sys_mmap(uint64_t* addr, uint64_t nbytes, uint64_t flags)
+uint64_t sys_mmap(uint64_t addr, uint64_t nbytes, uint64_t flags)
 {
     vma_struct *iter;    
 
@@ -597,18 +598,18 @@ uint64_t* sys_mmap(uint64_t* addr, uint64_t nbytes, uint64_t flags)
         for (iter = CURRENT_TASK->mm->vma_list; iter->vm_next != NULL; iter = iter->vm_next);
 
         // page aligning the addr
-        addr = (uint64_t *)((((iter->vm_end - 1) >> 12) + 1) << 12);
+        addr = (uint64_t)((((iter->vm_end - 1) >> 12) + 1) << 12);
 
     } else {
         // check if allocating new page does not conflicts with memory mapped by other VMAs
-        if (verify_addr(CURRENT_TASK,(uint64_t)addr, (uint64_t)((void *)addr + nbytes)) == 0) {
-            return NULL;   
+        if (verify_addr(CURRENT_TASK, addr, addr + nbytes) == 0) {
+            return NULL;
         }
     } 
 
-    //node = alloc_new_vma((uint64_t)addr, (uint64_t)((void *)addr + nbytes), RW, ANON); 
+    //node = alloc_new_vma((uint64_t)addr, (uint64_t)((void *)addr + nbytes), RW, ANON);
     vmalogic(addr, nbytes, RW, ANON, 0);
-    return (uint64_t *)addr;
+    return addr;
 }
 
 int sys_munmap(uint64_t* addr, uint64_t length)
