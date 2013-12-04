@@ -77,10 +77,6 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
     // Init AHCI
     init_ahci();
 
-    // Reads an existing super block and creates one if not present 
-    super_block *s_block = read_first_superblock();
-    kprintf("\nNumber of Inodes : %d\t", s_block->s_ninodes);
-
     // Enable Process Scheduling
     InitScheduling = TRUE;
 

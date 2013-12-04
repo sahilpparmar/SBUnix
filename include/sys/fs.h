@@ -1,30 +1,21 @@
 #include <defs.h>
-#define EXT_NAME_LEN 255
-#define EXT_ROOT_INO 1
 
-#define EXT_SUPER_MAGIC 0x137D
+#define INODES_PER_BLOCK 4
+#define SUPER_BLOCK_SECTOR 1
+#define AHCI_KERN_BASE 0xFFFFFFFF00000000
+#define AHCI_PHYS_BASE 0x800000
+#define AHCI_VIRT_BASE 0xFFFFFFFF00800000
+#define PHYS_PAGE(a) (AHCI_PHYS_BASE + (a * 0x1000))
+#define VIRT_PAGE(a) (AHCI_VIRT_BASE + (a * 0x1000))
+#define SIZE_OF_SECTOR 512
 
-#define EXT_INODES_PER_BLOCK ((BLOCK_SIZE)/(sizeof (struct ext_inode)))
 
 typedef struct ext_inode {
     uint64_t i_size;
     uint64_t i_block_count;
     uint64_t i_isfree;
-    uint16_t i_nlinks;
-    uint64_t i_block[10]; // Number of Indirect Block
+    uint64_t i_block[10];           // Number of Indirect Block
 } ext_inode;
-
-struct ext_free_inode {
-    uint64_t count;
-    uint64_t free[14];
-    uint64_t next;
-};
-
-struct ext_free_block {
-    uint64_t count;
-    uint64_t free[254];
-    uint64_t next;
-};
 
 typedef struct ext_super_block {
     uint64_t s_ninodes;
@@ -36,13 +27,7 @@ typedef struct ext_super_block {
     uint64_t s_magic;
 } super_block;
 
-struct ext_dir_entry {
-    uint64_t inode;
-    uint16_t rec_len;
-    uint16_t name_len;
-    char name[EXT_NAME_LEN];
-};
-
-void create_first_superblock();
-super_block *read_first_superblock();
+super_block *read_first_superblock(bool forceCreate);
+bool read_inode(ext_inode* inode_entry, uint64_t inode_no);
+void print_inodes();
 
