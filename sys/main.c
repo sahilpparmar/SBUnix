@@ -74,9 +74,9 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
     // Allow interrupts
     sti;
 
-    // Init AHCI
-    init_ahci();
-
+    // Init Disk and don't force create a new File System
+    init_disk(FALSE);
+   
     // Enable Process Scheduling
     InitScheduling = TRUE;
 

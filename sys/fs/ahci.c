@@ -373,7 +373,7 @@ void ahci_alloc_pages(uint32_t no_of_vpages)
     }
 }
 
-void init_ahci()
+void init_disk(bool forceCreate)
 {
     uint64_t paddr = 0xFEBF0000, vaddr;
 
@@ -387,7 +387,7 @@ void init_ahci()
     probe_port(abar);
 
     // Reads an existing super block and creates one if not present 
-    read_first_superblock(FALSE);
+    read_first_superblock(forceCreate);
 }
 
 // Reads one sector

@@ -313,18 +313,3 @@ typedef struct tagHBA_CMD_TBL
 } HBA_CMD_TBL;
 
 
-
-extern HBA_MEM *abar;
-extern uint64_t pages_for_ahci_start;
-extern uint64_t pages_for_ahci_end;
-extern uint64_t pages_for_ahci_start_virtual;
-extern uint64_t pages_for_ahci_end_virtual;
-
-void read_sector(void* read_addr, uint64_t sector_no, uint64_t sec_off, uint64_t size);
-void write_sector(void* write_addr, uint64_t sector_no, uint64_t sec_off, uint64_t size);
-
-extern void mem_map_ahci(uint64_t abar_tmp);
-extern int read(HBA_PORT *port, DWORD startl, DWORD starth, DWORD count, QWORD buf);
-
-void init_ahci();
-

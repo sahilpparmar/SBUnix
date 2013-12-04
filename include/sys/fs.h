@@ -9,6 +9,7 @@
 #define SIZE_OF_SECTOR          512
 #define MAX_NUM_INODES          100
 #define MAX_NUM_BLOCKS          70000
+#define NUM_BMAP_SECTORS        18
 #define INODES_PER_BLOCK        4
 #define SUPER_BLOCK_SECTOR      1
 #define INODE_START_SECTOR      2
@@ -28,18 +29,28 @@ typedef struct ext_super_block {
     uint64_t s_ninodes;
     uint64_t s_freeinodescount;     // No. of free inodes
     uint64_t s_inode_bmap[2];
-    uint64_t s_blockbitmapstart;
+    uint64_t s_nblocks;
+    uint64_t s_blockbmapstart;
     uint64_t s_freeblockscount;
     uint64_t s_blockdatastart;
     uint64_t s_max_fsize;           // Max File Size
     uint64_t s_magic;
 } super_block;
 
+void init_disk(bool forceCreate);
 super_block *read_first_superblock(bool forceCreate);
 
+void print_inodes();
 int32_t alloc_new_inode();
 void free_inode(int32_t inode_no);
 bool read_inode(ext_inode* inode_entry, uint64_t inode_no);
 bool write_inode(ext_inode* inode_entry, uint64_t inode_no);
-void print_inodes();
+
+int32_t alloc_new_block();
+void free_block(int32_t block_no);
+bool read_block(void* block_entry, uint64_t block_no);
+bool write_block(void* block_entry, uint64_t block_no);
+
+void read_sector(void* read_addr, uint64_t sector_no, uint64_t sec_off, uint64_t size);
+void write_sector(void* write_addr, uint64_t sector_no, uint64_t sec_off, uint64_t size);
 

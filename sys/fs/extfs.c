@@ -6,6 +6,7 @@
 
 static super_block* s_star = NULL;
 static ext_inode* inode_e  = NULL;
+static uint64_t *sector_e  = NULL;
 
 // Debug Routine for printing inodes and their current sizes
 void print_inodes()
@@ -19,18 +20,19 @@ void print_inodes()
 
 static void create_inode_structure(super_block *s_star)
 {
-    uint64_t vaddr  = VIRT_PAGE(1);
-    ext_inode *inode_ptr = (ext_inode*) vaddr;
     int i;
 
-    for (i = 0; i < INODES_PER_BLOCK; i++) {
-        inode_ptr->i_size        = 0;
-        inode_ptr->i_block_count = 0;
-        inode_ptr++;
-    }
-
     for (i = 0; i < s_star->s_ninodes/INODES_PER_BLOCK; i++) {
-        write_sector((void*)vaddr, s_star->s_inodestart + i, 0, SIZE_OF_SECTOR);
+        write_sector((void*)sector_e, s_star->s_inodestart + i, 0, SIZE_OF_SECTOR);
+    }
+}
+
+static void create_block_bmap(super_block *s_star)
+{
+    int i;
+
+    for (i = 0; i < NUM_BMAP_SECTORS; i++) {
+        write_sector((void*)sector_e, s_star->s_blockbmapstart + i, 0, SIZE_OF_SECTOR);
     }
 }
 
@@ -44,9 +46,10 @@ static void create_first_superblock(super_block *s_star)
     s_star->s_inode_bmap[1]    = 0UL;
 
     // Blocks Info
-    s_star->s_blockbitmapstart = BLOCK_BMAP_START_SECTOR;
-    s_star->s_blockdatastart   = BLOCK_DATA_START_SECTOR;
+    s_star->s_nblocks          = MAX_NUM_BLOCKS;
     s_star->s_freeblockscount  = MAX_NUM_BLOCKS;
+    s_star->s_blockbmapstart   = BLOCK_BMAP_START_SECTOR;
+    s_star->s_blockdatastart   = BLOCK_DATA_START_SECTOR;
     s_star->s_max_fsize        = MAX_FILE_SIZE;
     s_star->s_magic            = SUPER_BLOCK_MAGIC;
 
@@ -55,25 +58,33 @@ static void create_first_superblock(super_block *s_star)
 
 super_block *read_first_superblock(bool forceCreate) 
 {
-    s_star  = kmalloc(sizeof(super_block)); 
-    inode_e = kmalloc(sizeof(ext_inode));
+    s_star   = kmalloc(sizeof(super_block)); 
+    inode_e  = kmalloc(sizeof(ext_inode));
+    sector_e = kmalloc(sizeof(SIZE_OF_SECTOR));
 
     read_sector(s_star, SUPER_BLOCK_SECTOR, 0, sizeof(super_block));
 
     if (forceCreate || s_star->s_magic != SUPER_BLOCK_MAGIC) {
         kprintf("\nNew Superblock Created");
         create_first_superblock(s_star); 
+
+        memset((void*)sector_e, 0, SIZE_OF_SECTOR);
         create_inode_structure(s_star);
+        create_block_bmap(s_star);
+        kprintf("\nNumber of Free Inodes: %d", s_star->s_freeinodescount);
+        kprintf("\nNumber of Free Blocks: %d", s_star->s_freeblockscount);
     } else {
         kprintf("\nSuperblock Found");
         kprintf("\nNumber of Used Inodes: %d", s_star->s_ninodes - s_star->s_freeinodescount);
+        kprintf("\nNumber of Free Inodes: %d", s_star->s_freeinodescount);
+        kprintf("\nNumber of Used Blocks: %d", s_star->s_nblocks - s_star->s_freeblockscount);
+        kprintf("\nNumber of Free Blocks: %d", s_star->s_freeblockscount);
     }
-    kprintf("\nNumber of Free Inodes: %d", s_star->s_freeinodescount);
 
 #if 0
     kprintf("%p\t", s_star->s_ninodes);
     kprintf("%p\t", s_star->s_freeblockscount);
-    kprintf("%p\t", s_star->s_blockbitmapstart);
+    kprintf("%p\t", s_star->s_blockbmapstart);
     kprintf("%p\t", s_star->s_inodestart);
     kprintf("%p\t", s_star->s_freeinodescount);
     kprintf("%p\t", s_star->s_max_fsize);
@@ -91,12 +102,18 @@ static void inode_bmap_set(uint64_t inode_no)
 {
     s_star->s_inode_bmap[inode_no / 64] |= (1UL << (inode_no % 64));
     s_star->s_freeinodescount--;
+
+    // Update inode bitmap in super block
+    write_sector((void *)s_star, SUPER_BLOCK_SECTOR, 0, sizeof(super_block));
 }
 
 static void inode_bmap_unset(uint64_t inode_no)
 {
     s_star->s_inode_bmap[inode_no / 64] &= ~ (1UL << (inode_no % 64));
     s_star->s_freeinodescount++;
+
+    // Update inode bitmap in super block
+    write_sector((void *)s_star, SUPER_BLOCK_SECTOR, 0, sizeof(super_block));
 }
 
 static int inode_first_free()
@@ -133,9 +150,6 @@ int32_t alloc_new_inode()
 
     inode_bmap_set(inode_no);
 
-    // Update inode bitmap in super block
-    write_sector((void *)s_star, SUPER_BLOCK_SECTOR, 0, sizeof(super_block));
-
     return inode_no;
 };
 
@@ -156,8 +170,6 @@ void free_inode(int32_t inode_no)
 
     inode_bmap_unset(inode_no);
 
-    // Update inode bitmap in super block
-    write_sector((void *)s_star, SUPER_BLOCK_SECTOR, 0, sizeof(super_block));
 };
 
 bool read_inode(ext_inode* inode_entry, uint64_t inode_no)
@@ -190,4 +202,120 @@ bool write_inode(ext_inode* inode_entry, uint64_t inode_no)
 
     return TRUE;
 };
+
+//////////////////////////////////////////////////////////////////
+
+static bool block_bmap_isset(uint64_t *sector_t, uint64_t block_no)
+{
+    return sector_t[block_no / 64] & (1UL << (block_no % 64));
+}
+
+static void block_bmap_set(uint64_t *sector_t, uint64_t block_no)
+{
+    sector_t[block_no / 64] |= (1UL << (block_no % 64));
+    s_star->s_freeblockscount--;
+
+    // Update inode bitmap in super block
+    write_sector((void *)s_star, SUPER_BLOCK_SECTOR, 0, sizeof(super_block));
+}
+
+static void block_bmap_unset(uint64_t *sector_t, uint64_t block_no)
+{
+    sector_t[block_no / 64] &= ~ (1UL << (block_no % 64));
+    s_star->s_freeblockscount++;
+
+    // Update inode bitmap in super block
+    write_sector((void *)s_star, SUPER_BLOCK_SECTOR, 0, sizeof(super_block));
+}
+
+static int block_first_free()
+{
+    uint64_t i, j, k;
+
+    if (s_star->s_freeblockscount == 0) {
+        return -1;
+    }
+
+    for (i = 0; i < NUM_BMAP_SECTORS; i++) {
+        read_sector((void*)sector_e, i + s_star->s_blockbmapstart, 0, SIZE_OF_SECTOR);
+
+        for (j = 0; j < SIZE_OF_SECTOR/8; j++) {
+            if (sector_e[j] != 0xFFFFFFFFFFFFFFFFUL) {
+
+                for (k = 0; k < 64; k++) {
+                    uint64_t bit = 1UL << k;
+
+                    if (!(sector_e[j] & bit)) {
+                        return i*4096 + j*64 + k;
+                    }
+                }
+            }
+        }
+    }
+    return -1;
+}
+
+int32_t alloc_new_block()
+{
+    int32_t block_no, sec_no;
+    
+    block_no = block_first_free();
+
+    if (block_no == -1) 
+        return -1;
+
+    sec_no = s_star->s_blockbmapstart + block_no/4096;
+    
+    // Update block bitmap
+    read_sector((void*)sector_e, sec_no, 0, SIZE_OF_SECTOR);
+    block_bmap_set(sector_e, block_no);
+    write_sector((void*)sector_e, sec_no, 0, SIZE_OF_SECTOR);
+
+    return block_no;
+}
+
+void free_block(int32_t block_no)
+{
+    int32_t sec_no;
+
+    if (block_no < 0 || block_no >= s_star->s_nblocks) {
+        kprintf("\nAlready Free Block %d", block_no);
+        return;
+    }
+
+    sec_no = s_star->s_blockbmapstart + block_no/4096;
+    
+    // Check if block is actually used
+    read_sector((void*)sector_e, sec_no, 0, SIZE_OF_SECTOR);
+    if (!block_bmap_isset(sector_e, block_no))
+        return;
+
+    kprintf("\nFreeing Block %d", block_no);
+
+    // Update block bitmap
+    block_bmap_unset(sector_e, block_no);
+    write_sector((void*)sector_e, sec_no, 0, SIZE_OF_SECTOR);
+}
+
+bool read_block(void* block_entry, uint64_t block_no)
+{
+    if (block_no < 0 || block_no >= s_star->s_ninodes) {
+        return FALSE;
+    }
+
+    read_sector(block_entry, s_star->s_blockdatastart + block_no, 0, SIZE_OF_SECTOR);
+
+    return TRUE;
+}
+
+bool write_block(void* block_entry, uint64_t block_no)
+{
+    if (block_no < 0 || block_no >= s_star->s_ninodes) {
+        return FALSE;
+    }
+
+    write_sector(block_entry, s_star->s_blockdatastart + block_no, 0, SIZE_OF_SECTOR);
+
+    return TRUE;
+}
 
