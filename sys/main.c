@@ -74,13 +74,9 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
     // Allow interrupts
     sti;
 
-    // Init AHCI
-    init_ahci();
-
-    // Reads an existing super block and creates one if not present 
-    super_block *s_block = read_first_superblock();
-    kprintf("\nNumber of Inodes : %d\t", s_block->s_ninodes);
-
+    // Init Disk and don't force create a new File System
+    init_disk(FALSE);
+   
     // Enable Process Scheduling
     InitScheduling = TRUE;
 

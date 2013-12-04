@@ -16,13 +16,6 @@ int find_cmdslot(HBA_PORT *port);
 
 HBA_MEM *abar;
 
-#define AHCI_KERN_BASE 0xFFFFFFFF00000000
-#define AHCI_PHYS_BASE 0x800000
-#define AHCI_VIRT_BASE 0xFFFFFFFF00800000
-#define PHYS_PAGE(a) (AHCI_PHYS_BASE + (a * 0x1000))
-#define VIRT_PAGE(a) (AHCI_VIRT_BASE + (a * 0x1000))
-#define SIZE_OF_SECTOR 512
-
 int write(HBA_PORT *port, DWORD startl, DWORD starth, DWORD count, QWORD buf)  
 {
     port->is = 0xffff;              // Clear pending interrupt bits
@@ -380,7 +373,7 @@ void ahci_alloc_pages(uint32_t no_of_vpages)
     }
 }
 
-void init_ahci()
+void init_disk(bool forceCreate)
 {
     uint64_t paddr = 0xFEBF0000, vaddr;
 
@@ -392,32 +385,49 @@ void init_ahci()
     abar = (HBA_MEM *)vaddr;
     kprintf("\n Capablity : %p  PI : %p VI : %p Interrupt Status : %p", abar->cap, abar->pi,abar->vs,abar->is);
     probe_port(abar);
+
+    // Reads an existing super block and creates one if not present 
+    read_first_superblock(forceCreate);
 }
 
 // Reads one sector
-void read_disk(void* read_addr, uint64_t sector_no)
+void read_sector(void* read_addr, uint64_t sector_no, uint64_t sec_off, uint64_t size)
 {
     uint64_t vaddr   = VIRT_PAGE(1);
     uint32_t sec_low = sector_no & 0xFFFFFFFF;
     uint32_t sec_hi  = sector_no >> 32;
+
+    // Check for Invalid offset/size
+    if (sec_off + size > SIZE_OF_SECTOR)
+        return;
 
     read(&abar->ports[0], sec_low, sec_hi, 1, PHYS_PAGE(1));
 
-    memcpy(read_addr, (void*) vaddr, SIZE_OF_SECTOR);
-
+    memcpy(read_addr, (void*)vaddr + sec_off, size);
 }
 
-// Write to one sector
-void write_disk(void* write_addr, uint64_t sector_no, int32_t size)
+// Writes to one sector
+void write_sector(void* write_addr, uint64_t sector_no, uint64_t sec_off, uint64_t size)
 {
-    uint64_t vaddr   = VIRT_PAGE(1);
+    uint64_t vaddr   = VIRT_PAGE(1) + sec_off;
     uint32_t sec_low = sector_no & 0xFFFFFFFF;
     uint32_t sec_hi  = sector_no >> 32;
     
-    if (size > SIZE_OF_SECTOR)
-        size = SIZE_OF_SECTOR;
-        
-    memcpy((void*) vaddr, write_addr, size);
+    // Check for Invalid offset/size
+    if (sec_off + size > SIZE_OF_SECTOR)
+        return;
+
+    if (size != SIZE_OF_SECTOR) { 
+        // Trying to write only few parts in a sector.
+        // So need to read whole sector in order to rewrite the remainder part.
+        read(&abar->ports[0], sec_low, sec_hi, 1, PHYS_PAGE(1));
+    }
+
+    // Memcpy only if write_addr is different then vaddr
+    if (vaddr != (uint64_t) write_addr) {
+        memcpy((void*)vaddr, write_addr, size);
+    }
+    //kprintf("\tW[%d]+%d", sec_low, sec_off);
 
     write(&abar->ports[0], sec_low, sec_hi, 1, PHYS_PAGE(1));
 }
