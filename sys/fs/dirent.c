@@ -6,7 +6,12 @@
 #include <sys/kmalloc.h>
 #include <stdio.h>
 
-fnode_t* root_node;
+
+fnode_t* get_root_node()
+{
+    return root_node;
+}
+
 
 void* file_lookup(char *dir_path)
 {
@@ -110,7 +115,8 @@ void parse(char *dir_path, int type, uint64_t start, uint64_t end)
 void printnode(fnode_t *node)
 {
     int i = 0; 
-    //kprintf("\n%s\t%p", node->f_name, &node);
+    
+    kprintf("\n%s\t%p", node->f_name, &node);
 
     for (i = 2; i < node->end; ++i) {
         if (node->f_child[i]->f_type == FILE) {

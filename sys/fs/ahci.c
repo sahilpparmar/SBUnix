@@ -9,6 +9,9 @@
 #include <sys/phys_mm.h>
 #include <sys/kstring.h>
 #include <sys/fs.h>
+#include <sys/dirent.h>
+#include <sys/kmalloc.h>
+
 
 void start_cmd(HBA_PORT *port);
 void stop_cmd(HBA_PORT *port);
@@ -373,9 +376,83 @@ void ahci_alloc_pages(uint32_t no_of_vpages)
     }
 }
 
+void populate_struct(super_block *s_star)
+{
+
+    int count = 0;
+    ext_inode* inode_e  = (ext_inode *)kmalloc(sizeof(ext_inode));
+    char *path, *temp, *temp_tokens[10]; 
+    int i, j, k; 
+
+    for (i = 0; i < s_star->s_ninodes; i++) {
+        
+        if (read_inode(inode_e, i)){
+            //kprintf("\t[%d]=>%s", i, inode_e->i_name);
+           
+            fnode_t *auxnode, *temp_node,*currnode;
+            currnode = root_node;
+            
+            path =  kmalloc(kstrlen(inode_e->i_name));            
+            kstrcpy(path, inode_e->i_name); 
+            
+            count = 0;
+            //Tokenize the string path and store all '/' strings
+            temp = kstrtok(path, "/");  
+            while (temp != NULL) {
+                temp_tokens[count] = (char *)temp;                
+                count++;
+                temp = kstrtok(NULL, "/"); 
+            }
+      
+            //go over all tokens and create filenode structs
+            for (j = 0; j < count; ++j){
+                 
+                auxnode = currnode;
+
+                for(k = 2; k < currnode->end; ++k){
+                    
+                    if(kstrcmp(temp_tokens[j], currnode->f_child[k]->f_name) == 0) {
+                        currnode = (fnode_t *)currnode->f_child[k];
+                        break; 
+                    }        
+                }
+                
+                //kprintf("\nauxnode %s, currnode %s", auxnode->f_name, currnode->f_name);
+                //if auxnode is not equal to currnode mean child has been
+                //found so no need to create new node
+                
+                if (k == auxnode->end) {
+                    //if code reaches here create inode with temptokens[j] and set its parent as currnode
+                    temp_node = (fnode_t *)kmalloc(sizeof(struct file));
+                    
+                    //check if we want to create node of type FILE or Directory
+                    if (j == count-1){
+                        
+                        //kprintf("\n creating file: %s, parent : %s, inode no %d", temp_tokens[j],currnode->f_name, i);
+                        make_node(temp_node, currnode, temp_tokens[j], 0, 0, FILE, i);
+                        currnode->f_child[currnode->end] = temp_node;
+                        currnode->end += 1; 
+                    
+                    } else {
+                        //reached last token. Create this node of type FILE
+                        //kprintf("\n creating dir: %s, parent %s, inode no %d", temp_tokens[j], currnode->f_name, 0);
+                        make_node(temp_node, currnode, temp_tokens[j], 0, 2, DIRECTORY, 0);
+                        currnode->f_child[currnode->end] = temp_node;
+                        currnode->end += 1; 
+                    }
+                    
+                    currnode = temp_node;
+                } 
+           } 
+        } 
+    }
+
+}
+
 void init_disk(bool forceCreate)
 {
     uint64_t paddr = 0xFEBF0000, vaddr;
+    super_block *s_star = NULL;    
 
     ahci_alloc_pages(32);
 
@@ -387,7 +464,14 @@ void init_disk(bool forceCreate)
     probe_port(abar);
 
     // Reads an existing super block and creates one if not present 
-    read_first_superblock(forceCreate);
+    s_star = read_first_superblock(forceCreate);
+    
+    //temporary testing funciton
+    test_read();
+    //populates the logical tree structure by parsing inodes
+    populate_struct(s_star);
+
+
 }
 
 // Reads one sector

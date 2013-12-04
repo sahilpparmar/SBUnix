@@ -55,4 +55,4 @@ bool write_block(void* block_entry, uint64_t block_no);
 
 void read_sector(void* read_addr, uint64_t sector_no, uint64_t sec_off, uint64_t size);
 void write_sector(void* write_addr, uint64_t sector_no, uint64_t sec_off, uint64_t size);
-
+void test_read();
