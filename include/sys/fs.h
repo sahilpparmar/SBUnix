@@ -8,33 +8,35 @@
 
 #define SIZE_OF_SECTOR          512
 #define MAX_NUM_INODES          100
-#define MAX_FILE_SIZE           7168    // 14*512 = 7KB file
+#define NUM_DIRECT_BLOCKS       14
+#define MAX_FILE_SIZE           7168    // NUM_DIRECT_BLOCKS * SIZE_OF_SECTORS
 #define MAX_NUM_BLOCKS          1600    // > MAX_FILE_SIZE * MAX_NUM_INODES
-#define INODES_PER_BLOCK        4       // sizeof(INODE)/SIZE_OF_SECTORS
+#define INODES_PER_BLOCK        1       // sizeof(INODE)/SIZE_OF_SECTORS
 #define SUPER_BLOCK_SECTOR      1
 #define INODE_START_SECTOR      2       // SUPER_BLOCK_SECTOR + 1
 #define NUM_BMAP_SECTORS        1       // MAX_NUM_BLOCKS/4096 
-#define BLOCK_BMAP_START_SECTOR 27      // INODE_START_SECTOR + (MAX_NUM_INODES/INODES_PER_BLOCK)
-#define BLOCK_DATA_START_SECTOR 28      // BLOCK_BMAP_START_SECTOR + NUM_BMAP_SECTORS
+#define BLOCK_BMAP_START_SECTOR 102     // INODE_START_SECTOR + (MAX_NUM_INODES/INODES_PER_BLOCK)
+#define BLOCK_DATA_START_SECTOR 103     // BLOCK_BMAP_START_SECTOR + NUM_BMAP_SECTORS
 #define SUPER_BLOCK_MAGIC       0xFEDCBA1234567890
 
 typedef struct ext_inode {
-    uint64_t i_size;
-    uint64_t i_block_count;
-    uint64_t i_block[14];           // Number of Direct Block
+    char     i_name[128];               // Name of file
+    uint64_t i_size;                    // Size of file
+    uint64_t i_block_count;             // Number of blocks used
+    uint64_t i_block[NUM_DIRECT_BLOCKS];// Pointers to Direct Block
 } ext_inode;
 
 typedef struct ext_super_block {
-    uint64_t s_inodestart;          // Location at inode start
-    uint64_t s_ninodes;
-    uint64_t s_freeinodescount;     // No. of free inodes
-    uint64_t s_inode_bmap[2];
-    uint64_t s_nblocks;
-    uint64_t s_blockbmapstart;
-    uint64_t s_freeblockscount;
-    uint64_t s_blockdatastart;
-    uint64_t s_max_fsize;           // Max File Size
-    uint64_t s_magic;
+    uint64_t s_inodestart;              // Starting Sector No. at inode start
+    uint64_t s_ninodes;                 // MAX number of inodes
+    uint64_t s_freeinodescount;         // No. of free inodes
+    uint64_t s_inode_bmap[2];           // Inode bitmap
+    uint64_t s_nblocks;                 // Max number of blocks
+    uint64_t s_blockbmapstart;          // Starting Sector No. of block bitmap
+    uint64_t s_freeblockscount;         // No. of free blocks
+    uint64_t s_blockdatastart;          // Starting Sector No. of block data
+    uint64_t s_max_fsize;               // Max File Size
+    uint64_t s_magic;                   // Magic Bits
 } super_block;
 
 void init_disk(bool forceCreate);
