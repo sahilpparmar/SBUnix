@@ -8,20 +8,20 @@
 
 #define SIZE_OF_SECTOR          512
 #define MAX_NUM_INODES          100
-#define MAX_NUM_BLOCKS          70000
-#define NUM_BMAP_SECTORS        18
-#define INODES_PER_BLOCK        4
+#define MAX_FILE_SIZE           7168    // 14*512 = 7KB file
+#define MAX_NUM_BLOCKS          1600    // > MAX_FILE_SIZE * MAX_NUM_INODES
+#define INODES_PER_BLOCK        4       // sizeof(INODE)/SIZE_OF_SECTORS
 #define SUPER_BLOCK_SECTOR      1
-#define INODE_START_SECTOR      2
-#define BLOCK_BMAP_START_SECTOR 27
-#define BLOCK_DATA_START_SECTOR 50
-#define MAX_FILE_SIZE           327680  // 320 KB file
+#define INODE_START_SECTOR      2       // SUPER_BLOCK_SECTOR + 1
+#define NUM_BMAP_SECTORS        1       // MAX_NUM_BLOCKS/4096 
+#define BLOCK_BMAP_START_SECTOR 27      // INODE_START_SECTOR + (MAX_NUM_INODES/INODES_PER_BLOCK)
+#define BLOCK_DATA_START_SECTOR 28      // BLOCK_BMAP_START_SECTOR + NUM_BMAP_SECTORS
 #define SUPER_BLOCK_MAGIC       0xFEDCBA1234567890
 
 typedef struct ext_inode {
     uint64_t i_size;
     uint64_t i_block_count;
-    uint64_t i_block[10];           // Number of Indirect Block
+    uint64_t i_block[14];           // Number of Direct Block
 } ext_inode;
 
 typedef struct ext_super_block {
