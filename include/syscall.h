@@ -13,7 +13,7 @@ SYSCALL_PROTO(0)(uint64_t n)
         "int $0x80;"
         : "=a" (ret)
         : [no]"a"(n)
-        : "%rbp", "%rbx", "%r12", "%r13", "%r14", "%r15"
+        : "%rdi", "%rsi", "%rdx", "%rcx", "%rbp", "%rbx", "%r12", "%r13", "%r14", "%r15"
     );
     return ret;
 }
@@ -27,7 +27,7 @@ SYSCALL_PROTO(1)(uint64_t n, uint64_t a1)
         "int $0x80;"
         : "=a" (ret)
         : [a1]"g"(a1), [no]"a"(n)
-        : "%rdi", "%rbp", "%rbx", "%r12", "%r13", "%r14", "%r15"
+        : "%rdi", "%rsi", "%rdx", "%rcx", "%rbp", "%rbx", "%r12", "%r13", "%r14", "%r15"
     );
     return ret;
 }
@@ -42,7 +42,7 @@ SYSCALL_PROTO(2)(uint64_t n, uint64_t a1, uint64_t a2)
         "int $0x80;"
         : "=a" (ret)
         : [a1]"g"(a1), [a2]"g"(a2), [no]"a"(n)
-        : "%rdi", "%rsi", "%rbp", "%rbx", "%r12", "%r13", "%r14", "%r15"
+        : "%rdi", "%rsi", "%rdx", "%rcx", "%rbp", "%rbx", "%r12", "%r13", "%r14", "%r15"
     );
     return ret;
 }
@@ -58,7 +58,7 @@ SYSCALL_PROTO(3)(uint64_t n, uint64_t a1, uint64_t a2, uint64_t a3)
         "int $0x80;"
         : "=a" (ret)
         : [a1]"g"(a1), [a2]"g"(a2), [a3]"g"(a3), [no]"a"(n)
-        : "%rdi", "%rsi", "%rdx", "%rbp", "%rbx", "%r12", "%r13", "%r14", "%r15"
+        : "%rdi", "%rsi", "%rdx", "%rcx","%rbp", "%rbx", "%r12", "%r13", "%r14", "%r15"
     );
     return ret;
 }
@@ -101,6 +101,7 @@ enum syscall_num {
     CLOSE,
     SLEEP,
     CLEAR,
+    SEEK, 
     NUM_SYSCALLS
 };
 

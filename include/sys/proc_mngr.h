@@ -3,9 +3,9 @@
 
 #include <sys/types.h>
 
-#define USER_STACK_TOP  0xF0000000
-#define USER_STACK_SIZE 0x10000     // 16*4KB
-#define KERNEL_STACK_SIZE 512       // (512*8) = 4KB
+#define USER_STACK_TOP  0xF000000000UL
+#define USER_STACK_SIZE 0x10000         // 16*4KB
+#define KERNEL_STACK_SIZE 512           // (512*8) = 4KB
 #define DEBUG_SCHEDULING 0
 #define MAXFD 10
 
@@ -26,6 +26,7 @@ enum vmatype {
     HEAP,
     STACK,
     ANON,
+    FILETYPE,
     NOTYPE
 };
 
@@ -52,6 +53,7 @@ struct vm_area_struct {
     vma_struct *vm_next;            // linked list of VM areas per task, sorted by address
     uint64_t vm_flags;              // Flags read, write, execute permissions
     uint64_t vm_type;               // type of segment its reffering to 
+    uint64_t vm_file_descp;         // reference to file descriptors for file opened for writing
 };
 
 struct mm_struct {
@@ -72,18 +74,18 @@ struct task_struct {
     uint64_t kernel_stack[KERNEL_STACK_SIZE];
     uint64_t rip_register;
     uint64_t rsp_register;
-    uint64_t task_state;    // Saves the current state of task
+    uint64_t task_state;            // Saves the current state of task
     mm_struct* mm; 
-    char comm[16];
-    uint32_t sleep_time;    // Number of centiseconds to sleep
-    task_struct* next;      // The next process in the process list
-    task_struct* last;      // The process that ran last
-    task_struct* parent;    // Keep track of parent process on fork
-    task_struct* childhead;  // Keep track of its children on fork
-    task_struct* siblings;   // Keep track of its siblings (children of same parent)
-    uint64_t* file_descp[MAXFD]; //array of file descriptor pointers
-    uint32_t no_children;   // Number of children
-    pid_t last_child_exit;  // pid of child last exited
+    char comm[30];                  // Name of task
+    uint32_t sleep_time;            // Number of centiseconds to sleep
+    task_struct* next;              // The next process in the process list
+    task_struct* last;              // The process that ran last
+    task_struct* parent;            // Keep track of parent process on fork
+    task_struct* childhead;         // Keep track of its children on fork
+    task_struct* siblings;          // Keep track of its siblings (children of same parent)
+    uint64_t* file_descp[MAXFD];    //array of file descriptor pointers
+    uint32_t no_children;           // Number of children
+    pid_t wait_on_child_pid;        // pid of child last exited
 };
 
 extern task_struct* CURRENT_TASK;
@@ -105,12 +107,13 @@ task_struct* copy_task_struct(task_struct* parent_task);
 void add_to_task_free_list(task_struct* free_task);
 void empty_task_struct(task_struct *cur_task);
 
-vma_struct* alloc_new_vma(uint64_t start_addr, uint64_t end_addr, uint64_t flags, uint64_t type);
+vma_struct* alloc_new_vma(uint64_t start_addr, uint64_t end_addr, uint64_t flags, uint64_t type, uint64_t fd_type);
 void add_to_vma_free_list(vma_struct* free_vma);
 void empty_vma_list(vma_struct *vma_list);
 
 // Syscalls
 pid_t sys_getpid();
 pid_t sys_getppid();
+void sys_exit();
 
 #endif

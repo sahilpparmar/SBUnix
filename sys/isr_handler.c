@@ -41,6 +41,7 @@ static void page_fault_handler(registers_t regs)
     bool IsFault = FALSE;
 
     READ_CR2(fault_addr);
+    //kprintf("\nFault Addr:%p Error Code:%p", fault_addr, err_code);
 
     if (fault_addr >= KERNEL_START_VADDR) {
         // Page fault in kernel
@@ -81,9 +82,9 @@ static void page_fault_handler(registers_t regs)
         uint64_t start, end;
         while (vma_ptr != NULL) {
             start = vma_ptr->vm_start; end = vma_ptr->vm_end;
-            if (fault_addr >= start && fault_addr <= end) {
+            //kprintf("\n[VMA]:%p-%p", start, end);
+            if (fault_addr >= start && fault_addr < end) {
                 kmmap(start, end - start, RW_USER_FLAGS);
-                //kprintf("\n[VMA]:%p-%p", start, end);
                 break;
             }
             vma_ptr = vma_ptr->vm_next;
@@ -94,8 +95,8 @@ static void page_fault_handler(registers_t regs)
     }
 
     if (IsFault) {
-        kprintf("\nFault Addr:%p Error Code:%p", fault_addr, err_code);
-        panic("Segmentation Fault! (Should kill the Process)");
+        kprintf("\nSegmentation Fault %p (%p) - Process Terminated", fault_addr, err_code);
+        sys_exit();
     }
 }
 

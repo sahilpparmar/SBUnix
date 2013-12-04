@@ -75,7 +75,7 @@ task_struct* alloc_new_task(bool IsUserProcess)
         new_task->childhead     = NULL;
         new_task->siblings      = NULL;
         new_task->no_children   = 0;
-        new_task->last_child_exit = 0;
+        new_task->wait_on_child_pid = 0;
         memset((void*)new_task->kernel_stack, 0, KERNEL_STACK_SIZE);
         memset((void*)new_task->file_descp, 0, MAXFD*8);
     }
@@ -93,18 +93,19 @@ task_struct* alloc_new_task(bool IsUserProcess)
     return new_task;
 }
 
-vma_struct* alloc_new_vma(uint64_t start_addr, uint64_t end_addr, uint64_t flags, uint64_t type)
+vma_struct* alloc_new_vma(uint64_t start_addr, uint64_t end_addr, uint64_t flags, uint64_t type, uint64_t file_d)
 {
     vma_struct *vma = NULL;
 
     if ((vma = get_free_vma_struct()) == NULL) {
         vma = (vma_struct*) kmalloc(sizeof(vma_struct));
     }
-    vma->vm_start = start_addr;
-    vma->vm_end   = end_addr; 
-    vma->vm_flags = flags;
-    vma->vm_type  = type; 
-    vma->vm_next  = NULL;
+    vma->vm_start       = start_addr;
+    vma->vm_end         = end_addr; 
+    vma->vm_flags       = flags;
+    vma->vm_type        = type; 
+    vma->vm_next        = NULL;
+    vma->vm_file_descp  = file_d;
     return vma;
 }
 
@@ -128,7 +129,7 @@ void empty_task_struct(task_struct *cur_task)
     cur_task->childhead   = NULL;
     cur_task->siblings    = NULL;
     cur_task->no_children = 0;
-    cur_task->last_child_exit = 0;
+    cur_task->wait_on_child_pid = 0;
 }
 
 void empty_vma_list(vma_struct *vma_list)
@@ -207,8 +208,8 @@ void remove_child_from_parent(task_struct *child_task)
 
     parent_task->no_children--;
     if (parent_task->task_state == WAIT_STATE) {
-        if (!parent_task->last_child_exit || parent_task->last_child_exit == child_task->pid) {
-            parent_task->last_child_exit = child_task->pid;
+        if (!parent_task->wait_on_child_pid || parent_task->wait_on_child_pid == child_task->pid) {
+            parent_task->wait_on_child_pid = child_task->pid;
             parent_task->task_state = READY_STATE;
         }
     }
@@ -270,10 +271,10 @@ void increment_brk(task_struct *proc, uint64_t bytes)
     vma_struct *iter;
     
     for (iter = mms->vma_list; iter != NULL; iter = iter->vm_next) {
-        //kprintf("\n vm_start %p\t start_brk %p\t end_brk %p", iter->vm_start, mms->start_brk, mms->end_brk);
 
         // this vma is pointing to heap
         if (iter->vm_type == HEAP) {
+            //kprintf("\n vm_start %p\t start_brk %p\t end_brk %p", iter->vm_start, mms->start_brk, mms->end_brk);
             iter->vm_end  += bytes;
             mms->end_brk  += bytes; 
             mms->total_vm += bytes;

@@ -119,7 +119,7 @@ static task_struct* load_elf(Elf64_Ehdr* header, task_struct *proc, char *filena
             }   
 
             // Allocate a new vma
-            node = alloc_new_vma(start_vaddr, end_vaddr, program_header->p_type, vm_type); 
+            node = alloc_new_vma(start_vaddr, end_vaddr, program_header->p_type, vm_type, 0); 
 
             mms->vma_count++;
             mms->total_vm += size;
@@ -160,7 +160,7 @@ static task_struct* load_elf(Elf64_Ehdr* header, task_struct *proc, char *filena
     for (iter = mms->vma_list; iter->vm_next != NULL; iter = iter->vm_next);
     start_vaddr    = end_vaddr = ((((max_addr - 1) >> 12) + 1) << 12);
     
-    iter->vm_next  = alloc_new_vma(start_vaddr, end_vaddr, RW, HEAP);
+    iter->vm_next  = alloc_new_vma(start_vaddr, end_vaddr, RW, HEAP, 0);
     
     mms->vma_count++;
     mms->start_brk = start_vaddr;
@@ -171,7 +171,7 @@ static task_struct* load_elf(Elf64_Ehdr* header, task_struct *proc, char *filena
     for (iter = mms->vma_list; iter->vm_next != NULL; iter = iter->vm_next);
     end_vaddr = USER_STACK_TOP;
     start_vaddr = USER_STACK_TOP - USER_STACK_SIZE;
-    iter->vm_next = alloc_new_vma(start_vaddr, end_vaddr, RW, STACK);
+    iter->vm_next = alloc_new_vma(start_vaddr, end_vaddr, RW, STACK, 0);
 
     // For now map only a single physical page
     LOAD_CR3(mms->pml4_t);

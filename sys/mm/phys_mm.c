@@ -100,7 +100,7 @@ uint64_t phys_alloc_block() {
     uint64_t paddr = NULL;
     int frame = -1;
 
-    if (phys_get_free_block_count() <= 0)
+    if (phys_get_free_block_count() <= 5)
         return 0;   //out of memory
 
     frame = mmap_first_free();

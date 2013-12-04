@@ -34,12 +34,11 @@
 #define ATA_DEV_BUSY 0x80
 #define ATA_DEV_DRQ 0x08
 
-#define AHCI_KERN_BASE 0xFFFFFFFF00000000
-
 typedef uint8_t BYTE;
 typedef uint16_t WORD;
 typedef uint32_t DWORD;
 typedef uint64_t QWORD;
+
 typedef enum
 {
     FIS_TYPE_REG_H2D    = 0x27, // Register FIS - host to device
@@ -316,14 +315,16 @@ typedef struct tagHBA_CMD_TBL
 
 
 extern HBA_MEM *abar;
-extern uint64_t *pages_for_ahci_start;
-extern uint64_t *pages_for_ahci_end;
-extern uint64_t *pages_for_ahci_start_virtual;
-extern uint64_t *pages_for_ahci_end_virtual;
+extern uint64_t pages_for_ahci_start;
+extern uint64_t pages_for_ahci_end;
+extern uint64_t pages_for_ahci_start_virtual;
+extern uint64_t pages_for_ahci_end_virtual;
+
+void read_disk(void* read_addr, uint64_t sector_no);
+void write_disk(void* write_addr, uint64_t sector_no, int32_t size);
 
 extern void mem_map_ahci(uint64_t abar_tmp);
 extern int read(HBA_PORT *port, DWORD startl, DWORD starth, DWORD count, QWORD buf);
 
 void init_ahci();
-char fs_buf[1024];
 

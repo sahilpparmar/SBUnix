@@ -50,14 +50,15 @@ void* file_lookup(char *dir_path)
         return NULL;
 }
 
-void make_node(struct file *node, struct file *parent, char *name, uint64_t start, uint64_t end, int type)
+void make_node(struct file *node, struct file *parent, char *name, uint64_t start, uint64_t end, int type, uint64_t inode_no)
 {
     kstrcpy(node->f_name, name);
     node->start = start;
     node->end   = end;
     node->curr  = start;
     node->f_type  = type;
-    
+    node->f_inode_no = inode_no;
+ 
     node->f_child[0] = node;
     node->f_child[1] = parent;    
     
@@ -92,7 +93,7 @@ void parse(char *dir_path, int type, uint64_t start, uint64_t end)
         if (i == aux_node->end) {
 
             temp_node = (fnode_t *)kmalloc(sizeof(struct file));
-            make_node(temp_node, currnode, temp, start, end, type);  
+            make_node(temp_node, currnode, temp, start, end, type, 0);  
 
             currnode->f_child[currnode->end] = temp_node;
             currnode->end += 1; 
@@ -128,11 +129,16 @@ void* init_tarfs()
     fnode_t *temp_node;
 
     root_node = (fnode_t *)kmalloc(sizeof(struct file));
-    make_node(root_node, root_node, "/", 0, 2, DIRECTORY);  
+    make_node(root_node, root_node, "/", 0, 2, DIRECTORY, 0);  
 
     temp_node = (fnode_t *)kmalloc(sizeof(struct file)); 
-    make_node(temp_node, root_node, "rootfs", 0, 2, DIRECTORY);
+    make_node(temp_node, root_node, "rootfs", 0, 2, DIRECTORY, 0);
     root_node->f_child[2] = temp_node; 
+    root_node->end += 1;
+    
+    temp_node = (fnode_t *)kmalloc(sizeof(struct file)); 
+    make_node(temp_node, root_node, "Disk", 0, 2, DIRECTORY, 0);
+    root_node->f_child[3] = temp_node; 
     root_node->end += 1;
 
     do {

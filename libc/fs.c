@@ -43,9 +43,10 @@ void close(int file_d)
 {
     __syscall1(CLOSE, (uint64_t)file_d);    
 }
-//uint64_t read(uint64_t fd, void* buf, uint64_t nbytes)
-//{   
-//    printf("\n inside this");
-//    return (uint64_t)__syscall3(READ, fd,(uint64_t) buf, nbytes);
-//
-//}
+
+
+int lseek(uint64_t file_d, int offset, int whence){
+    
+    return (int)__syscall3(SEEK, (uint64_t)file_d, (uint64_t)offset, (uint64_t)whence);
+
+}
