@@ -30,7 +30,6 @@ struct file_dir {
     fnode_t* filenode;
     uint64_t curr;
     dirent curr_dirent;
-
 };
 
 struct file_descp {

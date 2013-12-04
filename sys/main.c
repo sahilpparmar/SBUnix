@@ -11,10 +11,10 @@
 #include <sys/proc_mngr.h>
 #include <sys/elf.h>
 #include <sys/tarfs.h>
+#include <sys/fs.h>
 #include <sys/dirent.h>
 #include <io_common.h>
 #include <sys/ahci.h>
-#include <sys/fs.h>
 
 #define K_MEM_PAGES 518
 #define INITIAL_STACK_SIZE 4096
@@ -76,7 +76,7 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
 
     // Init Disk and don't force create a new File System
     init_disk(FALSE);
-   
+
     // Enable Process Scheduling
     InitScheduling = TRUE;
 

@@ -82,6 +82,18 @@ super_block *read_first_superblock(bool forceCreate)
     }
 
 #if 0
+    if (read_inode(inode_e, 0)) {
+        kprintf("\nSTR: %s", inode_e->i_name);
+        kprintf("\nSiz: %d", inode_e->i_size);
+        kprintf("\nSTR: %d", inode_e->i_block_count);
+        kprintf("\nSTR: %d", inode_e->i_block[0]);
+
+        if (read_block(sector_e, 0, 0, 512)) {
+            char *str = (char*) sector_e;
+            kprintf("\nSTR: %s", str);
+        }
+    }
+
     kprintf("%p\t", s_star->s_ninodes);
     kprintf("%p\t", s_star->s_freeblockscount);
     kprintf("%p\t", s_star->s_blockbmapstart);
@@ -198,6 +210,8 @@ bool write_inode(ext_inode* inode_entry, uint64_t inode_no)
     sec_no  = s_star->s_inodestart + inode_no/INODES_PER_BLOCK;
     sec_off = (inode_no % INODES_PER_BLOCK) * sizeof(ext_inode);
 
+    //kprintf("\nI[%d]%s, %p, %p", inode_no, inode_entry->i_name, inode_entry->i_size, inode_entry->i_block_count);
+
     write_sector(inode_entry, sec_no, sec_off, sizeof(ext_inode));
 
     return TRUE;
@@ -297,25 +311,107 @@ void free_block(int32_t block_no)
     write_sector((void*)sector_e, sec_no, 0, SIZE_OF_SECTOR);
 }
 
-bool read_block(void* block_entry, uint64_t block_no)
+bool read_block(void* block_entry, uint64_t block_no, uint64_t block_off, uint64_t size)
 {
-    if (block_no < 0 || block_no >= s_star->s_ninodes) {
+    if (block_no < 0 || block_no >= s_star->s_nblocks) {
         return FALSE;
     }
 
-    read_sector(block_entry, s_star->s_blockdatastart + block_no, 0, SIZE_OF_SECTOR);
+    read_sector(block_entry, s_star->s_blockdatastart + block_no, block_off, size);
 
     return TRUE;
 }
 
-bool write_block(void* block_entry, uint64_t block_no)
+bool write_block(void* block_entry, uint64_t block_no, uint64_t block_off, uint64_t size)
 {
-    if (block_no < 0 || block_no >= s_star->s_ninodes) {
+    if (block_no < 0 || block_no >= s_star->s_nblocks) {
         return FALSE;
     }
 
-    write_sector(block_entry, s_star->s_blockdatastart + block_no, 0, SIZE_OF_SECTOR);
+    write_sector(block_entry, s_star->s_blockdatastart + block_no, block_off, size);
 
     return TRUE;
+}
+
+void copy_blocks_to_vma(ext_inode* inode_entry, uint64_t vma_start)
+{
+    uint64_t size = inode_entry->i_size;
+    int i;
+
+    for (i = 0; i < inode_entry->i_block_count; i++) {
+        if (size < SIZE_OF_SECTOR) {
+            read_block((void*) vma_start, inode_entry->i_block[i], 0, size);
+        } else {
+            read_block((void*) vma_start, inode_entry->i_block[i], 0, SIZE_OF_SECTOR);
+        }
+        vma_start = vma_start + SIZE_OF_SECTOR;
+        size = size - SIZE_OF_SECTOR;
+    }
+}
+
+void copy_vma_to_blocks(ext_inode* inode_entry, int32_t inode_no, uint64_t vma_start, uint64_t new_size)
+{
+    uint64_t new_block_count = new_size/SIZE_OF_SECTOR + 1;
+    uint64_t cur_block_count = inode_entry->i_block_count;
+    int32_t i;
+
+    inode_entry->i_size = new_size;
+    inode_entry->i_block_count = new_block_count;
+
+    if (cur_block_count == new_block_count) {
+        // Directly Copy all the contains; no need to alloc/dealloc blocks
+        for (i = 0; i < new_block_count; i++) {
+
+            if (new_size < SIZE_OF_SECTOR) {
+                write_block((void*) vma_start, inode_entry->i_block[i], 0, new_size);
+            } else {
+                write_block((void*) vma_start, inode_entry->i_block[i], 0, SIZE_OF_SECTOR);
+            }
+            vma_start = vma_start + SIZE_OF_SECTOR;
+            new_size = new_size - SIZE_OF_SECTOR;
+        }
+
+    } else if (cur_block_count > new_block_count) {
+        // Copy all the contains and dealloc extra blocks
+
+        for (i = 0; i < new_block_count; i++) {
+
+            if (new_size < SIZE_OF_SECTOR) {
+                write_block((void*) vma_start, inode_entry->i_block[i], 0, new_size);
+            } else {
+                write_block((void*) vma_start, inode_entry->i_block[i], 0, SIZE_OF_SECTOR);
+            }
+            vma_start = vma_start + SIZE_OF_SECTOR;
+            new_size = new_size - SIZE_OF_SECTOR;
+        }
+
+        // Free unused blocks
+        for (i = new_block_count; i < cur_block_count; i++) {
+            free_block(inode_entry->i_block[i]);
+        }
+    
+    } else if (cur_block_count < new_block_count) {
+        // Copy all the contains and alloc extra blocks
+
+        for (i = 0; i < cur_block_count; i++) {
+            write_block((void*) vma_start, inode_entry->i_block[i], 0, SIZE_OF_SECTOR);
+            vma_start = vma_start + SIZE_OF_SECTOR;
+            new_size = new_size - SIZE_OF_SECTOR;
+        }
+
+        // Alloc new blocks
+        for (i = cur_block_count; i < new_block_count; i++) {
+            inode_entry->i_block[i] = alloc_new_block();
+
+            if (new_size < SIZE_OF_SECTOR) {
+                write_block((void*) vma_start, inode_entry->i_block[i], 0, new_size);
+            } else {
+                write_block((void*) vma_start, inode_entry->i_block[i], 0, SIZE_OF_SECTOR);
+            }
+            vma_start = vma_start + SIZE_OF_SECTOR;
+            new_size = new_size - SIZE_OF_SECTOR;
+        }
+    }
+    write_inode(inode_entry, inode_no);
 }
 
