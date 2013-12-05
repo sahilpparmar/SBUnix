@@ -47,6 +47,15 @@ void close(int file_d)
     __syscall1(CLOSE, (uint64_t)file_d);    
 }
 
+uint64_t read(uint64_t fd, void *buf, uint64_t nbytes)
+{
+    return __syscall3(READ, fd, (uint64_t)buf, nbytes);
+}
+
+int write(int n, char *str, int len)
+{
+    return __syscall3(WRITE, n, (uint64_t)str, len);
+}
 
 int seek(uint64_t file_d, int offset, int whence)
 { 
@@ -57,3 +66,4 @@ int mkdir(char *path)
 {
     return (int)__syscall1(MKDIR, (uint64_t)path);
 }
+

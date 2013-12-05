@@ -24,29 +24,29 @@ For any queries, please contact SBUnix developers.
 =============================================================== S Y S T E M   C A L L S ==========================================================
 ==================================================================================================================================================
     
-    READ(): 
+    READ()
     Syntax       :  read(uint64_t fd_type, uint64_t addr, uint64_t length)
     Description  :  Attempts to read up to length number of bytes using file descriptor fd_type into the buffer starting at addr.
     Dependencies :  Always open a file using OPEN system call before reading and close the file after completion.
 
-    WRITE(): 
-    Syntax       :  read(uint64_t fd_type, uint64_t addr, uint64_t length)
+    WRITE() 
+    Syntax       :  write(int n, char *str, int len)
     Description  :  Attempts to write up to length number of bytes into file descriptor fd_type from the buffer starting at addr.
     Dependencies :  Always open a file using OPEN system call before writing and close the file after completion.
     
-    BRK():
+    BRK()
     Syntax       :  brk(uint64_t no_of_pages)
     Description  :  Increase size of vma by no_of_pages.
     
-    FORK():
+    FORK()
     Syntax       :  fork()
     Description  :  Creates a child process. Returns pid = 0 for child and non zero for parent.
     
-    EXECVPE():
+    EXECVPE()
     Syntax       :  execvpe(char *file, char *argv[], char *envp[])
     Description  :  Executes a file along with any necessary arguments argv[] in the environment envp[].
     
-    WAIT():
+    WAIT()
     Syntax       :  wait(uint64_t status)
     Description  :  Parent waits for a child process to exit.
     Dependencies :  Returns -1 if parent has no children.
@@ -59,6 +59,10 @@ For any queries, please contact SBUnix developers.
     EXIT()
     Syntax       :  exit(int status)
     Description  :  Terminate the calling process immediately.
+
+    YIELD()
+    Syntax       :  yield()
+    Description  :  Hands control over to next READY process.
     
     MMAP()
     Syntax       :  mmap(uint64_t addr, uint64_t nbytes, uint64_t flags)
@@ -114,7 +118,7 @@ For any queries, please contact SBUnix developers.
     Description  :  Clears the screen.
     
     SEEK()
-    Syntax       :  lseek(uint64_t fd_type, int offset, int whence) 
+    Syntax       :  seek(uint64_t fd_type, int offset, int whence) 
     Description  :  moves the current file pointer by offset number of bytes in the file.
     Dependencies :  whence can be SEEK_SET, SEEK_CUR, SEEK_END. This determines the offset from start , current pointer or end of file.
 
@@ -125,3 +129,4 @@ For any queries, please contact SBUnix developers.
     SHUTDOWN()
     Syntax       :  shutdown() 
     Description  :  exit all processes. 
+

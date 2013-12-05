@@ -2,17 +2,8 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <defs.h>
-// Accessory Functions
-//Accessory Functions
 
 static char write_buf[1024];
-
-int write(int n, char *str, int len)
-{
-    return __syscall3(WRITE, n, (uint64_t)str, len);
-}
-
-
 
 int32_t printf(const char *str, ...)
 {

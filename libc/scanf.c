@@ -4,13 +4,7 @@
 #include <syscall.h>
 #include <stdlib.h>
 
-char read_buf[1024];
-
-uint64_t read(uint64_t fd, void *buf, uint64_t nbytes)
-{
-    return __syscall3(READ, fd, (uint64_t)buf, nbytes);
-}
-
+static char read_buf[1024];
 
 void scanf(const char *str, ...)
 {
@@ -46,3 +40,4 @@ void scanf(const char *str, ...)
     }
     va_end(ap); 
 }
+
