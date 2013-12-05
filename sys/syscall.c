@@ -196,6 +196,7 @@ int sys_open(char* dir_path, uint64_t flags)
     kstrcpy(path, dir_path); 
 
     temp = kstrtok(path, "/");  
+    if (temp == NULL) return -1;
 
     if (kstrcmp(temp, "rootfs") == 0) {
 

@@ -2,8 +2,8 @@
 #include <syscall.h>
 #include <sys/dirent.h>
 
-DIR* opendir(char *dir_path) {
-
+DIR* opendir(char *dir_path)
+{
     DIR *dir = (DIR *)malloc(sizeof(DIR));
     dir = (DIR*) __syscall2(OPENDIR, (uint64_t)dir_path, (uint64_t)dir); 
      
@@ -15,17 +15,17 @@ DIR* opendir(char *dir_path) {
     }
 }
 
-struct dirent* readdir(DIR* node) {
-    
+struct dirent* readdir(DIR* node)
+{   
     struct dirent* curr = (struct dirent*) __syscall1(READDIR, (uint64_t)node);
     return curr;
 }
 
-int closedir(DIR* node) {
-
+int closedir(DIR* node)
+{
     int ret = (int)__syscall1(CLOSEDIR, (uint64_t)node);
 
-    if(ret == 1) {
+    if (ret == 1) {
         free(node);
         return 1;
     } else {
@@ -35,14 +35,11 @@ int closedir(DIR* node) {
 
 int open(char *path, int flags)
 {
-    if(strlen(path) > 0 && (flags >=0 && flags < 6)) {
-         
+    if (strlen(path) > 0 && (flags >=0 && flags < 6)) {
         return (int)__syscall2(OPEN, (uint64_t)path, (uint64_t)flags);
     } else {
-        
         return -1;
     }
-
 }
 
 void close(int file_d)
@@ -51,10 +48,9 @@ void close(int file_d)
 }
 
 
-int lseek(uint64_t file_d, int offset, int whence){
-    
+int lseek(uint64_t file_d, int offset, int whence)
+{
     return (int)__syscall3(SEEK, (uint64_t)file_d, (uint64_t)offset, (uint64_t)whence);
-
 }
 
 int mkdir(char *path)
