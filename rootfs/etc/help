@@ -1,0 +1,15 @@
+---------------------------------- H E L P -----------------------------------
+
+ps              process status
+ls              list directory contents
+cd              Change Directory
+echo $PATH      displays the current value set in the PATH variable
+export PATH     export can be used to set a custom value to PATH variable. 
+                example: export PATH=/rootfs/bin
+sleep           Puts the shell to sleep for specified numebr of seconds. 
+                example: sleep 20
+pwd             displays current working directory
+ulimit          displays system limits
+cat             prints file contents, absolute file path to be given as input
+                example: cat /absolute/path/file
+

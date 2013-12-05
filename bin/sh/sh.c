@@ -43,7 +43,7 @@ static void export_to_path()
         if (args[1][strlen(args[1])-1] != '/') {
             args[1][strlen(args[1])] = '/';
             args[1][strlen(args[1])+1] = '\0';
-        
+
         }
         path_str = args[1];
         path_str += 5;
@@ -128,10 +128,12 @@ int main(int argc, char **argv)
         }
         /*****1) To check if process is to be run in background ****/
         bg_flag = ptr[ptr_length - 1];
-        if (bg_flag == '&')
+        if (bg_flag == '&') {
             ptr[ptr_length - 1] = '\0';
-
-
+            ptr_length -= 1;
+            if (ptr_length == 0)
+                continue;
+        }
         //collect the arguments entered by user in 2D array args
         for (i = 0; i < ptr_length; i++) {
             if(ptr[i] == ' ') {
@@ -142,19 +144,71 @@ int main(int argc, char **argv)
                 args[j][k++] = ptr[i];
             }
         }
-
         args[j][k]='\0';
 
-        if (strcmp(args[0], "cls") == 0) {
+        char help_str[100], help_ptr[1024];
+        memset(help_ptr, 0, 1024);
+        memset(help_str, 0, 100);
+        if (strcmp(args[0], "ulimit") == 0) {
+
+            char *new_pointer; 
+            file_descp  = open("/rootfs/etc/ulimit", 0);
+            if (file_descp != -1) {
+                read(file_descp, help_ptr, 1024); 
+                close(file_descp);
+                new_pointer = help_ptr;
+                cls();
+                while (*new_pointer != '\0') {
+
+                    new_pointer = getLine(new_pointer, help_str);
+                    printf("\n%s", help_str);
+                }
+
+                printf("\n");
+            }
+
+        } else if (strcmp(args[0], "help") == 0) {
+
+            char *new_pointer; 
+            file_descp  = open("/rootfs/etc/help", 0);
+            if (file_descp != -1) {
+                read(file_descp, help_ptr, 1024); 
+                close(file_descp);
+                new_pointer = help_ptr;
+                cls();
+                while (*new_pointer != '\0') {
+
+                    new_pointer = getLine(new_pointer, help_str);
+                    printf("\n%s", help_str);
+                }
+
+                printf("\n");
+            }
+        } else if (strcmp(args[0], "cat") == 0) {
+
+            char *new_pointer; 
+            file_descp  = open(args[1], 0);
+            if (file_descp != -1) {
+                read(file_descp, help_ptr, 1024); 
+                close(file_descp);
+                new_pointer = help_ptr;
+                while (*new_pointer != '\0') {
+
+                    new_pointer = getLine(new_pointer, help_str);
+                    printf("\n%s", help_str);
+                }
+
+                printf("\n");
+            } else { 
+                printf("\nInvalid Path : Please enter absolute path of the file");
+            }
+
+
+        } else if (strcmp(args[0], "cls") == 0) {
             cls();
         } else if(strcmp(args[0], "export") == 0) {
             /****1) export path****/   
-            //printf("b4:%s",args[1]);
             export_to_path();
-
-        } else if (strcmp(args[0], "help") == 0) {             
-            /****2) To handle help command ****/
-            printf("ps\ncls\nls\ncd\nexport PATH");
 
         } else if (strcmp(args[0], "pwd") == 0) {
             /****3) To handle PWD command ****/
@@ -284,7 +338,7 @@ int main(int argc, char **argv)
                         args[j][k]='\0';
                         strcpy(prog, path);
                         strcat(prog, args[0]);
-                        
+
                         if (Is_file_exist()) {
                             copy_args_to_execargs();
                             fork_and_execvpe();
@@ -305,10 +359,10 @@ int main(int argc, char **argv)
             /****7) Run a binary ****/
             char *cmd = NULL;
             cmd = args[0];
-            
+
             if (args[0][0] == '.' && args[0][1] == '/')
                 cmd += 2;
-            
+
             if (args[0][0] == '/') {
                 strcpy(prog, args[0]);
             } else { 
