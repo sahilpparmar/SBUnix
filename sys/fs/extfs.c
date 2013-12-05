@@ -80,6 +80,28 @@ super_block *read_first_superblock(bool forceCreate)
         kprintf("\nNumber of Used Blocks: %d", s_star->s_nblocks - s_star->s_freeblockscount);
         kprintf("\nNumber of Free Blocks: %d", s_star->s_freeblockscount);
     }
+    if (read_inode(inode_e, 0)) {
+        kprintf("\nName: %s", inode_e->i_name);
+        kprintf("\nSize: %d", inode_e->i_size);
+        kprintf("\nBCnt: %d", inode_e->i_block_count);
+        kprintf("\nB[0]: %d", inode_e->i_block[0]);
+
+        if (read_block(sector_e, inode_e->i_block[0], 0, 512)) {
+            char *str = (char*) sector_e;
+            kprintf("\nSTR: %s", str);
+        }
+    }
+    if (read_inode(inode_e, 1)) {
+        kprintf("\nName: %s", inode_e->i_name);
+        kprintf("\nSize: %d", inode_e->i_size);
+        kprintf("\nBCnt: %d", inode_e->i_block_count);
+        kprintf("\nB[0]: %d", inode_e->i_block[0]);
+
+        if (read_block(sector_e, inode_e->i_block[0], 0, 512)) {
+            char *str = (char*) sector_e;
+            kprintf("\nSTR: %s", str);
+        }
+    }
 
 #if 0
     if (read_inode(inode_e, 0)) {
@@ -317,6 +339,7 @@ bool read_block(void* block_entry, uint64_t block_no, uint64_t block_off, uint64
         return FALSE;
     }
 
+    kprintf("\nREAD[%d] %p %d %p", block_no, block_entry, block_off, size);
     read_sector(block_entry, s_star->s_blockdatastart + block_no, block_off, size);
 
     return TRUE;
@@ -327,7 +350,8 @@ bool write_block(void* block_entry, uint64_t block_no, uint64_t block_off, uint6
     if (block_no < 0 || block_no >= s_star->s_nblocks) {
         return FALSE;
     }
-    //kprintf("\n[WRITE]%s", block_entry, block_no, size);
+    //kprintf("\nWRITE[%d] %p %d %p", block_no, block_entry, block_off, size);
+
     write_sector(block_entry, s_star->s_blockdatastart + block_no, block_off, size);
 
     return TRUE;

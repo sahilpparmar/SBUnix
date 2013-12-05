@@ -28,6 +28,7 @@ pid_t fork();
 int execvpe(const char *file, char *const argv[], char *const envp[]);
 pid_t wait(uint64_t *status);
 pid_t waitpid(pid_t pid, uint64_t *status, int options);
+int mkdir(char *path);
 
 void *memcpy(void *destination, void *source, uint64_t num);
 void *memset(void *ptr, uint8_t value, uint64_t num);

@@ -19,6 +19,7 @@
 
 extern fnode_t* root_node;
 
+
 vma_struct* vmalogic(uint64_t addr, uint64_t nbytes, uint64_t flags, uint64_t type, uint64_t file_d)
 {
     vma_struct *node, *iter, *temp;
@@ -102,6 +103,58 @@ DIR* sys_opendir(uint64_t* entry, uint64_t* directory)
     }
     return dir;
 }
+
+
+int sys_mkdir( uint64_t dir)
+{
+    char *dirpath = (char *)dir; 
+    
+    int dirlength = kstrlen(dirpath);
+    char *path;
+    DIR* tempdir = kmalloc(sizeof(struct file_dir));
+    fnode_t *temp_node;
+    tempdir = sys_opendir((uint64_t *)dirpath,(uint64_t *) tempdir);
+ 
+    if (tempdir->filenode != NULL){
+        kprintf("\n directory already exists"); 
+        return -1;
+    }
+       
+    path = (char *)kmalloc(sizeof(char) * dirlength);
+    kstrcpy(path, dirpath);
+
+   
+    int end = dirlength;
+
+
+    if (path[dirlength - 1] == '/')
+        end = dirlength - 2;
+    else
+        end = dirlength - 1;
+    
+    while (dirpath[end] != '/'){
+        --end; 
+         
+    }
+    
+    path[end] = '\0'; 
+    tempdir = sys_opendir((uint64_t *)path, (uint64_t*)tempdir); 
+    
+    if (tempdir != NULL) {
+        temp_node = (fnode_t *)kmalloc(sizeof(fnode_t));                
+         
+        make_node(temp_node, tempdir->filenode, path + end + 1, 0, 2, DIRECTORY, 0);  
+        tempdir->filenode->f_child[tempdir->filenode->end] = temp_node;
+        tempdir->filenode->end += 1;
+        return 0; 
+    } else {
+        kprintf("\n %s Directory doesnot exists", path);
+        return -1; 
+    }
+
+
+}
+
 
 struct dirent* sys_readdir(uint64_t* entry)
 {
@@ -265,6 +318,7 @@ int sys_open(char* dir_path, uint64_t flags)
 
                     if (flags == O_APPEND) {
                         file_d->curr     = addr + inode_entry->i_size;
+                        kprintf("\nSEEK[%d]%p", i, file_d->curr);
                     } else {
                         file_d->curr     = addr;
                     }
@@ -394,11 +448,16 @@ int sys_write(uint64_t fd_type, uint64_t addr, int length)
 
 int sys_lseek(uint64_t fd_type, int offset, int whence) 
 {
+    
+    
     vma_struct* iter;
-    if(((FD *)CURRENT_TASK->file_descp[fd_type])->filenode->f_inode_no == 0) {
+    ext_inode *inode_t = (ext_inode*) ((FD*) CURRENT_TASK->file_descp[fd_type])->inode_struct;
+    
+    if (inode_t == NULL) {
         //file descriptor belongs to tarfs 
         // ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr = 0;
-
+         kprintf("\n cannot do lseek");
+         return -1;
     } else {
 
 
@@ -737,7 +796,8 @@ void* syscall_tbl[NUM_SYSCALLS] =
     sys_close,
     sys_sleep,
     sys_clear,
-    sys_lseek
+    sys_lseek,
+    sys_mkdir
 };
 
 // The handler for the int 0x80

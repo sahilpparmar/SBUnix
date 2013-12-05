@@ -22,11 +22,32 @@ int main(int argc, char* argv[])
     
     closedir(tp);
 #endif
+
+    //test for mkdir
+#if 0
+    mkdir("/Disk/lib"); 
+    int fd = open("/Disk/lib/four.txt", O_RDONLY);
+    
+    char* buf = NULL;//, *tp = NULL;
+    buf = (char *)malloc(500);
+     
+    strcpy(buf, "aaaaaa");
+    printf("\nOld Copy: %s", buf);
+
+    if (fd > 0) {
+        lseek(fd, 10, SEEK_SET); 
+        length = read(fd, buf, 500); 
+        printf("Length: %p", length);
+        close(fd);
+    }
+    printf("\nNew Copy: %s", buf);
+   
+    free(buf);
+#endif
     
     // test for open, read, close, append
 #if 1
     int fd, length;
-    //fd = open("/rootfs/newfolder/timepass/helloworldfile.txt", 0);
     fd = open("/Disk/first.txt", O_CREAT);
     
     char* buf = NULL;
@@ -80,6 +101,8 @@ int main(int argc, char* argv[])
         printf("Length: %p", length);
         close(fd);
     }
+    //lseek(fd, 2, SEEK_SET); 
+    //read(fd, tp, 500); 
     printf("\nNew Copy: %s", buf);
    
     free(buf);
