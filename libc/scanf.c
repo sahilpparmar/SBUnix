@@ -1,6 +1,6 @@
 #include <stdarg.h>
 #include <defs.h>
-#include <stdio.h>
+#include <sys/common.h>
 #include <syscall.h>
 #include <stdlib.h>
 

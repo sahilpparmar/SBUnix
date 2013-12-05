@@ -15,6 +15,5 @@ sh {filepath}   execute shebang files. example: sh /path/shebang/file
 ./{command}     execute binaries using ./   example:  ./ps  ./ls
 /path           execute binaries by entering the complete path.
                 example: /rootfs/bin/ls
-process&        starts the process in background.  
-                example: sleep 20 &
-
+process&        starts the process in background. 
+                example: sleep 20 &               

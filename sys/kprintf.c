@@ -4,7 +4,7 @@
 
 #include <stdarg.h>
 #include <defs.h>
-#include <stdio.h>
+#include <sys/common.h>
 #include <screen.h>
 
 extern void putchar(char mychar);

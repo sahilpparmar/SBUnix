@@ -1,5 +1,5 @@
 #include <defs.h>
-#include <stdio.h>
+#include <sys/common.h>
 #include <sys/ahci.h>
 #include <sys/fs.h>
 #include <sys/virt_mm.h>

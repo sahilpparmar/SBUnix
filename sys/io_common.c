@@ -4,7 +4,7 @@
 
 #include <defs.h>
 #include <io_common.h>
-#include <stdio.h>
+#include <sys/common.h>
 
 // Write a byte out to the specified port
 void outb(uint16_t port, uint8_t value)

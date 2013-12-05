@@ -1,3 +1,5 @@
+#include <defs.h>
+#include <sys/common.h>
 #include <syscall.h>
 #include <sys/paging.h>
 #include <sys/proc_mngr.h>
@@ -12,7 +14,6 @@
 #include <sys/dirent.h>
 #include <sys/kmalloc.h>
 #include <io_common.h>
-#include <stdio.h>
 // These will get invoked in kernel mode
 
 extern fnode_t* root_node;

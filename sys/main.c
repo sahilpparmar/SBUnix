@@ -1,6 +1,6 @@
 #include <defs.h>
-#include <stdio.h>
 #include <screen.h>
+#include <sys/common.h>
 #include <sys/init_desc_table.h>
 #include <sys/irq_common.h>
 #include <sys/types.h>
@@ -35,7 +35,7 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
     while(modulep[0] != 0x9001) modulep += modulep[1]+2;
     for(smap = (struct smap_t*)(modulep+2); smap < (struct smap_t*)((char*)modulep+modulep[1]+2*4); ++smap) {
         if (smap->type == 1 /* memory */ && smap->length != 0) {
-            set_cursor_pos(15, 5);
+            set_cursor_pos(3, 5);
             kprintf("Available Physical Memory [%x-%x]", smap->base, smap->base + smap->length);
             phys_base = smap->base;
             phys_size = smap->length;
@@ -99,11 +99,11 @@ void boot(void)
     init_timer(1);
     init_keyboard();
 
-    set_cursor_pos(11, 25);
+    set_cursor_pos(0, 25);
     kprintf("________________");
-    set_cursor_pos(12, 25);
+    set_cursor_pos(1, 25);
     kprintf("|    SBUnix    |");
-    set_cursor_pos(13, 25);
+    set_cursor_pos(2, 25);
     kprintf("----------------");
 
     start(

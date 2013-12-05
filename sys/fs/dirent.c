@@ -4,7 +4,7 @@
 #include <sys/virt_mm.h>
 #include <sys/kstring.h>
 #include <sys/kmalloc.h>
-#include <stdio.h>
+#include <sys/common.h>
 
 
 fnode_t* get_root_node()

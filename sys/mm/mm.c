@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include <sys/common.h>
 #include <sys/proc_mngr.h>
 #include <sys/paging.h>
 #include <sys/virt_mm.h>
