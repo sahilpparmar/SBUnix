@@ -102,6 +102,7 @@ enum syscall_num {
     SLEEP,
     CLEAR,
     SEEK, 
+    MKDIR, 
     NUM_SYSCALLS
 };
 

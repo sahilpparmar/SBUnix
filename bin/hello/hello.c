@@ -36,21 +36,31 @@ int main(int argc, char* argv[])
     
     // test for open, read, close
 #if 1
-    int fd, length;
+    int fd, length;//, tp1, tp2;
     //fd = open("/rootfs/newfolder/timepass/helloworldfile.txt", 0);
-    fd = open("/Disk/first.txt", O_RDONLY);
+    //int tp1  = mkdir("/Disk/bin"); 
+    //tp2 = mkdir("/Disk/bin"); 
+//    printf("\n making dir %d",tp1); 
     
-    char* buf = NULL;
+    //fd = open("/Disk/first.txt", O_RDONLY);
+    mkdir("/Disk/lib"); 
+    fd = open("/Disk/lib/four.txt", O_RDONLY);
+    
+    char* buf = NULL;//, *tp = NULL;
     buf = (char *)malloc(500);
-    strcpy(buf, "Hi, THis is a new string");
-
+    //tp = (char *)malloc(500);
+     
+    strcpy(buf, "aaaaaa");
     printf("\nOld Copy: %s", buf);
 
     if (fd > 0) {
+        lseek(fd, 10, SEEK_SET); 
         length = read(fd, buf, 500); 
         printf("Length: %p", length);
         close(fd);
     }
+    //lseek(fd, 2, SEEK_SET); 
+    //read(fd, tp, 500); 
     printf("\nNew Copy: %s", buf);
    
     free(buf);

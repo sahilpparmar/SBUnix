@@ -50,3 +50,8 @@ int lseek(uint64_t file_d, int offset, int whence){
     return (int)__syscall3(SEEK, (uint64_t)file_d, (uint64_t)offset, (uint64_t)whence);
 
 }
+
+int mkdir(char *path)
+{
+    return (int)__syscall1(MKDIR, (uint64_t)path);
+}
