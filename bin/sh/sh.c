@@ -211,7 +211,8 @@ int main(int argc, char **argv)
                 printf("\nInvalid Path : Please enter absolute path of the file.\nRefer to help.");
             }
 
-
+        } else if (strcmp(args[0], "shutdown") == 0) {
+            shutdown();
         } else if (strcmp(args[0], "cls") == 0) {
             cls();
         } else if(strcmp(args[0], "export") == 0) {

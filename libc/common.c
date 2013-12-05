@@ -42,3 +42,9 @@ void yield()
     __syscall0(YIELD);
 }
 
+void shutdown()
+{
+    __syscall0(SHUTDOWN);
+}
+
+

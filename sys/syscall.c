@@ -331,7 +331,7 @@ void sys_close(int fd)
     CURRENT_TASK->file_descp[fd] = NULL;
 }
 
-uint64_t sys_read(uint64_t fd_type, uint64_t addr, uint64_t length)
+int sys_read(uint64_t fd_type, uint64_t addr, uint64_t length)
 {
     uint64_t end = 0, currlength = 0;
 
@@ -774,6 +774,22 @@ void sys_listprocess()
     }
 }    
 
+void sys_shutdown()
+{
+    task_struct *cur = CURRENT_TASK;
+    while (cur) {
+        cur->task_state = EXIT_STATE; 
+        cur = cur->next;
+    }
+    
+    sys_clear();
+    kprintf("\n\n\n\n\n\n\n\n\n\n\n\n");
+    kprintf("\n==========================================================================");
+    kprintf("\n============ SBU Unix is now shutting down.  Thank You !!! ===============");
+    kprintf("\n==========================================================================");
+    while(1);    
+}
+
 // Set up the system call table
 void* syscall_tbl[NUM_SYSCALLS] = 
 {
@@ -799,7 +815,8 @@ void* syscall_tbl[NUM_SYSCALLS] =
     sys_sleep,
     sys_clear,
     sys_lseek,
-    sys_mkdir
+    sys_mkdir,
+    sys_shutdown
 };
 
 // The handler for the int 0x80

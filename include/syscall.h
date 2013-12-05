@@ -104,6 +104,7 @@ enum syscall_num {
     CLEAR,
     SEEK, 
     MKDIR, 
+    SHUTDOWN,
     NUM_SYSCALLS
 };
 
