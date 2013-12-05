@@ -200,7 +200,7 @@ int main(int argc, char **argv)
 
                 printf("\n");
             } else { 
-                printf("\nInvalid Path : Please enter absolute path of the file");
+                printf("\nInvalid Path : Please enter absolute path of the file.\nRefer to help.");
             }
 
 
@@ -225,7 +225,7 @@ int main(int argc, char **argv)
 
                 if (curr_dir_ptr == NULL) {
 
-                    printf("%s: No such directory", args[1]); 
+                    printf("%s: No such directory.\nRefer to help.", args[1]); 
                     currdir[lendir] = '\0';
                     curr_dir_ptr    = opendir(currdir); 
 
@@ -247,7 +247,7 @@ int main(int argc, char **argv)
 
                 if (curr_dir_ptr == NULL) {
 
-                    printf("%s: No such directory", currdir); 
+                    printf("%s: No such directory.\nRefer to help.", currdir); 
                     currdir[lendir] = '\0';
                     curr_dir_ptr    = opendir(currdir); 
 
@@ -290,7 +290,7 @@ int main(int argc, char **argv)
             if (Is_file_exist()) {
                 fork_and_execvpe();
             } else {
-                printf("CMD does not exist");
+                printf("CMD does not exist.\nRefer to help.");
             }
 
         } else if (ptr[0] == 's' && ptr[1] == 'h' && ptr[2] == ' ' && ptr_length > 3)  {              /****6) To check for executable ****/
@@ -343,16 +343,16 @@ int main(int argc, char **argv)
                             copy_args_to_execargs();
                             fork_and_execvpe();
                         } else { 
-                            printf("CMD does not exist");
+                            printf("CMD does not exist.\nRefer to help.");
                         }
                     }
 
                 } else {
-                    printf("File not an executable");
+                    printf("File not an executable.\nRefer to help.");
                 }
 
             } else {
-                printf("File does not exist");
+                printf("File does not exist.\nRefer to help.");
             }
 
         } else {
@@ -374,7 +374,7 @@ int main(int argc, char **argv)
                 copy_args_to_execargs();
                 fork_and_execvpe();
             } else { 
-                printf("CMD does not exist");
+                printf("CMD does not exist.\nRefer to help.");
             }
         }
         *ptr = NULL;
