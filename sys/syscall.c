@@ -332,7 +332,7 @@ void sys_close(int fd)
     CURRENT_TASK->file_descp[fd] = NULL;
 }
 
-uint64_t sys_read(uint64_t fd_type, uint64_t addr, uint64_t length)
+int sys_read(uint64_t fd_type, uint64_t addr, uint64_t length)
 {
     uint64_t end = 0, currlength = 0;
 
