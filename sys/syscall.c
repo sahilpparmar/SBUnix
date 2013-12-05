@@ -192,7 +192,7 @@ int sys_open(char* dir_path, uint64_t flags)
                 break; 
             } else if (i == aux_node->end && flags != O_CREAT) {
 
-                kprintf("\nFile doesnot exist"); 
+                //kprintf("\nFile doesnot exist"); 
                 return -1;
             }
 
@@ -260,8 +260,8 @@ int sys_open(char* dir_path, uint64_t flags)
 
                     vma_struct *new_vma = vmalogic(addr, inode_entry->i_size, RW, FILETYPE, i);
                     kmmap(new_vma->vm_start, new_vma->vm_end - new_vma->vm_start, RW_USER_FLAGS);
-                    
                     copy_blocks_to_vma(inode_entry, new_vma->vm_start);
+                    //kprintf("\n[OPEN] %p start %s, addr %s, end %p, length %p", new_vma, new_vma->vm_start, addr, new_vma->vm_end, inode_entry->i_size);
 
                     if (flags == O_APPEND) {
                         file_d->curr     = addr + inode_entry->i_size;
@@ -362,13 +362,12 @@ int sys_write(uint64_t fd_type, uint64_t addr, int length)
         if ((CURRENT_TASK->file_descp[fd_type]) == NULL) {
             length = -1;
         } else if(((FD *)CURRENT_TASK->file_descp[fd_type])->f_perm == O_RDONLY ){
-            kprintf("\n Not valid permissions"); 
+            //kprintf("\n Not valid permissions"); 
             length = -1; 
         } else {
             uint64_t end = 0, currlength = 0;
 
             currlength = ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr;
-            kprintf("\n curr %p", currlength);
             //get end of vma 
             for (iter = CURRENT_TASK->mm->vma_list; iter != NULL; iter = iter->vm_next) {
                 if(iter->vm_file_descp == fd_type){
@@ -383,8 +382,8 @@ int sys_write(uint64_t fd_type, uint64_t addr, int length)
                 iter->vm_end = currlength + length;
             }
            
-            //kprintf("\n currlength %p, addr %p, end %p, length %p", currlength, addr, iter->vm_end, length);            
-            memcpy((uint64_t *)currlength, (uint64_t *)addr, length);
+            //kprintf("\n4currlength %p, string %p %s, end %p %p, length %p", currlength, iter, iter->vm_start, iter->vm_end, end, length);
+            memcpy((void *)currlength, (void *)addr, length);
             
             ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr += length;
         } 
@@ -410,7 +409,7 @@ int sys_lseek(uint64_t fd_type, int offset, int whence)
             }
         }
 
-        kprintf("\n seek offset: %p start %p", offset, iter->vm_start);
+        //kprintf("\n seek offset: %p start %p", offset, iter->vm_start);
 
         if(whence == SEEK_SET) {
             if (offset < 0)

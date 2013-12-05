@@ -238,7 +238,7 @@ void map_virt_phys_addr(uint64_t vaddr, uint64_t paddr, uint64_t flags)
 
                 if (IS_PRESENT_PAGE(entry)) { 
                     // kprintf("\tPhysical page already mapped; so freeing physical page %p", paddr);
-                    phys_free_block(paddr);
+                    phys_free_block(paddr, FALSE);
                 } else {
                     // kprintf("\tNew Physical page mapped %p", paddr);
                     *pte_entry = paddr | flags;
@@ -293,10 +293,6 @@ void empty_page_tables(uint64_t pml4_t)
     uint64_t pml4, pdpe, pde, pte;
     uint64_t *pml4_e, *pdpe_e, *pde_e, *pte_e;
 
-//    uint64_t cr3;
-//    READ_CR3(cr3);
-//    kprintf("\tCR3:%p", cr3);
-
     // Free entries except [510] and [511] entries 
     for (pml4 = 0; pml4 < ENTRIES_PER_PML4-2; pml4++) {
         pml4_e = (uint64_t*) (PML4_SELF_REF | (pml4 << 3));
@@ -318,22 +314,20 @@ void empty_page_tables(uint64_t pml4_t)
                                 if (IS_PRESENT_PAGE(*pte_e)) {
                                     //kprintf("\tpte[%d]:%p", pte, *pte_e);
 
-                                    //TODO (WAR): FIX THIS!!
                                     set_top_virtaddr(get_top_virtaddr() + 0x1000);
-
-                                    phys_free_block(*pte_e & PAGING_ADDR);
+                                    phys_free_block(*pte_e & PAGING_ADDR, TRUE);
                                     *pte_e = 0UL;
                                 }
                             }
-                            phys_free_block(*pde_e & PAGING_ADDR);
+                            phys_free_block(*pde_e & PAGING_ADDR, TRUE);
                             *pde_e = 0UL;
                         }
                     }
-                    phys_free_block(*pdpe_e & PAGING_ADDR);
+                    phys_free_block(*pdpe_e & PAGING_ADDR, TRUE);
                     *pdpe_e = 0UL;
                 }
             }
-            phys_free_block(*pml4_e & PAGING_ADDR);
+            phys_free_block(*pml4_e & PAGING_ADDR, TRUE);
             *pml4_e = 0UL;
         }
     }

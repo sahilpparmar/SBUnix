@@ -39,7 +39,6 @@ struct file_descp {
     uint64_t inode_struct;
 };
 
-
 fnode_t* root_node;
 
 void printnode(fnode_t *node);

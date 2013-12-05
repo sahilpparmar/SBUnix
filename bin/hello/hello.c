@@ -23,20 +23,60 @@ int main(int argc, char* argv[])
     closedir(tp);
 #endif
     
-    // test for open, read, close
+    // test for open, read, close, append
 #if 1
     int fd, length;
     //fd = open("/rootfs/newfolder/timepass/helloworldfile.txt", 0);
-    fd = open("/Disk/first.txt", O_RDONLY);
+    fd = open("/Disk/first.txt", O_CREAT);
     
     char* buf = NULL;
-    buf = (char *)malloc(500);
+    buf = (char *)malloc(512);
     strcpy(buf, "Hi, THis is a new string");
 
     printf("\nOld Copy: %s", buf);
 
     if (fd > 0) {
-        length = read(fd, buf, 500); 
+        length = write(fd, buf, 512); 
+        printf("Length: %p", length);
+        close(fd);
+    }
+    printf("\nNew Copy: %s", buf);
+   
+    free(buf);
+#endif    
+#if 0
+    int fd, length;
+    //fd = open("/rootfs/newfolder/timepass/helloworldfile.txt", 0);
+    fd = open("/Disk/first.txt", O_RDONLY);
+    
+    char* buf = NULL;
+    buf = (char *)malloc(512);
+    strcpy(buf, "Hi, THis is a NULL string");
+
+    printf("\nOld Copy: %s", buf);
+
+    if (fd > 0) {
+        length = read(fd, buf, 512); 
+        printf("Length: %p", length);
+        close(fd);
+    }
+    printf("\nNew Copy: %s", buf);
+   
+    free(buf);
+#endif    
+#if 0
+    int fd, length;
+    //fd = open("/rootfs/newfolder/timepass/helloworldfile.txt", 0);
+    fd = open("/Disk/first.txt", O_APPEND);
+    
+    char* buf = NULL;
+    buf = (char *)malloc(512);
+    strcpy(buf, "Hi, THis is a new string");
+
+    printf("\nOld Copy: %s", buf);
+
+    if (fd > 0) {
+        length = write(fd, buf, 512); 
         printf("Length: %p", length);
         close(fd);
     }

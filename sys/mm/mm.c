@@ -143,6 +143,7 @@ void empty_vma_list(vma_struct *vma_list)
         cur_vma->vm_start = NULL;
         cur_vma->vm_end   = NULL;
         cur_vma->vm_flags = NULL;
+        cur_vma->vm_file_descp = NULL;
 
         last_vma = cur_vma;
         cur_vma = cur_vma->vm_next;

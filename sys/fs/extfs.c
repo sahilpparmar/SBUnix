@@ -168,7 +168,7 @@ int32_t alloc_new_inode()
 void free_inode(int32_t inode_no)
 {
     if (inode_no < 0 || inode_no >= s_star->s_ninodes || !inode_bmap_isset(inode_no)) {
-        kprintf("\nAlready Free Inode %d", inode_no);
+        //kprintf("\nAlready Free Inode %d", inode_no);
         return;
     }
 
@@ -293,7 +293,7 @@ void free_block(int32_t block_no)
     int32_t sec_no;
 
     if (block_no < 0 || block_no >= s_star->s_nblocks) {
-        kprintf("\nAlready Free Block %d", block_no);
+        //kprintf("\nAlready Free Block %d", block_no);
         return;
     }
 
@@ -304,7 +304,7 @@ void free_block(int32_t block_no)
     if (!block_bmap_isset(sector_e, block_no))
         return;
 
-    kprintf("\nFreeing Block %d", block_no);
+    //kprintf("\nFreeing Block %d", block_no);
 
     // Update block bitmap
     block_bmap_unset(sector_e, block_no);
@@ -327,7 +327,7 @@ bool write_block(void* block_entry, uint64_t block_no, uint64_t block_off, uint6
     if (block_no < 0 || block_no >= s_star->s_nblocks) {
         return FALSE;
     }
-
+    //kprintf("\n[WRITE]%s", block_entry, block_no, size);
     write_sector(block_entry, s_star->s_blockdatastart + block_no, block_off, size);
 
     return TRUE;
@@ -351,7 +351,7 @@ void copy_blocks_to_vma(ext_inode* inode_entry, uint64_t vma_start)
 
 void copy_vma_to_blocks(ext_inode* inode_entry, int32_t inode_no, uint64_t vma_start, uint64_t new_size)
 {
-    uint64_t new_block_count = new_size/SIZE_OF_SECTOR + 1;
+    uint64_t new_block_count = new_size/(SIZE_OF_SECTOR+1) + 1;
     uint64_t cur_block_count = inode_entry->i_block_count;
     int32_t i;
 
