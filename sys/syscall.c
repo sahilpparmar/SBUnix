@@ -1,5 +1,3 @@
-#include <defs.h>
-#include <stdio.h>
 #include <syscall.h>
 #include <sys/paging.h>
 #include <sys/proc_mngr.h>
@@ -14,47 +12,10 @@
 #include <sys/dirent.h>
 #include <sys/kmalloc.h>
 #include <io_common.h>
-
+#include <stdio.h>
 // These will get invoked in kernel mode
 
 extern fnode_t* root_node;
-
-
-vma_struct* vmalogic(uint64_t addr, uint64_t nbytes, uint64_t flags, uint64_t type, uint64_t file_d)
-{
-    vma_struct *node, *iter, *temp;
-    bool myflag = 0;
-
-    node = alloc_new_vma(addr, addr + nbytes, flags, type, file_d); 
-    //kprintf("\n node start %p, end%p fd %d", node->vm_start, node->vm_end, node->vm_file_descp);
-
-    
-    CURRENT_TASK->mm->vma_count++;
-    CURRENT_TASK->mm->total_vm += nbytes;
-
-    iter = CURRENT_TASK->mm->vma_list;
-
-    // check position where we can insert this new vma in vma list
-    while (iter->vm_next != NULL) {
-
-        temp = iter;            
-        iter = iter->vm_next;
-
-        if (temp->vm_end < addr && (iter->vm_start > addr + nbytes)) {
-            myflag = 1;
-            break;
-        }
-    }
-
-    if (myflag == 1) {
-        temp->vm_next = node;
-        node->vm_next = iter;
-    } else {
-        iter->vm_next = node; 
-    }
-
-    return node;
-}
 
 DIR* sys_opendir(uint64_t* entry, uint64_t* directory)
 {
@@ -151,10 +112,7 @@ int sys_mkdir( uint64_t dir)
         //kprintf("\n %s Directory doesnot exists", path);
         return -1; 
     }
-
-
 }
-
 
 struct dirent* sys_readdir(uint64_t* entry)
 {
@@ -193,15 +151,18 @@ int sys_open(char* dir_path, uint64_t flags)
     char *temp = NULL; 
     int i, inode_no, creat_flag = 0;
     char *path = (char *)kmalloc(sizeof(char) * kstrlen(dir_path));
-    kstrcpy(path, dir_path); 
 
+    kstrcpy(path, dir_path); 
     temp = kstrtok(path, "/");  
+
     if (temp == NULL) return -1;
 
     if (kstrcmp(temp, "rootfs") == 0) {
 
         while (temp != NULL) {
             aux_node = currnode;
+             
+            
             for (i = 2; i < currnode->end; ++i) {
                 if (kstrcmp(temp, currnode->f_child[i]->f_name) == 0) {
                     currnode = (fnode_t *)currnode->f_child[i];
@@ -217,11 +178,12 @@ int sys_open(char* dir_path, uint64_t flags)
         }
 
         if (currnode->f_type == DIRECTORY) {
-            
-            kprintf("\n Invalid open operation on directory");
+                
+            //kprintf("\n Invalid open operation on directory");
             return -1;
-        }
 
+        }
+        
         file_d->filenode = currnode;
         file_d->curr     = currnode->start;
         file_d->f_perm   = flags;
@@ -330,7 +292,7 @@ int sys_open(char* dir_path, uint64_t flags)
 
                     if (flags == O_APPEND) {
                         file_d->curr     = addr + inode_entry->i_size;
-                        kprintf("\nSEEK[%d]%p", i, file_d->curr);
+                        //kprintf("\nSEEK[%d]%p", i, file_d->curr);
                     } else {
                         file_d->curr     = addr;
                     }
@@ -381,6 +343,10 @@ uint64_t sys_read(uint64_t fd_type, uint64_t addr, uint64_t length)
         if ((CURRENT_TASK->file_descp[fd_type]) == NULL) {
             length = -1;
 
+        } else if(((FD *)CURRENT_TASK->file_descp[fd_type])->f_perm == O_WRONLY ){
+            //kprintf("\n Not valid permissions"); 
+            length = -1; 
+        
         } else if(((FD *)CURRENT_TASK->file_descp[fd_type])->filenode->f_inode_no != 0) { 
             //This file descriptor is associated with file on disk 
 
@@ -463,52 +429,73 @@ int sys_lseek(uint64_t fd_type, int offset, int whence)
     
     vma_struct* iter;
     ext_inode *inode_t = (ext_inode*) ((FD*) CURRENT_TASK->file_descp[fd_type])->inode_struct;
-    
-    if (inode_t == NULL) {
-        //file descriptor belongs to tarfs 
-        // ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr = 0;
-         //kprintf("\n cannot do lseek");
-         return -1;
+    uint64_t start = 0, end = 0;    
+
+    //kprintf("\n inode value %p", inode_t);
+
+    if (((FD*) CURRENT_TASK->file_descp[fd_type])->filenode->f_type == DIRECTORY) {
+        //kprintf("\n Invalid operation on directory");
+        offset = -1;
+
     } else {
+        if (inode_t == NULL) {
+                //file descriptor belongs to tarfs 
+                // ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr = 0;
+                // kprintf("\n cannot do lseek");
+                // return -1;
+            start = ((FD*) CURRENT_TASK->file_descp[fd_type])->filenode->start;
+            end   = ((FD*) CURRENT_TASK->file_descp[fd_type])->filenode->end;
+        
+        
+        } else {
 
-
-        for (iter = CURRENT_TASK->mm->vma_list; iter != NULL; iter = iter->vm_next) {
-            if(iter->vm_file_descp == fd_type){
-                //start = iter->vm_start;
-                break; 
+            for (iter = CURRENT_TASK->mm->vma_list; iter != NULL; iter = iter->vm_next) {
+                if(iter->vm_file_descp == fd_type){
+                    //start = iter->vm_start;
+                    break; 
+                }
+                
             }
+        
+            start = iter->vm_start; 
+            end   = iter->vm_end; 
+            
+            //kprintf("\n start %p end %p", start, end);
+        
         }
+            //kprintf("\n seek offset: %p start %p", offset, iter->vm_start);
 
-        //kprintf("\n seek offset: %p start %p", offset, iter->vm_start);
 
-        if(whence == SEEK_SET) {
-            if (offset < 0)
-                offset = 0;
+            if(whence == SEEK_SET) {
+                if (offset < 0)
+                    offset = 0;
 
-            ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr = iter->vm_start + offset;
+                //((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr = iter->vm_start + offset;
+                ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr = start + offset;
 
-        } else if(whence == SEEK_CUR) {
+            } else if(whence == SEEK_CUR) {
 
-            if(((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr + offset > iter->vm_end) {
+                if(((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr + offset > end) {
 
-                ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr = iter->vm_end;
-            } else {        
+                    ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr = end;
+                } else {        
 
-                ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr += offset;
+                    ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr += offset;
+                }
+
+            } else if(whence == SEEK_END) {
+
+                if (offset > 0)
+                    offset = 0;
+
+                ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr = end + offset;
+
+
+            }else{
+                offset = -1;
             }
-
-        } else if(whence == SEEK_END) {
-
-            if (offset > 0)
-                offset = 0;
-
-            ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr = iter->vm_end + offset;
-
-
-        }else{
-            offset = -1;
-        }
-    } 
+         
+   } 
     //kprintf("\n curr inside seek %p",((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr);
     return offset;
 
@@ -764,6 +751,12 @@ int sys_clear()
     return 1;
 }
 
+void sys_yield()
+{
+    // Enable interrupt for scheduling next process
+    __asm__ __volatile__ ("int $32");
+}
+
 const char *t_state[NUM_TASK_STATES] = { "RUNNING" , "READY  " , "SLEEP  " , "WAIT   " , "IDLE   " , "EXIT   ", "ZOMBIE "};
 
 void sys_listprocess()
@@ -793,6 +786,7 @@ void* syscall_tbl[NUM_SYSCALLS] =
     sys_wait,
     sys_waitpid,
     sys_exit,
+    sys_yield,
     sys_mmap,
     sys_munmap,
     sys_getpid,

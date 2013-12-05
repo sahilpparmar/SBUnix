@@ -76,9 +76,9 @@ super_block *read_first_superblock(bool forceCreate)
     } else {
         kprintf("\nSuperblock Found");
         kprintf("\nNumber of Used Inodes: %d", s_star->s_ninodes - s_star->s_freeinodescount);
-        kprintf("\nNumber of Free Inodes: %d", s_star->s_freeinodescount);
+        kprintf("\tNumber of Free Inodes: %d", s_star->s_freeinodescount);
         kprintf("\nNumber of Used Blocks: %d", s_star->s_nblocks - s_star->s_freeblockscount);
-        kprintf("\nNumber of Free Blocks: %d", s_star->s_freeblockscount);
+        kprintf("\tNumber of Free Blocks: %d", s_star->s_freeblockscount);
     }
 
 #if 0

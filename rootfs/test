@@ -1,4 +1,3 @@
 #!
-hello
-ps
+sleep 5 &
 ps

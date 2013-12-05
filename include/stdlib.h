@@ -17,8 +17,9 @@ int munmap(uint64_t* addr, uint64_t size);
 int open(char *path, int flags);
 uint64_t read(uint64_t fd, void *buf, uint64_t nbytes);
 int write(int n, char *str, int len);
-int lseek(uint64_t file_d, int offset, int whence);
+int seek(uint64_t file_d, int offset, int whence);
 void close(int file_d);
+int mkdir(char *path);
 
 pid_t getpid();
 pid_t getppid();
@@ -28,7 +29,7 @@ pid_t fork();
 int execvpe(const char *file, char *const argv[], char *const envp[]);
 pid_t wait(uint64_t *status);
 pid_t waitpid(pid_t pid, uint64_t *status, int options);
-int mkdir(char *path);
+void yield();
 
 void *memcpy(void *destination, void *source, uint64_t num);
 void *memset(void *ptr, uint8_t value, uint64_t num);

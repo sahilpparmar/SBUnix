@@ -109,7 +109,7 @@ static void fork_and_execvpe()
 
 int main(int argc, char **argv)
 {
-    char str[25], *newstr, ptr[20], path_cmd[20];
+    char str[1024], *newstr, ptr[1024], path_cmd[1024];
     int i, j=0, k=0, file_descp, ptr_length, lendir = 0, str_length;
     char* exec_path;
 
@@ -153,16 +153,16 @@ int main(int argc, char **argv)
         }
         args[j][k]='\0';
 
-        char help_str[100], help_ptr[1024];
-        memset(help_ptr, 0, 1024);
-        memset(help_str, 0, 100);
+        char help_str[2048], help_ptr[2048];
+        memset(help_ptr, 0, 2048);
+        memset(help_str, 0, 2048);
 
         if (strcmp(args[0], "ulimit") == 0) {
 
             char *new_pointer; 
             file_descp  = open("/rootfs/etc/ulimit", 0);
             if (file_descp != -1) {
-                read(file_descp, help_ptr, 1024); 
+                read(file_descp, help_ptr, 2048); 
                 close(file_descp);
                 new_pointer = help_ptr;
                 cls();
@@ -180,13 +180,13 @@ int main(int argc, char **argv)
             char *new_pointer; 
             file_descp  = open("/rootfs/etc/help", 0);
             if (file_descp != -1) {
-                read(file_descp, help_ptr, 1024); 
+                read(file_descp, help_ptr, 2048); 
                 close(file_descp);
                 new_pointer = help_ptr;
                 cls();
                 while (*new_pointer != '\0') {
 
-                    new_pointer = getLine(new_pointer, help_str, 1023);
+                    new_pointer = getLine(new_pointer, help_str, 2047);
                     printf("\n%s", help_str);
                 }
 
@@ -197,12 +197,12 @@ int main(int argc, char **argv)
             char *new_pointer; 
             file_descp  = open(args[1], 0);
             if (file_descp != -1) {
-                read(file_descp, help_ptr, 1024); 
+                read(file_descp, help_ptr, 2048); 
                 close(file_descp);
                 new_pointer = help_ptr;
                 while (*new_pointer != '\0') {
 
-                    new_pointer = getLine(new_pointer, help_str, 1023);
+                    new_pointer = getLine(new_pointer, help_str, 2047);
                     printf("\n%s", help_str);
                 }
 
@@ -272,10 +272,10 @@ int main(int argc, char **argv)
             /****5) To handle LS command ****/
 
             // To list contents of directory specified by user
-            if(args[1][0] != '\0') {
+            if (args[1][0] != '\0') {
 
                 //if argument to ls is relative path, append it to currdir
-                if(args[1][0] != '/') {
+                if (args[1][0] != '/') {
 
                     int lendir  = strlen(currdir);
 
@@ -316,14 +316,13 @@ int main(int argc, char **argv)
             if (file_descp != -1) {
                 //check if path is valid path
 
-                read(file_descp, ptr, 100); 
+                read(file_descp, ptr, 1024); 
                 close(file_descp);
                 if (ptr[0] == '#' && ptr[1] == '!') {
                     newstr = ptr;
-                    newstr += 2;
-                    //For parsing a script file and extracting the commands from the file
-                    while (*newstr != '\0')
-                    {
+                    newstr = getLine(newstr, str, 1023);
+                    // For parsing a script file and extracting the commands from the file
+                    while (*newstr != '\0') {
                         newstr = getLine(newstr, str, 1023);
                         str_length = strlen(str); 
                         bg_flag = str[str_length - 1];
@@ -352,6 +351,7 @@ int main(int argc, char **argv)
                         if (Is_file_exist()) {
                             copy_args_to_execargs();
                             fork_and_execvpe();
+                            yield();
                         } else { 
                             printf("CMD does not exist.\nRefer to help.");
                         }
@@ -379,7 +379,7 @@ int main(int argc, char **argv)
                 strcpy(prog, path);
                 strcat(prog, cmd);
             }
-            if (Is_file_exist()) {
+            if (Is_file_exist() || strcmp(prog, "ls") == 0) {
                 copy_args_to_execargs();
                 fork_and_execvpe();
             } else { 

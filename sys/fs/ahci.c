@@ -327,7 +327,7 @@ void probe_port(HBA_MEM *abar_temp)
             int dt = check_type((HBA_PORT *)&abar_temp->ports[i]);
             if (dt == AHCI_DEV_SATA)
             {
-                kprintf("\nSATA drive found at port %d\n", i);
+                //kprintf("\nSATA drive found at port %d\n", i);
                 abar = abar_temp;
 
                 port_rebase(abar_temp->ports, i);
@@ -459,7 +459,7 @@ void init_disk(bool forceCreate)
     map_virt_phys_addr(vaddr, paddr, RW_USER_FLAGS); 
 
     abar = (HBA_MEM *)vaddr;
-    kprintf("\n Capablity : %p  PI : %p VI : %p Interrupt Status : %p", abar->cap, abar->pi,abar->vs,abar->is);
+    //kprintf("\n Capablity : %p  PI : %p VI : %p Interrupt Status : %p", abar->cap, abar->pi,abar->vs,abar->is);
     probe_port(abar);
 
     // Reads an existing super block and creates one if not present 

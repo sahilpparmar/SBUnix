@@ -65,7 +65,7 @@ int main(int argc, char* argv[])
    
     free(buf);
 #endif    
-#if 0
+#if 1
     int fd, length;
     fd = open("/Disk/first.txt", O_RDONLY);
     
@@ -110,9 +110,8 @@ int main(int argc, char* argv[])
    
     free(buf);
 #endif    
-#if 1
+#if 0
     int fd, length;
-    //fd = open("/rootfs/newfolder/timepass/helloworldfile.txt", 0);
     fd = open("/Disk/first.txt", O_TRUNC);
     
     char* buf = NULL;
@@ -126,8 +125,6 @@ int main(int argc, char* argv[])
         printf("Length: %p", length);
         close(fd);
     }
-    //lseek(fd, 2, SEEK_SET); 
-    //read(fd, tp, 500); 
     printf("\nNew Copy: %s", buf);
    
     free(buf);

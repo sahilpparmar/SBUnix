@@ -82,7 +82,7 @@ void phys_init(uint64_t physBase, uint64_t physfree, uint64_t physSize) {
     // Set all physical memory to 0
     memset8((uint64_t*)_mmngr_base_addr, 0x0, _mmngr_memory_size/8);
 
-    kprintf("\nPhysical Blocks Base:%p, Size:%p, Max:%p", _mmngr_base_addr, _mmngr_memory_size, _mmngr_max_blocks);
+    //kprintf("\nPhysical Blocks Base:%p, Size:%p, Max:%p", _mmngr_base_addr, _mmngr_memory_size, _mmngr_max_blocks);
 
     // Set Bitmap to all 0
     _mmngr_memory_map = (uint64_t *) (KERNEL_START_VADDR + physfree);

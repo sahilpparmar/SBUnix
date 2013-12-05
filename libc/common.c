@@ -36,3 +36,7 @@ void listprocess()
     __syscall0(LISTPROCESS);
 }
 
+void yield()
+{
+    __syscall0(YIELD);
+}

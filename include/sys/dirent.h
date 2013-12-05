@@ -45,7 +45,6 @@ void printnode(fnode_t *node);
 DIR* opendir(char *dir_path);
 struct dirent* readdir(DIR* node);
 int closedir(DIR* node);
-int open(char *path, int flags);
 void* file_lookup(char *dir_path);
 void make_node(struct file *node, struct file *parent, char *name, uint64_t start, uint64_t end, int type, uint64_t f_inode_no);
 fnode_t* get_root_node();

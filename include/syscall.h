@@ -89,6 +89,7 @@ enum syscall_num {
     WAIT,
     WAITPID,
     EXIT,
+    YIELD,
     MMAP,
     MUNMAP, 
     GETPID,
