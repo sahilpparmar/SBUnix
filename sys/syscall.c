@@ -328,7 +328,6 @@ void sys_close(int fd)
         add_to_vma_free_list(vma_l);
     }
     
-    //TODO add this filedescriptor to free list    
     CURRENT_TASK->file_descp[fd] = NULL;
 }
 
@@ -414,7 +413,7 @@ int sys_write(uint64_t fd_type, uint64_t addr, int length)
                 iter->vm_end = currlength + length;
             }
            
-            //kprintf("\n4currlength %p, string %p %s, end %p %p, length %p", currlength, iter, iter->vm_start, iter->vm_end, end, length);
+            //kprintf("\n[WRITE]curr %p, string %p %s, end %p %p, length %p", currlength, iter, iter->vm_start, iter->vm_end, end, length);
             memcpy((void *)currlength, (void *)addr, length);
             
             ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr += length;
@@ -521,7 +520,6 @@ pid_t sys_fork()
 
 uint64_t sys_execvpe(char *file, char *argv[], char *envp[])
 {
-    //TODO: Need to load envp[]
     task_struct *new_task = create_elf_proc(file, argv);
 
     if (new_task) {

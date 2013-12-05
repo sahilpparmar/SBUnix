@@ -8,7 +8,7 @@ static super_block* s_star = NULL;
 static ext_inode* inode_e  = NULL;
 static uint64_t *sector_e  = NULL;
 
-// Debug Routine for printing inodes and their current sizes
+// Debug Routine for printing used inodes and their current sizes
 void print_inodes()
 {
     kprintf("\tInode BitMap => %p %p", s_star->s_inode_bmap[1], s_star->s_inode_bmap[0]);
@@ -104,7 +104,6 @@ super_block *read_first_superblock(bool forceCreate)
             kprintf("\nSTR: %s", str);
         }
     }
-
     kprintf("%p\t", s_star->s_ninodes);
     kprintf("%p\t", s_star->s_freeblockscount);
     kprintf("%p\t", s_star->s_blockbmapstart);
@@ -115,6 +114,8 @@ super_block *read_first_superblock(bool forceCreate)
 #endif
     return s_star;
 };
+
+/////////////////////   INODE   ////////////////////
 
 static bool inode_bmap_isset(uint64_t inode_no)
 {
@@ -197,33 +198,31 @@ void free_inode(int32_t inode_no)
 
 bool read_inode(ext_inode* inode_entry, uint64_t inode_no)
 {
-    uint64_t sec_no, sec_off;
+    uint64_t sec_no;
 
     if (inode_no < 0 || inode_no >= s_star->s_ninodes || !inode_bmap_isset(inode_no)) {
         return FALSE;
     }
     sec_no = s_star->s_inodestart + inode_no/INODES_PER_BLOCK;
-    sec_off = (inode_no % INODES_PER_BLOCK) * sizeof(ext_inode);
 
-    read_sector(inode_entry, sec_no, sec_off, sizeof(ext_inode));
+    read_sector(inode_entry, sec_no, 0, sizeof(ext_inode));
 
     return TRUE;
 };
 
 bool write_inode(ext_inode* inode_entry, uint64_t inode_no)
 {
-    uint64_t sec_no, sec_off;
+    uint64_t sec_no;
 
     if (inode_no < 0 || inode_no >= s_star->s_ninodes || !inode_bmap_isset(inode_no)) {
         return FALSE;
     }
     
     sec_no  = s_star->s_inodestart + inode_no/INODES_PER_BLOCK;
-    sec_off = (inode_no % INODES_PER_BLOCK) * sizeof(ext_inode);
 
     //kprintf("\nI[%d]%s, %p, %p", inode_no, inode_entry->i_name, inode_entry->i_size, inode_entry->i_block_count);
 
-    write_sector(inode_entry, sec_no, sec_off, sizeof(ext_inode));
+    write_sector(inode_entry, sec_no, 0, sizeof(ext_inode));
 
     return TRUE;
 };
@@ -239,7 +238,7 @@ void truncate_inode(ext_inode* inode_entry, uint64_t inode_no)
     write_inode(inode_entry, inode_no);
 }
 
-//////////////////////////////////////////////////////////////////
+/////////////////////   BLOCK   ////////////////////
 
 static bool block_bmap_isset(uint64_t *sector_t, uint64_t block_no)
 {
@@ -350,7 +349,7 @@ bool write_block(void* block_entry, uint64_t block_no, uint64_t block_off, uint6
     if (block_no < 0 || block_no >= s_star->s_nblocks) {
         return FALSE;
     }
-    //kprintf("\nWRITE[%d] %p %s %d %p", block_no, block_entry, block_entry, block_off, size);
+    //kprintf("\nBLOCKW[%d] %p %s %d %p", block_no, block_entry, block_entry, block_off, size);
 
     write_sector(block_entry, s_star->s_blockdatastart + block_no, block_off, size);
 
@@ -382,10 +381,14 @@ void copy_vma_to_blocks(ext_inode* inode_entry, int32_t inode_no, uint64_t vma_s
     inode_entry->i_size = new_size;
 
     // Limit number of blocks
-    if (new_block_count > NUM_DIRECT_BLOCKS)
+    if (new_block_count > NUM_DIRECT_BLOCKS) {
         new_block_count = NUM_DIRECT_BLOCKS;
+    } else if (new_size == 0) {
+        new_block_count = 0;
+    }
 
     inode_entry->i_block_count = new_block_count;
+    //kprintf("\nCOPY[%d] %p %p", inode_no, inode_entry->i_block_count, inode_entry->i_size);
 
     if (cur_block_count == new_block_count) {
         // Directly Copy all the contains; no need to alloc/dealloc blocks

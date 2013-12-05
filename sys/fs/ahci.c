@@ -482,6 +482,7 @@ void read_sector(void* read_addr, uint64_t sector_no, uint64_t sec_off, uint64_t
     read(&abar->ports[0], sec_low, sec_hi, 1, PHYS_PAGE(1));
 
     memcpy(read_addr, (void*)vaddr + sec_off, size);
+    //kprintf("\nSecR[%d]+%d %d %s", sec_low, sec_off, size, vaddr);
 }
 
 // Writes to one sector
@@ -501,11 +502,9 @@ void write_sector(void* write_addr, uint64_t sector_no, uint64_t sec_off, uint64
         read(&abar->ports[0], sec_low, sec_hi, 1, PHYS_PAGE(1));
     }
 
-    // Memcpy only if write_addr is different then vaddr
-    if (vaddr != (uint64_t) write_addr) {
-        memcpy((void*)vaddr, write_addr, size);
-    }
-    //kprintf("\tW[%d]+%d", sec_low, sec_off);
+    memset((void*)vaddr, 0, SIZE_OF_SECTOR);
+    memcpy((void*)vaddr, write_addr, size);
+    //kprintf("\nSecW[%d]+%d %d %s", sec_low, sec_off, size, vaddr);
 
     write(&abar->ports[0], sec_low, sec_hi, 1, PHYS_PAGE(1));
 }
