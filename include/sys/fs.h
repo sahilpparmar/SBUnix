@@ -47,6 +47,7 @@ int32_t alloc_new_inode();
 void free_inode(int32_t inode_no);
 bool read_inode(ext_inode* inode_entry, uint64_t inode_no);
 bool write_inode(ext_inode* inode_entry, uint64_t inode_no);
+void truncate_inode(ext_inode* inode_entry, uint64_t inode_no);
 
 int32_t alloc_new_block();
 void free_block(int32_t block_no);

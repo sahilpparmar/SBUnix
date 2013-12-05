@@ -119,14 +119,13 @@ uint64_t phys_alloc_block() {
 
 void phys_free_block(uint64_t paddr, bool forceZero) 
 {
-
     int frame = (paddr - _mmngr_base_addr) >> PAGE_2ALIGN;
 
     //kprintf("\tFree:%p(%d)", paddr, phys_get_block_ref(paddr));
 
     if (paddr < _mmngr_base_addr || paddr > (_mmngr_base_addr + _mmngr_memory_size)) {
         //kprintf("\nInvalid Paddr: %p", paddr);
-        panic("Segmentation Fault in Kernel! Please Reboot!");
+        panic("Segmentation Fault in Kernel");
     }
 
     phys_dec_block_ref(paddr);

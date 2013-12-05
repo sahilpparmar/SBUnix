@@ -83,7 +83,7 @@ struct task_struct {
     task_struct* parent;            // Keep track of parent process on fork
     task_struct* childhead;         // Keep track of its children on fork
     task_struct* siblings;          // Keep track of its siblings (children of same parent)
-    uint64_t* file_descp[MAXFD];    //array of file descriptor pointers
+    uint64_t* file_descp[MAXFD];    // array of file descriptor pointers
     uint32_t no_children;           // Number of children
     pid_t wait_on_child_pid;        // pid of child last exited
 };

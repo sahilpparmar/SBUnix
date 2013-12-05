@@ -71,7 +71,7 @@ void dump_regs()
 
 void panic(char* msg)
 {
-    kprintf("\n[FAULT]: %s\n", msg);
+    kprintf("\n[FAULT]: %s\nPlease Reboot!", msg);
     while(1);
 }
 

@@ -198,7 +198,7 @@ void remove_child_from_parent(task_struct *child_task)
         sibling_l = sibling_l->siblings;
     }
 
-    if (!sibling_l) panic("Child task should be in the sibling list");
+    if (!sibling_l) return; 
 
     // Remove from sibling list
     if (last_sibling) {
@@ -232,7 +232,7 @@ void replace_child_task(task_struct *old_task, task_struct *new_task)
         sibling_l = sibling_l->siblings;
     }
 
-    if (!sibling_l) panic("Child task should be in the sibling list");
+    if (!sibling_l) return; 
     
     // Replace old_task with new_task
     if (last_sibling) {
