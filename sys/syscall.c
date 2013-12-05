@@ -19,6 +19,7 @@
 
 extern fnode_t* root_node;
 
+
 vma_struct* vmalogic(uint64_t addr, uint64_t nbytes, uint64_t flags, uint64_t type, uint64_t file_d)
 {
     vma_struct *node, *iter, *temp;
@@ -102,6 +103,58 @@ DIR* sys_opendir(uint64_t* entry, uint64_t* directory)
     }
     return dir;
 }
+
+
+int sys_mkdir( uint64_t dir)
+{
+    char *dirpath = (char *)dir; 
+    
+    int dirlength = kstrlen(dirpath);
+    char *path;
+    DIR* tempdir = kmalloc(sizeof(struct file_dir));
+    fnode_t *temp_node;
+    tempdir = sys_opendir((uint64_t *)dirpath,(uint64_t *) tempdir);
+ 
+    if (tempdir->filenode != NULL){
+        kprintf("\n directory already exists"); 
+        return -1;
+    }
+       
+    path = (char *)kmalloc(sizeof(char) * dirlength);
+    kstrcpy(path, dirpath);
+
+   
+    int end = dirlength;
+
+
+    if (path[dirlength - 1] == '/')
+        end = dirlength - 2;
+    else
+        end = dirlength - 1;
+    
+    while (dirpath[end] != '/'){
+        --end; 
+         
+    }
+    
+    path[end] = '\0'; 
+    tempdir = sys_opendir((uint64_t *)path, (uint64_t*)tempdir); 
+    
+    if (tempdir != NULL) {
+        temp_node = (fnode_t *)kmalloc(sizeof(fnode_t));                
+         
+        make_node(temp_node, tempdir->filenode, path + end + 1, 0, 2, DIRECTORY, 0);  
+        tempdir->filenode->f_child[tempdir->filenode->end] = temp_node;
+        tempdir->filenode->end += 1;
+        return 0; 
+    } else {
+        kprintf("\n %s Directory doesnot exists", path);
+        return -1; 
+    }
+
+
+}
+
 
 struct dirent* sys_readdir(uint64_t* entry)
 {
@@ -192,7 +245,7 @@ int sys_open(char* dir_path, uint64_t flags)
                 break; 
             } else if (i == aux_node->end && flags != O_CREAT) {
 
-                kprintf("\nFile doesnot exist"); 
+                //kprintf("\nFile doesnot exist"); 
                 return -1;
             }
 
@@ -260,11 +313,12 @@ int sys_open(char* dir_path, uint64_t flags)
 
                     vma_struct *new_vma = vmalogic(addr, inode_entry->i_size, RW, FILETYPE, i);
                     kmmap(new_vma->vm_start, new_vma->vm_end - new_vma->vm_start, RW_USER_FLAGS);
-                    
                     copy_blocks_to_vma(inode_entry, new_vma->vm_start);
+                    //kprintf("\n[OPEN] %p start %s, addr %s, end %p, length %p", new_vma, new_vma->vm_start, addr, new_vma->vm_end, inode_entry->i_size);
 
                     if (flags == O_APPEND) {
                         file_d->curr     = addr + inode_entry->i_size;
+                        kprintf("\nSEEK[%d]%p", i, file_d->curr);
                     } else {
                         file_d->curr     = addr;
                     }
@@ -362,13 +416,12 @@ int sys_write(uint64_t fd_type, uint64_t addr, int length)
         if ((CURRENT_TASK->file_descp[fd_type]) == NULL) {
             length = -1;
         } else if(((FD *)CURRENT_TASK->file_descp[fd_type])->f_perm == O_RDONLY ){
-            kprintf("\n Not valid permissions"); 
+            //kprintf("\n Not valid permissions"); 
             length = -1; 
         } else {
             uint64_t end = 0, currlength = 0;
 
             currlength = ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr;
-            kprintf("\n curr %p", currlength);
             //get end of vma 
             for (iter = CURRENT_TASK->mm->vma_list; iter != NULL; iter = iter->vm_next) {
                 if(iter->vm_file_descp == fd_type){
@@ -383,8 +436,8 @@ int sys_write(uint64_t fd_type, uint64_t addr, int length)
                 iter->vm_end = currlength + length;
             }
            
-            //kprintf("\n currlength %p, addr %p, end %p, length %p", currlength, addr, iter->vm_end, length);            
-            memcpy((uint64_t *)currlength, (uint64_t *)addr, length);
+            //kprintf("\n4currlength %p, string %p %s, end %p %p, length %p", currlength, iter, iter->vm_start, iter->vm_end, end, length);
+            memcpy((void *)currlength, (void *)addr, length);
             
             ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr += length;
         } 
@@ -395,11 +448,16 @@ int sys_write(uint64_t fd_type, uint64_t addr, int length)
 
 int sys_lseek(uint64_t fd_type, int offset, int whence) 
 {
+    
+    
     vma_struct* iter;
-    if(((FD *)CURRENT_TASK->file_descp[fd_type])->filenode->f_inode_no == 0) {
+    ext_inode *inode_t = (ext_inode*) ((FD*) CURRENT_TASK->file_descp[fd_type])->inode_struct;
+    
+    if (inode_t == NULL) {
         //file descriptor belongs to tarfs 
         // ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr = 0;
-
+         kprintf("\n cannot do lseek");
+         return -1;
     } else {
 
 
@@ -410,7 +468,7 @@ int sys_lseek(uint64_t fd_type, int offset, int whence)
             }
         }
 
-        kprintf("\n seek offset: %p start %p", offset, iter->vm_start);
+        //kprintf("\n seek offset: %p start %p", offset, iter->vm_start);
 
         if(whence == SEEK_SET) {
             if (offset < 0)
@@ -738,7 +796,8 @@ void* syscall_tbl[NUM_SYSCALLS] =
     sys_close,
     sys_sleep,
     sys_clear,
-    sys_lseek
+    sys_lseek,
+    sys_mkdir
 };
 
 // The handler for the int 0x80

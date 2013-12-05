@@ -80,6 +80,28 @@ super_block *read_first_superblock(bool forceCreate)
         kprintf("\nNumber of Used Blocks: %d", s_star->s_nblocks - s_star->s_freeblockscount);
         kprintf("\nNumber of Free Blocks: %d", s_star->s_freeblockscount);
     }
+    if (read_inode(inode_e, 0)) {
+        kprintf("\nName: %s", inode_e->i_name);
+        kprintf("\nSize: %d", inode_e->i_size);
+        kprintf("\nBCnt: %d", inode_e->i_block_count);
+        kprintf("\nB[0]: %d", inode_e->i_block[0]);
+
+        if (read_block(sector_e, inode_e->i_block[0], 0, 512)) {
+            char *str = (char*) sector_e;
+            kprintf("\nSTR: %s", str);
+        }
+    }
+    if (read_inode(inode_e, 1)) {
+        kprintf("\nName: %s", inode_e->i_name);
+        kprintf("\nSize: %d", inode_e->i_size);
+        kprintf("\nBCnt: %d", inode_e->i_block_count);
+        kprintf("\nB[0]: %d", inode_e->i_block[0]);
+
+        if (read_block(sector_e, inode_e->i_block[0], 0, 512)) {
+            char *str = (char*) sector_e;
+            kprintf("\nSTR: %s", str);
+        }
+    }
 
 #if 0
     if (read_inode(inode_e, 0)) {
@@ -168,7 +190,7 @@ int32_t alloc_new_inode()
 void free_inode(int32_t inode_no)
 {
     if (inode_no < 0 || inode_no >= s_star->s_ninodes || !inode_bmap_isset(inode_no)) {
-        kprintf("\nAlready Free Inode %d", inode_no);
+        //kprintf("\nAlready Free Inode %d", inode_no);
         return;
     }
 
@@ -293,7 +315,7 @@ void free_block(int32_t block_no)
     int32_t sec_no;
 
     if (block_no < 0 || block_no >= s_star->s_nblocks) {
-        kprintf("\nAlready Free Block %d", block_no);
+        //kprintf("\nAlready Free Block %d", block_no);
         return;
     }
 
@@ -304,7 +326,7 @@ void free_block(int32_t block_no)
     if (!block_bmap_isset(sector_e, block_no))
         return;
 
-    kprintf("\nFreeing Block %d", block_no);
+    //kprintf("\nFreeing Block %d", block_no);
 
     // Update block bitmap
     block_bmap_unset(sector_e, block_no);
@@ -317,6 +339,7 @@ bool read_block(void* block_entry, uint64_t block_no, uint64_t block_off, uint64
         return FALSE;
     }
 
+    kprintf("\nREAD[%d] %p %d %p", block_no, block_entry, block_off, size);
     read_sector(block_entry, s_star->s_blockdatastart + block_no, block_off, size);
 
     return TRUE;
@@ -327,6 +350,7 @@ bool write_block(void* block_entry, uint64_t block_no, uint64_t block_off, uint6
     if (block_no < 0 || block_no >= s_star->s_nblocks) {
         return FALSE;
     }
+    //kprintf("\nWRITE[%d] %p %d %p", block_no, block_entry, block_off, size);
 
     write_sector(block_entry, s_star->s_blockdatastart + block_no, block_off, size);
 
@@ -351,7 +375,7 @@ void copy_blocks_to_vma(ext_inode* inode_entry, uint64_t vma_start)
 
 void copy_vma_to_blocks(ext_inode* inode_entry, int32_t inode_no, uint64_t vma_start, uint64_t new_size)
 {
-    uint64_t new_block_count = new_size/SIZE_OF_SECTOR + 1;
+    uint64_t new_block_count = new_size/(SIZE_OF_SECTOR+1) + 1;
     uint64_t cur_block_count = inode_entry->i_block_count;
     int32_t i;
 
