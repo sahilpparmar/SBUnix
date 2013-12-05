@@ -363,13 +363,12 @@ int main(int argc, char **argv)
             if (args[0][0] == '.' && args[0][1] == '/')
                 cmd += 2;
 
-            if (args[0][0] == '/') {
+            if (args[0][0] == '/' && strlen(args[0]) > 1) {
                 strcpy(prog, args[0]);
             } else { 
                 strcpy(prog, path);
                 strcat(prog, cmd);
             }
-
             if (Is_file_exist()) {
                 copy_args_to_execargs();
                 fork_and_execvpe();
