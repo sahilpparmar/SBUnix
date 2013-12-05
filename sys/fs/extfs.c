@@ -80,6 +80,8 @@ super_block *read_first_superblock(bool forceCreate)
         kprintf("\nNumber of Used Blocks: %d", s_star->s_nblocks - s_star->s_freeblockscount);
         kprintf("\nNumber of Free Blocks: %d", s_star->s_freeblockscount);
     }
+
+#if 0
     if (read_inode(inode_e, 0)) {
         kprintf("\nName: %s", inode_e->i_name);
         kprintf("\nSize: %d", inode_e->i_size);
@@ -98,19 +100,6 @@ super_block *read_first_superblock(bool forceCreate)
         kprintf("\nB[0]: %d", inode_e->i_block[0]);
 
         if (read_block(sector_e, inode_e->i_block[0], 0, 512)) {
-            char *str = (char*) sector_e;
-            kprintf("\nSTR: %s", str);
-        }
-    }
-
-#if 0
-    if (read_inode(inode_e, 0)) {
-        kprintf("\nSTR: %s", inode_e->i_name);
-        kprintf("\nSiz: %d", inode_e->i_size);
-        kprintf("\nSTR: %d", inode_e->i_block_count);
-        kprintf("\nSTR: %d", inode_e->i_block[0]);
-
-        if (read_block(sector_e, 0, 0, 512)) {
             char *str = (char*) sector_e;
             kprintf("\nSTR: %s", str);
         }
@@ -239,6 +228,17 @@ bool write_inode(ext_inode* inode_entry, uint64_t inode_no)
     return TRUE;
 };
 
+void truncate_inode(ext_inode* inode_entry, uint64_t inode_no)
+{
+    int i;
+    for (i = 0; i < inode_entry->i_block_count; i++) {
+        free_block(inode_entry->i_block[i]);
+    }
+    inode_entry->i_size = 0;
+    inode_entry->i_block_count = 0;
+    write_inode(inode_entry, inode_no);
+}
+
 //////////////////////////////////////////////////////////////////
 
 static bool block_bmap_isset(uint64_t *sector_t, uint64_t block_no)
@@ -339,8 +339,8 @@ bool read_block(void* block_entry, uint64_t block_no, uint64_t block_off, uint64
         return FALSE;
     }
 
-    kprintf("\nREAD[%d] %p %d %p", block_no, block_entry, block_off, size);
     read_sector(block_entry, s_star->s_blockdatastart + block_no, block_off, size);
+    //kprintf("\nREAD[%d] %p %s %d %p", block_no, block_entry, block_entry, block_off, size);
 
     return TRUE;
 }
@@ -350,7 +350,7 @@ bool write_block(void* block_entry, uint64_t block_no, uint64_t block_off, uint6
     if (block_no < 0 || block_no >= s_star->s_nblocks) {
         return FALSE;
     }
-    //kprintf("\nWRITE[%d] %p %d %p", block_no, block_entry, block_off, size);
+    //kprintf("\nWRITE[%d] %p %s %d %p", block_no, block_entry, block_entry, block_off, size);
 
     write_sector(block_entry, s_star->s_blockdatastart + block_no, block_off, size);
 
@@ -380,6 +380,11 @@ void copy_vma_to_blocks(ext_inode* inode_entry, int32_t inode_no, uint64_t vma_s
     int32_t i;
 
     inode_entry->i_size = new_size;
+
+    // Limit number of blocks
+    if (new_block_count > NUM_DIRECT_BLOCKS)
+        new_block_count = NUM_DIRECT_BLOCKS;
+
     inode_entry->i_block_count = new_block_count;
 
     if (cur_block_count == new_block_count) {
@@ -405,8 +410,7 @@ void copy_vma_to_blocks(ext_inode* inode_entry, int32_t inode_no, uint64_t vma_s
             } else {
                 write_block((void*) vma_start, inode_entry->i_block[i], 0, SIZE_OF_SECTOR);
             }
-            vma_start = vma_start + SIZE_OF_SECTOR;
-            new_size = new_size - SIZE_OF_SECTOR;
+            vma_start = vma_start + SIZE_OF_SECTOR; new_size = new_size - SIZE_OF_SECTOR;
         }
 
         // Free unused blocks

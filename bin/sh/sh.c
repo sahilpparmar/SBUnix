@@ -8,10 +8,12 @@ DIR *curr_dir_ptr;
 static char bg_flag, prog[100];
 char *execargs[10], path[100] = "/rootfs/bin/";
 
-static char *getLine(char *ptr, char *str)
+static char *getLine(char *ptr, char *str, int limit)
 {
-    while (*ptr != '\n')
+    while (limit && *ptr != '\n') {
         *str++ = *ptr++;
+        limit--;
+    }
     *str = '\0';
 
     return ++ptr;
@@ -61,14 +63,14 @@ static void modify_string(char *currdir)
         if(currdir[i] == '/')
             indx[++count] = j;
 
-        if(i+1 < currlen && currdir[i] == '.' && currdir[i+1] != '.') {  //if path ends with dot dot
-
+        if(i+1 < currlen && currdir[i] == '.' && currdir[i+1] != '.') {     
+            // if path ends with dot dot
             i = i + 2;
-        } else if(i+1 >= currlen && currdir[i+1] == '.') {                //if path ends with single dot
-
+        } else if(i+1 >= currlen && currdir[i+1] == '.') {                  
+            // if path ends with single dot
             break; 
-        } else if(currdir[i] == '.' && currdir[i+1] == '.') {           //path has two consecutive dots in middle 
-
+        } else if(currdir[i] == '.' && currdir[i+1] == '.') {               
+            // path has two consecutive dots in middle 
             j           = indx[count - 1] + 1;
             i           = i + 3;
             indx[count] = 0;
@@ -92,9 +94,13 @@ static void fork_and_execvpe()
 {
     int pid = fork();
 
-    if (pid!=0) {
-        if (bg_flag != '&')
+    if (pid != 0) {
+        if (bg_flag != '&') {
             waitpid(pid, NULL, 0);
+        } else {
+            printf("Added [%d] to BG", pid);
+        }
+
     } else {
         execvpe(prog, execargs, NULL);
         exit(1);
@@ -112,13 +118,14 @@ int main(int argc, char **argv)
     curr_dir_ptr = opendir("/");
     while(1) {
         j = 0, k = 0;
-        memset(args, 0, sizeof(args));
-        execargs[0] = NULL;
 
         printf("\n[user@SBUnix ~%s]$", currdir);
 
         scanf("%s", ptr);
         ptr_length = strlen(ptr);
+
+        memset(args, 0, sizeof(args));
+        execargs[0] = NULL;
 
         if (ptr_length == 0) {
             continue;
@@ -146,9 +153,10 @@ int main(int argc, char **argv)
         }
         args[j][k]='\0';
 
-        char help_str[100], help_ptr[1024];
-        memset(help_ptr, 0, 1024);
-        memset(help_str, 0, 100);
+        char help_str[2048], help_ptr[2048];
+        memset(help_ptr, 0, 2048);
+        memset(help_str, 0, 2048);
+
         if (strcmp(args[0], "ulimit") == 0) {
 
             char *new_pointer; 
@@ -160,7 +168,7 @@ int main(int argc, char **argv)
                 cls();
                 while (*new_pointer != '\0') {
 
-                    new_pointer = getLine(new_pointer, help_str);
+                    new_pointer = getLine(new_pointer, help_str, 1023);
                     printf("\n%s", help_str);
                 }
 
@@ -172,13 +180,13 @@ int main(int argc, char **argv)
             char *new_pointer; 
             file_descp  = open("/rootfs/etc/help", 0);
             if (file_descp != -1) {
-                read(file_descp, help_ptr, 1024); 
+                read(file_descp, help_ptr, 2048); 
                 close(file_descp);
                 new_pointer = help_ptr;
                 cls();
                 while (*new_pointer != '\0') {
 
-                    new_pointer = getLine(new_pointer, help_str);
+                    new_pointer = getLine(new_pointer, help_str, 1023);
                     printf("\n%s", help_str);
                 }
 
@@ -194,7 +202,7 @@ int main(int argc, char **argv)
                 new_pointer = help_ptr;
                 while (*new_pointer != '\0') {
 
-                    new_pointer = getLine(new_pointer, help_str);
+                    new_pointer = getLine(new_pointer, help_str, 1023);
                     printf("\n%s", help_str);
                 }
 
@@ -212,14 +220,16 @@ int main(int argc, char **argv)
 
         } else if (strcmp(args[0], "pwd") == 0) {
             /****3) To handle PWD command ****/
-            printf("%s", currdir); 
-
+            if (strlen(currdir) == 0)
+                printf("/");
+            else
+                printf("%s", currdir);
         } else if (strcmp(args[0], "cd") == 0) {
             /****4) To handle CD command ****/
             lendir  = strlen(currdir);
 
             //check if args[1] is a absolute path 
-            if(args[1][0] == '/') {
+            if (args[1][0] == '/') {
 
                 curr_dir_ptr = opendir(args[1]);
 
@@ -314,7 +324,7 @@ int main(int argc, char **argv)
                     //For parsing a script file and extracting the commands from the file
                     while (*newstr != '\0')
                     {
-                        newstr = getLine(newstr, str);
+                        newstr = getLine(newstr, str, 1023);
                         str_length = strlen(str); 
                         bg_flag = str[str_length - 1];
 
@@ -363,13 +373,12 @@ int main(int argc, char **argv)
             if (args[0][0] == '.' && args[0][1] == '/')
                 cmd += 2;
 
-            if (args[0][0] == '/') {
+            if (args[0][0] == '/' && strlen(args[0]) > 1) {
                 strcpy(prog, args[0]);
             } else { 
                 strcpy(prog, path);
                 strcat(prog, cmd);
             }
-
             if (Is_file_exist()) {
                 copy_args_to_execargs();
                 fork_and_execvpe();

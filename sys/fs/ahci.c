@@ -12,7 +12,6 @@
 #include <sys/dirent.h>
 #include <sys/kmalloc.h>
 
-
 void start_cmd(HBA_PORT *port);
 void stop_cmd(HBA_PORT *port);
 int find_cmdslot(HBA_PORT *port);
@@ -466,10 +465,8 @@ void init_disk(bool forceCreate)
     // Reads an existing super block and creates one if not present 
     s_star = read_first_superblock(forceCreate);
     
-    //populates the logical tree structure by parsing inodes
+    // Populates the logical tree structure by parsing inodes
     populate_struct(s_star);
-
-
 }
 
 // Reads one sector
