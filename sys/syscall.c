@@ -453,52 +453,73 @@ int sys_lseek(uint64_t fd_type, int offset, int whence)
     
     vma_struct* iter;
     ext_inode *inode_t = (ext_inode*) ((FD*) CURRENT_TASK->file_descp[fd_type])->inode_struct;
-    
-    if (inode_t == NULL) {
-        //file descriptor belongs to tarfs 
-        // ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr = 0;
-         kprintf("\n cannot do lseek");
-         return -1;
+    uint64_t start = 0, end = 0;    
+
+    kprintf("\n inode value %p", inode_t);
+
+    if (((FD*) CURRENT_TASK->file_descp[fd_type])->filenode->f_type == DIRECTORY) {
+        kprintf("\n Invalid operation on directory");
+        offset = -1;
+
     } else {
+        if (inode_t == NULL) {
+                //file descriptor belongs to tarfs 
+                // ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr = 0;
+                // kprintf("\n cannot do lseek");
+                // return -1;
+            start = ((FD*) CURRENT_TASK->file_descp[fd_type])->filenode->start;
+            end   = ((FD*) CURRENT_TASK->file_descp[fd_type])->filenode->end;
+        
+        
+        } else {
 
 
-        for (iter = CURRENT_TASK->mm->vma_list; iter != NULL; iter = iter->vm_next) {
-            if(iter->vm_file_descp == fd_type){
-                //start = iter->vm_start;
-                break; 
+            for (iter = CURRENT_TASK->mm->vma_list; iter != NULL; iter = iter->vm_next) {
+                if(iter->vm_file_descp == fd_type){
+                    //start = iter->vm_start;
+                    break; 
+                }
+                
             }
+        
+            start = iter->vm_start; 
+            end   = iter->vm_end; 
+            
+            kprintf("\n start %p end %p", start, end);
+        
         }
+            //kprintf("\n seek offset: %p start %p", offset, iter->vm_start);
 
-        kprintf("\n seek offset: %p start %p", offset, iter->vm_start);
+            if(whence == SEEK_SET) {
+                if (offset < 0)
+                    offset = 0;
 
-        if(whence == SEEK_SET) {
-            if (offset < 0)
-                offset = 0;
+                //((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr = iter->vm_start + offset;
+                ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr = start + offset;
 
-            ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr = iter->vm_start + offset;
+            } else if(whence == SEEK_CUR) {
 
-        } else if(whence == SEEK_CUR) {
+                if(((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr + offset > end) {
 
-            if(((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr + offset > iter->vm_end) {
+                    ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr = end;
+                } else {        
 
-                ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr = iter->vm_end;
-            } else {        
+                    ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr += offset;
+                }
 
-                ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr += offset;
+            } else if(whence == SEEK_END) {
+
+                if (offset > 0)
+                    offset = 0;
+
+                ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr = end + offset;
+
+
+            }else{
+                offset = -1;
             }
-
-        } else if(whence == SEEK_END) {
-
-            if (offset > 0)
-                offset = 0;
-
-            ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr = iter->vm_end + offset;
-
-
-        }else{
-            offset = -1;
-        }
-    } 
+         
+   } 
     //kprintf("\n curr inside seek %p",((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr);
     return offset;
 
