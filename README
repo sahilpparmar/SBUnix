@@ -16,7 +16,7 @@ If new disk is to created, here are the following steps:
 
     3. For running qemu, run the executable file qstart.sh
 
-For Shutdown : run the file /rootfs/bin/testcase on shell.
+For Shutdown : type shutdown on shell.
                             
 For any queries, please contact SBUnix developers.
 

@@ -10,6 +10,7 @@ void scanf(const char *format, ...);
 int cls();
 void *malloc(int elem_size);
 void free(void *p);
+void shutdown();
 
 void* mmap(void* addr, uint64_t nbytes, uint64_t flags);
 int munmap(uint64_t* addr, uint64_t size);
