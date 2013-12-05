@@ -323,8 +323,8 @@ int main(int argc, char **argv)
                     newstr = ptr;
                     newstr = getLine(newstr, str, 1023);
                     // For parsing a script file and extracting the commands from the file
+                    newstr = getLine(newstr, str, 1023);
                     while (*newstr != '\0') {
-                        newstr = getLine(newstr, str, 1023);
                         str_length = strlen(str); 
                         bg_flag = str[str_length - 1];
 
@@ -356,6 +356,7 @@ int main(int argc, char **argv)
                         } else { 
                             printf("CMD does not exist.\nRefer to help.");
                         }
+                        newstr = getLine(newstr, str, 1023);
                     }
 
                 } else {
