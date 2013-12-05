@@ -1,8 +1,7 @@
 #include <defs.h>
 #include <sys/ahci.h>
-#include <stdio.h>
 #include <stdarg.h>
-#include <stdio.h>
+#include <sys/common.h>
 #include <sys/paging.h>
 #include <sys/types.h>
 #include <sys/virt_mm.h>

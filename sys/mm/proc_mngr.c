@@ -2,7 +2,7 @@
 #include <sys/virt_mm.h>
 #include <sys/phys_mm.h>
 #include <sys/proc_mngr.h>
-#include <stdio.h>
+#include <sys/common.h>
 #include <screen.h>
 #include <io_common.h>
 #include <sys/paging.h>

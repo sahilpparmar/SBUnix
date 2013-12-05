@@ -3,8 +3,8 @@
 //
 
 #include <defs.h>
-#include <stdio.h>
 #include <screen.h>
+#include <sys/common.h>
 
 #define MAX_ROW 24          // We shall use the last row for displaying timer
 #define MAX_COL 80

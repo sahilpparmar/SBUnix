@@ -1,5 +1,5 @@
 #include <defs.h>
-#include <stdio.h>
+#include <sys/common.h>
 
 int kstrcmp(const char *s1, const char *s2)
 {

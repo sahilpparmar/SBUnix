@@ -4,7 +4,7 @@
 #include <sys/elf.h>
 #include <sys/tarfs.h>
 #include <sys/kstring.h>
-#include <stdio.h>
+#include <sys/common.h>
 #include <sys/dirent.h>
 
 void readelf(char* filename)

@@ -4,10 +4,10 @@
 //
 
 #include <defs.h>
-#include <stdio.h>
 #include <screen.h>
 #include <io_common.h>
 #include <syscall.h>
+#include <sys/common.h>
 #include <sys/irq_common.h>
 #include <sys/types.h>
 

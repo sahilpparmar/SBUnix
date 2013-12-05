@@ -1,7 +1,7 @@
 #include <sys/tarfs.h>
 #include <sys/kstring.h>
 #include <defs.h>
-#include <stdio.h>
+#include <sys/common.h>
 
 void* lookup(char *file_name) {
     HEADER *header = (HEADER*) &_binary_tarfs_start;

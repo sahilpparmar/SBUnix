@@ -1,5 +1,5 @@
-#ifndef _STDIO_H
-#define _STDIO_H
+#ifndef _COMMON_H
+#define _COMMON_H
 #include <defs.h>
 
 char *itoa(uint64_t val, char *str, int32_t base);

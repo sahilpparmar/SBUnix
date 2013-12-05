@@ -2,7 +2,7 @@
 #include <defs.h>
 #include <sys/kmalloc.h>
 #include <sys/ahci.h>
-#include <stdio.h>
+#include <sys/common.h>
 
 static super_block* s_star = NULL;
 static ext_inode* inode_e  = NULL;

@@ -1,6 +1,6 @@
 #include <defs.h>
-#include <stdio.h>
 #include <screen.h>
+#include <sys/common.h>
 #include <sys/init_desc_table.h>
 #include <sys/irq_common.h>
 #include <sys/types.h>

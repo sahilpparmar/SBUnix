@@ -1,19 +1,127 @@
-The provided Makefile:
-  1) builds a kernel
-	2) copies it into rootfs/boot/kernel/kernel
-	3) creates an ISO CD image with the rootfs/ contents
+=================================================================================================================================================
+========================================================= 7 0   P O I N T S   P R O J E C T =====================================================
+=================================================================================================================================================
 
-To boot the system in QEMU, run:
-	qemu-system-x86_64 -curses -cdrom $USER.iso -hda $USER.img -gdb tcp::NNNN
+=================================================================================================================================================
+=============================================================== U S E F U L   T I P S ===========================================================
+=================================================================================================================================================
 
-	Explanation of parameters:
-	-curses         use a text console (omit this to use default SDL/VNC console)
-	-cdrom x.iso    connect a CD-ROM and insert CD with x.iso disk
-	-hda x.img      connect a hard drive with x.img disk
-	-gdb tcp::NNNN  listen for "remote" debugging connections on port NNNN
+For filesystem, use the disk named "test.img" in cse506 folder. Disk Image size is 1 MB
 
-When using the -curses mode, switch to the qemu> console with ESC-2.
+If new disk is to created, here are the following steps:
 
-To connect a remote debugger to the running qemu VM:
-	gdb ./kernel
-	target remote localhost:1234
+    1. Run the qemu command to create a 1 MB disk named "test.img" : qemu-img create test.img 1M 
+
+    2. Run qemu with file = test.img
+
+    3. For running qemu, run the executable file qstart.sh
+
+For Shutdown : run the file /rootfs/bin/testcase on shell.
+                            
+For any queries, please contact SBUnix developers.
+
+==================================================================================================================================================
+=============================================================== S Y S T E M   C A L L S ==========================================================
+==================================================================================================================================================
+    
+    READ(): 
+    Syntax       :  read(uint64_t fd_type, uint64_t addr, uint64_t length)
+    Description  :  Attempts to read up to length number of bytes using file descriptor fd_type into the buffer starting at addr.
+    Dependencies :  Always open a file using OPEN system call before reading and close the file after completion.
+
+    WRITE(): 
+    Syntax       :  read(uint64_t fd_type, uint64_t addr, uint64_t length)
+    Description  :  Attempts to write up to length number of bytes into file descriptor fd_type from the buffer starting at addr.
+    Dependencies :  Always open a file using OPEN system call before writing and close the file after completion.
+    
+    BRK():
+    Syntax       :  brk(uint64_t no_of_pages)
+    Description  :  Increase size of vma by no_of_pages.
+    
+    FORK():
+    Syntax       :  fork()
+    Description  :  Creates a child process. Returns pid = 0 for child and non zero for parent.
+    
+    EXECVPE():
+    Syntax       :  execvpe(char *file, char *argv[], char *envp[])
+    Description  :  Executes a file along with any necessary arguments argv[] in the environment envp[].
+    
+    WAIT():
+    Syntax       :  wait(uint64_t status)
+    Description  :  Parent waits for a child process to exit.
+    Dependencies :  Returns -1 if parent has no children.
+    
+    WAITPID()
+    Syntax       :  waitpid(uint64_t fpid, uint64_t fstatus, uint64_t foptions)
+    Description  :  Parent waits for a child process with fpid to complete.
+    Dependencies :  Returns -1 if parent has no children. If particular child pid does not exit then waits for any of the children to exit.
+    
+    EXIT()
+    Syntax       :  exit(int status)
+    Description  :  Terminate the calling process immediately.
+    
+    MMAP()
+    Syntax       :  mmap(uint64_t addr, uint64_t nbytes, uint64_t flags)
+    Description  :  Allocate nbytes of memory to Current Process at the addr location. 
+                    If no addr is given, alloc from vma end of last vma list element.
+    
+    MUNMAP()
+    Syntax       :  sys_munmap(uint64_t* addr, uint64_t length)
+    Description  :  Iterate through vma list and free all anon-type vma. 
+                    Check if there are any other vmas mappped on this addr if not then free the page.
+
+    GETPID()
+    Syntax       :  getpid()
+    Description  :  returns the process id of currently running process.
+    
+    GETPPID()
+    Syntax       :  getppid()
+    Description  :  returns the parent's process id of currently running process.
+    
+    LISTPROCESS()
+    Syntax       :  listprocess()
+    Description  :  gives the list of all currently running process.
+    
+    OPENDIR()
+    Syntax       :  opendir(uint64_t* entry, uint64_t* directory)
+    Description  :  returns a directory struct with list of all inode/files in it.
+    
+    READDIR()
+    Syntax       :  readdir(DIR* node)
+    Description  :  returns the list of all the files descriptor (inode numbers) and names of files
+    Dependencies :  Read directory is followed after open directory system call.
+    
+    CLOSEDIR() 
+    Syntax       :  closedir(uint64_t* node)
+    Description  :  closes the list of all the files in the node Directory structure.
+    Dependencies :  Close directory is followed after open directory system call.
+    
+    OPEN()
+    Syntax       :  open(char* dir_path, uint64_t flags)
+    Description  :  opens a files and returns a file descriptor. Open files from tarfs and disk depending on dir_path.
+    Dependencies :  open on a directory returns -1 as file descriptor.
+    
+    CLOSE()
+    Syntax       :  close(int fd)
+    Description  :  closes a file with fd file descriptor. Copies all file's vma's onto disk before closing only.
+    
+    SLEEP()
+    Syntax       :  sleep(int msec)
+    Description  :  Changes the state of current task to sleep for msec milliseconds.
+    
+    CLEAR()
+    Syntax       :  clear()
+    Description  :  Clears the screen.
+    
+    SEEK()
+    Syntax       :  lseek(uint64_t fd_type, int offset, int whence) 
+    Description  :  moves the current file pointer by offset number of bytes in the file.
+    Dependencies :  whence can be SEEK_SET, SEEK_CUR, SEEK_END. This determines the offset from start , current pointer or end of file.
+
+    MKDIR()
+    Syntax       :  mkdir( uint64_t dir)
+    Description  :  Creates new directory using path given by dir. Returns -1 for already existing directory
+    
+    SHUTDOWN()
+    Syntax       :  shutdown() 
+    Description  :  exit all processes. 

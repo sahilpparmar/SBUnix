@@ -1,5 +1,5 @@
 #include <defs.h>
-#include <stdio.h>
+#include <sys/common.h>
 #include <syscall.h>
 #include <sys/paging.h>
 #include <sys/proc_mngr.h>

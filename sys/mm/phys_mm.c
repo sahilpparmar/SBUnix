@@ -1,6 +1,6 @@
 #include <defs.h>
-#include <stdio.h>
 #include <screen.h>
+#include <sys/common.h>
 #include <sys/types.h>
 #include <sys/virt_mm.h>
 #include <io_common.h>
