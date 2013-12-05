@@ -35,7 +35,13 @@ int closedir(DIR* node) {
 
 int open(char *path, int flags)
 {
-    return (int)__syscall2(OPEN, (uint64_t)path, (uint64_t)flags);
+    if(strlen(path) > 0 && (flags >=0 && flags < 6)) {
+         
+        return (int)__syscall2(OPEN, (uint64_t)path, (uint64_t)flags);
+    } else {
+        
+        return -1;
+    }
 
 }
 

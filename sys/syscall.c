@@ -1,5 +1,3 @@
-#include <defs.h>
-#include <stdio.h>
 #include <syscall.h>
 #include <sys/paging.h>
 #include <sys/proc_mngr.h>
@@ -14,7 +12,7 @@
 #include <sys/dirent.h>
 #include <sys/kmalloc.h>
 #include <io_common.h>
-
+#include <stdio.h>
 // These will get invoked in kernel mode
 
 extern fnode_t* root_node;
@@ -340,6 +338,10 @@ uint64_t sys_read(uint64_t fd_type, uint64_t addr, uint64_t length)
         if ((CURRENT_TASK->file_descp[fd_type]) == NULL) {
             length = -1;
 
+        } else if(((FD *)CURRENT_TASK->file_descp[fd_type])->f_perm == O_WRONLY ){
+            //kprintf("\n Not valid permissions"); 
+            length = -1; 
+        
         } else if(((FD *)CURRENT_TASK->file_descp[fd_type])->filenode->f_inode_no != 0) { 
             //This file descriptor is associated with file on disk 
 
