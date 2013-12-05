@@ -4,17 +4,6 @@
 
 char hello[10] = "HELLO";
 
-static char *strcpy(char *dest, const char *src)
-{
-    char *str = dest;
-    while (*src)
-    {
-        *dest++ = *src++;
-    }
-    *dest = '\0';
-    return str;
-}
-
 
 int main(int argc, char* argv[])
 {

@@ -25,7 +25,7 @@ bool InitScheduling;
 // Idle kernel task
 static void idle_process(void)
 {
-    kprintf("\nInside Idle Process %d", sys_getpid());
+    //kprintf("\nInside Idle Process %d", sys_getpid());
     while(1);
 }
 
