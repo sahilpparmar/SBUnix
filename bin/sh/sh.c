@@ -8,106 +8,13 @@ DIR *curr_dir_ptr;
 static char bg_flag, prog[100];
 char *execargs[10], path[100] = "/rootfs/bin/";
 
-
-int32_t a_to_i(char *p)
-{
-    int k = 0, sign =1;
-
-    if (p[0] == '-') {
-        sign = -1;
-        p++;
-    } else if (p[0] == '+') {
-        sign = 1;
-        p++;
-    }
-    while (*p) {
-        if ( (int)(*p) >= 48 && (int)(*p) <= 57) {
-            k = (k<<3)+(k<<1)+(*p)-'0';
-            p++;
-        } else {
-            return 0;
-        }
-
-    }
-
-    return k*sign;
-}
-
-
-
-
-int strcmp(const char *s1, const char *s2)
-{
-    while (*s1 == *s2++)
-        if (*s1++ == 0)
-            return (0);
-
-    return (*(const unsigned char *)s1 - *(const unsigned char *)(s2 - 1));
-}
-
-int ustrlen(const char *str)
-{
-    int len=0;
-    while (*str++ != '\0')
-        len += 1;
-    return len;
-}
-
-char* strcat(char *str1, const char *str2)
-{
-    uint64_t len1 = ustrlen(str1);
-    uint64_t len2 = ustrlen(str2);
-    uint64_t i = 0;
-
-    for(i = 0; i < len2 ; i++)
-        str1[len1 + i] = str2[i];
-    str1[len1 + i] = '\0';
-
-    return str1;    
-}
-
-char *strcpy(char *dest, const char *src)
-{
-    char *str = dest;
-    while (*src)
-    {
-        *dest++ = *src++;
-    }
-    *dest = '\0';
-    return str;
-}
-
-char *getLine(char *ptr, char *str)
+static char *getLine(char *ptr, char *str)
 {
     while (*ptr != '\n')
         *str++ = *ptr++;
     *str = '\0';
 
     return ++ptr;
-}
-
-int argsCount(char *str)
-{
-    int num=0;
-
-    while (*str != '\0')
-    {
-        if( *str == ' ')
-            num++;
-
-        str++;
-    }
-    return num;
-}
-
-void *kmemset(void *ptr, uint8_t value, uint64_t num)
-{
-    uint8_t *temp = (uint8_t *)ptr;
-
-    while(num--) {
-        *temp++ = value; 
-    }
-    return ptr;
 }
 
 static bool Is_file_exist()
@@ -119,7 +26,7 @@ static bool Is_file_exist()
     return TRUE;
 }
 
-void copy_args_to_execargs()
+static void copy_args_to_execargs()
 {
     int i = 0;
     for (i = 0; args[i+1][0] != '\0'; i++)
@@ -127,15 +34,15 @@ void copy_args_to_execargs()
     execargs[i] = NULL;
 }
 
-void export_to_path()
+static void export_to_path()
 {
     char *path_str;
 
     if (args[1][0] == 'P' && args[1][1] == 'A' && args[1][2] == 'T' && args[1][3] == 'H') {
 
-        if (args[1][ustrlen(args[1])-1] != '/') {
-            args[1][ustrlen(args[1])] = '/';
-            args[1][ustrlen(args[1])+1] = '\0';
+        if (args[1][strlen(args[1])-1] != '/') {
+            args[1][strlen(args[1])] = '/';
+            args[1][strlen(args[1])+1] = '\0';
         
         }
         path_str = args[1];
@@ -144,10 +51,9 @@ void export_to_path()
     }
 }
 
-void modify_string(char *currdir)
+static void modify_string(char *currdir)
 {
-
-    int i = 0, j = 0, count = -1, currlen = ustrlen(currdir);
+    int i = 0, j = 0, count = -1, currlen = strlen(currdir);
     int indx[50];
 
     for(i = 0; i < currlen;) {
@@ -182,8 +88,7 @@ void modify_string(char *currdir)
     strcpy(currdir, temp);
 }
 
-
-void fork_and_execvpe()
+static void fork_and_execvpe()
 {
     int pid = fork();
 
@@ -194,16 +99,6 @@ void fork_and_execvpe()
         execvpe(prog, execargs, NULL);
         exit(1);
     }
-}
-
-void *umemset(void *ptr, uint8_t value, uint64_t num)
-{
-    uint8_t *temp = (uint8_t *)ptr;
-
-    while(num--) {
-        *temp++ = value; 
-    }
-    return ptr;
 }
 
 int main(int argc, char **argv)
@@ -217,13 +112,13 @@ int main(int argc, char **argv)
     curr_dir_ptr = opendir("/");
     while(1) {
         j = 0, k = 0;
-        umemset(args, 0, sizeof(args));
+        memset(args, 0, sizeof(args));
         execargs[0] = NULL;
 
         printf("\n[user@SBUnix ~%s]$", currdir);
 
         scanf("%s", ptr);
-        ptr_length = ustrlen(ptr);
+        ptr_length = strlen(ptr);
 
         if (ptr_length == 0) {
             continue;
@@ -249,19 +144,14 @@ int main(int argc, char **argv)
         }
 
         args[j][k]='\0';
-        if (strcmp(args[0], "sleep") == 0) {
-            if ( args[1][0] != '-') {
-                sleep(a_to_i(args[1]));
-            } else {
-                printf("\nPlease enter positive integer in seconds");
-           }
-         } else if (strcmp(args[0], "cls") == 0) {
-                cls();
+
+        if (strcmp(args[0], "cls") == 0) {
+            cls();
         } else if(strcmp(args[0], "export") == 0) {
             /****1) export path****/   
-               //printf("b4:%s",args[1]);
-               export_to_path();
-        
+            //printf("b4:%s",args[1]);
+            export_to_path();
+
         } else if (strcmp(args[0], "help") == 0) {             
             /****2) To handle help command ****/
             printf("ps\ncls\nls\ncd\nexport PATH");
@@ -272,7 +162,7 @@ int main(int argc, char **argv)
 
         } else if (strcmp(args[0], "cd") == 0) {
             /****4) To handle CD command ****/
-            lendir  = ustrlen(currdir);
+            lendir  = strlen(currdir);
 
             //check if args[1] is a absolute path 
             if(args[1][0] == '/') {
@@ -314,7 +204,7 @@ int main(int argc, char **argv)
                 }
             } 
 
-        } else if (strcmp(args[0], "ls") == 0) {
+        } else if (strcmp(args[0], "/rootfs/bin/ls") == 0 || strcmp(args[0], "ls") == 0) {
             /****5) To handle LS command ****/
 
             // To list contents of directory specified by user
@@ -323,7 +213,7 @@ int main(int argc, char **argv)
                 //if argument to ls is relative path, append it to currdir
                 if(args[1][0] != '/') {
 
-                    int lendir  = ustrlen(currdir);
+                    int lendir  = strlen(currdir);
 
                     strcat(currdir, "/");
                     strcat(currdir, args[1]);
@@ -364,14 +254,14 @@ int main(int argc, char **argv)
 
                 read(file_descp, ptr, 100); 
                 close(file_descp);
-                if (ptr[0] == '#' && ptr[1] == '`') {
+                if (ptr[0] == '#' && ptr[1] == '!') {
                     newstr = ptr;
                     newstr += 2;
                     //For parsing a script file and extracting the commands from the file
                     while (*newstr != '\0')
                     {
                         newstr = getLine(newstr, str);
-                        str_length = ustrlen(str); 
+                        str_length = strlen(str); 
                         bg_flag = str[str_length - 1];
 
                         if (bg_flag == '&')
@@ -379,7 +269,7 @@ int main(int argc, char **argv)
 
                         j = 0, k = 0;
 
-                        umemset(args, 0, sizeof(args));
+                        memset(args, 0, sizeof(args));
                         execargs[0] = NULL;
 
                         for (i = 0; i < str_length ; i++) {
@@ -438,3 +328,4 @@ int main(int argc, char **argv)
 
     return 0;
 }
+

@@ -340,20 +340,22 @@ void sys_close(int fd)
 
     if (inode_t != NULL) {
         vma_struct *vma_l = CURRENT_TASK->mm->vma_list;
+        vma_struct *last_vma_l = NULL;
 
         for (;vma_l != NULL; vma_l = vma_l->vm_next) {
             if (vma_l->vm_file_descp == fd) {
                 break;
             }
+            last_vma_l = vma_l;
         }
         copy_vma_to_blocks(inode_t, inode_no, vma_l->vm_start, vma_l->vm_end - vma_l->vm_start);
 
-        //TODO Need to remove the VMA
+        last_vma_l->vm_next = vma_l->vm_next; 
+        add_to_vma_free_list(vma_l);
     }
     
     //TODO add this filedescriptor to free list    
     CURRENT_TASK->file_descp[fd] = NULL;
-
 }
 
 uint64_t sys_read(uint64_t fd_type, uint64_t addr, uint64_t length)
