@@ -153,9 +153,9 @@ int main(int argc, char **argv)
         }
         args[j][k]='\0';
 
-        char help_str[100], help_ptr[1024];
-        memset(help_ptr, 0, 1024);
-        memset(help_str, 0, 100);
+        char help_str[2048], help_ptr[2048];
+        memset(help_ptr, 0, 2048);
+        memset(help_str, 0, 2048);
 
         if (strcmp(args[0], "ulimit") == 0) {
 
@@ -180,7 +180,7 @@ int main(int argc, char **argv)
             char *new_pointer; 
             file_descp  = open("/rootfs/etc/help", 0);
             if (file_descp != -1) {
-                read(file_descp, help_ptr, 1024); 
+                read(file_descp, help_ptr, 2048); 
                 close(file_descp);
                 new_pointer = help_ptr;
                 cls();
