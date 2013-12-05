@@ -115,8 +115,8 @@ int sys_mkdir( uint64_t dir)
     fnode_t *temp_node;
     tempdir = sys_opendir((uint64_t *)dirpath,(uint64_t *) tempdir);
  
-    if (tempdir->filenode != NULL){
-        kprintf("\n directory already exists"); 
+    if (tempdir->filenode != NULL) {
+        //kprintf("\n directory already exists"); 
         return -1;
     }
        
@@ -148,7 +148,7 @@ int sys_mkdir( uint64_t dir)
         tempdir->filenode->end += 1;
         return 0; 
     } else {
-        kprintf("\n %s Directory doesnot exists", path);
+        //kprintf("\n %s Directory doesnot exists", path);
         return -1; 
     }
 
@@ -307,8 +307,13 @@ int sys_open(char* dir_path, uint64_t flags)
             //currnode will not be equal to aux node
 
             read_inode(inode_entry, currnode->f_inode_no);
-            file_d->inode_struct = (uint64_t) inode_entry; 
 
+            if (flags == O_TRUNC) {
+                truncate_inode(inode_entry, currnode->f_inode_no);
+            }
+
+            file_d->inode_struct = (uint64_t) inode_entry; 
+            
             file_d->filenode = currnode;
             file_d->f_perm   = flags;
 
@@ -335,7 +340,6 @@ int sys_open(char* dir_path, uint64_t flags)
         }
         return -1;
     }
-
     return -1;
 }
 
@@ -462,7 +466,7 @@ int sys_lseek(uint64_t fd_type, int offset, int whence)
     if (inode_t == NULL) {
         //file descriptor belongs to tarfs 
         // ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr = 0;
-         kprintf("\n cannot do lseek");
+         //kprintf("\n cannot do lseek");
          return -1;
     } else {
 
@@ -551,7 +555,7 @@ uint64_t sys_execvpe(char *file, char *argv[], char *envp[])
         // Enable interrupt for scheduling next process
         __asm__ __volatile__ ("int $32");
 
-        panic("\nEXECVPE terminated incorrectly");
+        panic("EXECVPE terminated incorrectly");
     }
     // execvpe failed; so return -1
     return -1;
@@ -627,7 +631,7 @@ void sys_exit()
     // Enable interrupt for scheduling next process
     __asm__ __volatile__ ("int $32");
 
-    panic("\nEXIT terminated incorrectly");
+    panic("EXIT terminated incorrectly");
 }
 
 int sys_sleep(int msec)
@@ -651,8 +655,6 @@ uint64_t sys_brk(uint64_t no_of_pages)
 
     return new_vaddr;
 }
-
-
 
 uint64_t sys_mmap(uint64_t addr, uint64_t nbytes, uint64_t flags)
 {

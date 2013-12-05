@@ -16,20 +16,19 @@
 /* Divide by Zero handler */
 static void divide_by_zero_handler(registers_t regs)
 {
-    panic("Divide by Zero!");
+    kprintf("Divide by Zero!");
+    sys_exit();
 }
 
 /* Invalid TSS exception handler */
 static void tss_fault_handler(registers_t regs)
 {
-    dump_regs();
     panic("Invalid TSS Exception!");
 }
 
 /* General Protection fault handler */
 static void gpf_handler(registers_t regs)
 {
-    dump_regs();
     panic("General Protection Fault!");
 }
 
@@ -45,8 +44,8 @@ static void page_fault_handler(registers_t regs)
 
     if (fault_addr >= KERNEL_START_VADDR) {
         // Page fault in kernel
-        kprintf("\nFault Addr:%p Error Code:%p", fault_addr, err_code);
-        panic("Page fault in kernel! Please Reboot");
+        //kprintf("\nFault Addr:%p Error Code:%p", fault_addr, err_code);
+        panic("Page fault in kernel!");
     } else if (err_code & 0x1) {
         // Page is PRESENT
         // Get the PTE entry for the fault address

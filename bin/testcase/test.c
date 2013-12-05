@@ -45,8 +45,8 @@ int main(int argc, char* argv[])
     free(buf);
 #endif
     
-    // test for open, read, close, append
-#if 1
+    // test for open, read, close, append, trunc
+#if 0
     int fd, length;
     fd = open("/Disk/first.txt", O_CREAT);
     
@@ -67,7 +67,6 @@ int main(int argc, char* argv[])
 #endif    
 #if 0
     int fd, length;
-    //fd = open("/rootfs/newfolder/timepass/helloworldfile.txt", 0);
     fd = open("/Disk/first.txt", O_RDONLY);
     
     char* buf = NULL;
@@ -78,10 +77,14 @@ int main(int argc, char* argv[])
 
     if (fd > 0) {
         length = read(fd, buf, 512); 
+        printf("\nNew Copy: %s", buf);
+        printf("Length: %p", length);
+
+        length = read(fd, buf, 512); 
+        printf("\nNew Copy: %s", buf);
         printf("Length: %p", length);
         close(fd);
     }
-    printf("\nNew Copy: %s", buf);
    
     free(buf);
 #endif    
@@ -92,7 +95,29 @@ int main(int argc, char* argv[])
     
     char* buf = NULL;
     buf = (char *)malloc(512);
-    strcpy(buf, "Hi, THis is a new string");
+    strcpy(buf, "Hi, THis is a append string");
+
+    printf("\nOld Copy: %s", buf);
+
+    if (fd > 0) {
+        length = write(fd, buf, 512); 
+        printf("Length: %p", length);
+        close(fd);
+    }
+    //lseek(fd, 2, SEEK_SET); 
+    //read(fd, tp, 500); 
+    printf("\nNew Copy: %s", buf);
+   
+    free(buf);
+#endif    
+#if 1
+    int fd, length;
+    //fd = open("/rootfs/newfolder/timepass/helloworldfile.txt", 0);
+    fd = open("/Disk/first.txt", O_TRUNC);
+    
+    char* buf = NULL;
+    buf = (char *)malloc(512);
+    strcpy(buf, "Hi, THis is a trunc string");
 
     printf("\nOld Copy: %s", buf);
 

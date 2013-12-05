@@ -1,6 +1,6 @@
 #include <defs.h>
 
-#define MAXLEN 20
+#define MAXLEN 30
 #define MAXCHILD 10
 
 enum ftype {DIRECTORY, FILE};
@@ -49,3 +49,4 @@ int open(char *path, int flags);
 void* file_lookup(char *dir_path);
 void make_node(struct file *node, struct file *parent, char *name, uint64_t start, uint64_t end, int type, uint64_t f_inode_no);
 fnode_t* get_root_node();
+
