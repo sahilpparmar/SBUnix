@@ -17,7 +17,7 @@ int munmap(uint64_t* addr, uint64_t size);
 int open(char *path, int flags);
 uint64_t read(uint64_t fd, void *buf, uint64_t nbytes);
 int write(int n, char *str, int len);
-int lseek(uint64_t file_d, int offset, int whence);
+int seek(uint64_t file_d, int offset, int whence);
 void close(int file_d);
 
 pid_t getpid();

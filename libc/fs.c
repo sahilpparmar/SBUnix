@@ -45,7 +45,7 @@ void close(int file_d)
 }
 
 
-int lseek(uint64_t file_d, int offset, int whence){
+int seek(uint64_t file_d, int offset, int whence){
     
     return (int)__syscall3(SEEK, (uint64_t)file_d, (uint64_t)offset, (uint64_t)whence);
 

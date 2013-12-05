@@ -46,7 +46,7 @@ void free_virt_page(void *vaddr)
     // Get physical address of the page
     physaddr = *pte_entry & PAGING_ADDR;     
     // Free the physical page
-    phys_free_block(physaddr);
+    phys_free_block(physaddr, TRUE);
     // Empty PTE entry
     *pte_entry = 0;
 }
@@ -76,3 +76,4 @@ void zero_out_phys_block(uint64_t paddr)
     // Unmap k_vaddr
     free_temp_vaddr(vaddr);
 }
+

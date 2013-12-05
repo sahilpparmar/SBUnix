@@ -143,6 +143,7 @@ void empty_vma_list(vma_struct *vma_list)
         cur_vma->vm_start = NULL;
         cur_vma->vm_end   = NULL;
         cur_vma->vm_flags = NULL;
+        cur_vma->vm_file_descp = NULL;
 
         last_vma = cur_vma;
         cur_vma = cur_vma->vm_next;
@@ -303,5 +304,41 @@ void* kmmap(uint64_t start_addr, int bytes, uint64_t flags)
     set_top_virtaddr(cur_top_vaddr);
 
     return (void*)start_addr;
+}
+
+vma_struct* vmalogic(uint64_t addr, uint64_t nbytes, uint64_t flags, uint64_t type, uint64_t file_d)
+{
+    vma_struct *node, *iter, *temp;
+    bool myflag = 0;
+
+    node = alloc_new_vma(addr, addr + nbytes, flags, type, file_d); 
+    //kprintf("\n node start %p, end%p fd %d", node->vm_start, node->vm_end, node->vm_file_descp);
+
+    
+    CURRENT_TASK->mm->vma_count++;
+    CURRENT_TASK->mm->total_vm += nbytes;
+
+    iter = CURRENT_TASK->mm->vma_list;
+
+    // check position where we can insert this new vma in vma list
+    while (iter->vm_next != NULL) {
+
+        temp = iter;            
+        iter = iter->vm_next;
+
+        if (temp->vm_end < addr && (iter->vm_start > addr + nbytes)) {
+            myflag = 1;
+            break;
+        }
+    }
+
+    if (myflag == 1) {
+        temp->vm_next = node;
+        node->vm_next = iter;
+    } else {
+        iter->vm_next = node; 
+    }
+
+    return node;
 }
 

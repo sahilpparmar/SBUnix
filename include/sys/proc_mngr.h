@@ -115,5 +115,6 @@ void empty_vma_list(vma_struct *vma_list);
 pid_t sys_getpid();
 pid_t sys_getppid();
 void sys_exit();
+vma_struct* vmalogic(uint64_t addr, uint64_t nbytes, uint64_t flags, uint64_t type, uint64_t file_d);
 
 #endif

@@ -117,20 +117,23 @@ uint64_t phys_alloc_block() {
     return paddr;
 }
 
-void phys_free_block(uint64_t paddr) {
+void phys_free_block(uint64_t paddr, bool forceZero) 
+{
 
     int frame = (paddr - _mmngr_base_addr) >> PAGE_2ALIGN;
 
     //kprintf("\tFree:%p(%d)", paddr, phys_get_block_ref(paddr));
 
     if (paddr < _mmngr_base_addr || paddr > (_mmngr_base_addr + _mmngr_memory_size)) {
-        kprintf("\nInvalid Paddr: %p", paddr);
-        panic("Trying to Free out of range Physical Block");
+        //kprintf("\nInvalid Paddr: %p", paddr);
+        panic("Segmentation Fault in Kernel! Please Reboot!");
     }
 
     phys_dec_block_ref(paddr);
     if (phys_get_block_ref(paddr) == 0) {
-        zero_out_phys_block(paddr);
+        if (forceZero) {
+            zero_out_phys_block(paddr);
+        }
         mmap_unset(frame);
         _mmngr_used_blocks--;
     }

@@ -19,43 +19,6 @@
 
 extern fnode_t* root_node;
 
-
-vma_struct* vmalogic(uint64_t addr, uint64_t nbytes, uint64_t flags, uint64_t type, uint64_t file_d)
-{
-    vma_struct *node, *iter, *temp;
-    bool myflag = 0;
-
-    node = alloc_new_vma(addr, addr + nbytes, flags, type, file_d); 
-    //kprintf("\n node start %p, end%p fd %d", node->vm_start, node->vm_end, node->vm_file_descp);
-
-    
-    CURRENT_TASK->mm->vma_count++;
-    CURRENT_TASK->mm->total_vm += nbytes;
-
-    iter = CURRENT_TASK->mm->vma_list;
-
-    // check position where we can insert this new vma in vma list
-    while (iter->vm_next != NULL) {
-
-        temp = iter;            
-        iter = iter->vm_next;
-
-        if (temp->vm_end < addr && (iter->vm_start > addr + nbytes)) {
-            myflag = 1;
-            break;
-        }
-    }
-
-    if (myflag == 1) {
-        temp->vm_next = node;
-        node->vm_next = iter;
-    } else {
-        iter->vm_next = node; 
-    }
-
-    return node;
-}
-
 DIR* sys_opendir(uint64_t* entry, uint64_t* directory)
 {
     char* dir_path = (char *)entry;
@@ -151,8 +114,6 @@ int sys_mkdir( uint64_t dir)
         kprintf("\n %s Directory doesnot exists", path);
         return -1; 
     }
-
-
 }
 
 
@@ -201,6 +162,8 @@ int sys_open(char* dir_path, uint64_t flags)
 
         while (temp != NULL) {
             aux_node = currnode;
+             
+            
             for (i = 2; i < currnode->end; ++i) {
                 if (kstrcmp(temp, currnode->f_child[i]->f_name) == 0) {
                     currnode = (fnode_t *)currnode->f_child[i];
@@ -215,6 +178,13 @@ int sys_open(char* dir_path, uint64_t flags)
             temp = kstrtok(NULL, "/");          
         }
 
+        if (currnode->f_type == DIRECTORY) {
+                
+            kprintf("\n Invalid open operation on directory");
+            return -1;
+
+        }
+        
         file_d->filenode = currnode;
         file_d->curr     = currnode->start;
         file_d->f_perm   = flags;
@@ -245,7 +215,7 @@ int sys_open(char* dir_path, uint64_t flags)
                 break; 
             } else if (i == aux_node->end && flags != O_CREAT) {
 
-                kprintf("\nFile doesnot exist"); 
+                //kprintf("\nFile doesnot exist"); 
                 return -1;
             }
 
@@ -313,8 +283,8 @@ int sys_open(char* dir_path, uint64_t flags)
 
                     vma_struct *new_vma = vmalogic(addr, inode_entry->i_size, RW, FILETYPE, i);
                     kmmap(new_vma->vm_start, new_vma->vm_end - new_vma->vm_start, RW_USER_FLAGS);
-                    
                     copy_blocks_to_vma(inode_entry, new_vma->vm_start);
+                    //kprintf("\n[OPEN] %p start %s, addr %s, end %p, length %p", new_vma, new_vma->vm_start, addr, new_vma->vm_end, inode_entry->i_size);
 
                     if (flags == O_APPEND) {
                         file_d->curr     = addr + inode_entry->i_size;
@@ -416,13 +386,12 @@ int sys_write(uint64_t fd_type, uint64_t addr, int length)
         if ((CURRENT_TASK->file_descp[fd_type]) == NULL) {
             length = -1;
         } else if(((FD *)CURRENT_TASK->file_descp[fd_type])->f_perm == O_RDONLY ){
-            kprintf("\n Not valid permissions"); 
+            //kprintf("\n Not valid permissions"); 
             length = -1; 
         } else {
             uint64_t end = 0, currlength = 0;
 
             currlength = ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr;
-            kprintf("\n curr %p", currlength);
             //get end of vma 
             for (iter = CURRENT_TASK->mm->vma_list; iter != NULL; iter = iter->vm_next) {
                 if(iter->vm_file_descp == fd_type){
@@ -437,8 +406,8 @@ int sys_write(uint64_t fd_type, uint64_t addr, int length)
                 iter->vm_end = currlength + length;
             }
            
-            //kprintf("\n currlength %p, addr %p, end %p, length %p", currlength, addr, iter->vm_end, length);            
-            memcpy((uint64_t *)currlength, (uint64_t *)addr, length);
+            //kprintf("\n4currlength %p, string %p %s, end %p %p, length %p", currlength, iter, iter->vm_start, iter->vm_end, end, length);
+            memcpy((void *)currlength, (void *)addr, length);
             
             ((FD *)(CURRENT_TASK->file_descp[fd_type]))->curr += length;
         } 
@@ -473,7 +442,6 @@ int sys_lseek(uint64_t fd_type, int offset, int whence)
         
         } else {
 
-
             for (iter = CURRENT_TASK->mm->vma_list; iter != NULL; iter = iter->vm_next) {
                 if(iter->vm_file_descp == fd_type){
                     //start = iter->vm_start;
@@ -489,6 +457,7 @@ int sys_lseek(uint64_t fd_type, int offset, int whence)
         
         }
             //kprintf("\n seek offset: %p start %p", offset, iter->vm_start);
+
 
             if(whence == SEEK_SET) {
                 if (offset < 0)
