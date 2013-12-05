@@ -12,4 +12,8 @@ pwd             displays current working directory
 ulimit          displays system limits
 cat             prints file contents, absolute file path to be given as input
                 example: cat /absolute/path/file
+sh              execute shebang files. example: sh /path/shebang/file
+./              execute binaries using ./   example:  ./ps  ./ls
+/path           execute binaries by entering the complete path.
+                example: /rootfs/bin/ls
 

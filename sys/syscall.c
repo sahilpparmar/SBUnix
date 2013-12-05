@@ -215,6 +215,12 @@ int sys_open(char* dir_path, uint64_t flags)
             temp = kstrtok(NULL, "/");          
         }
 
+        if (currnode->f_type == DIRECTORY) {
+            
+            kprintf("\n Invalid open operation on directory");
+            return -1;
+        }
+
         file_d->filenode = currnode;
         file_d->curr     = currnode->start;
         file_d->f_perm   = flags;
