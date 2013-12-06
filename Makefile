@@ -1,6 +1,6 @@
 CC=gcc
 AS=as
-CFLAGS=-O1 -g3 -std=c99 -Wall -Werror -nostdinc -Iinclude -msoft-float -mno-sse -mno-red-zone -fno-builtin -fPIC -march=amdfam10
+CFLAGS=-O1 -std=c99 -Wall -Werror -nostdinc -Iinclude -msoft-float -mno-sse -mno-red-zone -fno-builtin -fPIC -march=amdfam10 -g3
 LD=ld
 LDLAGS=-nostdlib
 AR=ar
@@ -24,8 +24,12 @@ $(USER).iso: kernel
 	cp kernel $(ROOTBOOT)/kernel/kernel
 	mkisofs -r -no-emul-boot -input-charset utf-8 -b boot/cdboot -o $@ $(ROOTFS)/
 
-$(USER).img:
+$(USER).img: newfs.506
 	qemu-img create -f raw $@ 16M
+	./newfs.506 $@
+
+newfs.506: $(wildcard newfs/*.c)
+	$(CC) -o $@ $^
 
 kernel: $(patsubst %.s,obj/%.asm.o,$(KERN_SRCS:%.c=obj/%.o)) obj/tarfs.o
 	$(LD) $(LDLAGS) -o $@ -T linker.script $^
@@ -33,7 +37,6 @@ kernel: $(patsubst %.s,obj/%.asm.o,$(KERN_SRCS:%.c=obj/%.o)) obj/tarfs.o
 obj/tarfs.o: $(BINS)
 	tar --format=ustar -cvf tarfs --no-recursion -C $(ROOTFS) $(shell find $(ROOTFS)/ -name boot -prune -o ! -name .empty -printf "%P\n")
 	objcopy --input binary --binary-architecture i386 --output elf64-x86-64 tarfs $@
-	@rm tarfs
 
 $(ROOTLIB)/libc.a: $(LIBC_SRCS:%.c=obj/%.o)
 	$(AR) rcs $@ $^
@@ -66,7 +69,7 @@ obj/%.asm.o: %.s
 SUBMITTO:=~mferdman/cse506-submit/
 
 submit: clean
-	tar -czvf $(USER).tgz --exclude=$(ROOTLIB) --exclude=$(ROOTBIN) --exclude=.empty --exclude=.*.sw? --exclude=*~ LICENSE Makefile linker.script sys bin libc ld include $(ROOTFS)
+	tar -czvf $(USER).tgz --exclude=.empty --exclude=.*.sw? --exclude=*~ LICENSE README qstart.sh Makefile linker.script sys bin crt libc ld newfs include $(ROOTFS) $(USER).img test.img 
 	@gpg --quiet --import cse506-pubkey.txt
 	gpg --yes --encrypt --recipient 'CSE506' $(USER).tgz
 	rm -fv $(SUBMITTO)$(USER)=*.tgz.gpg
@@ -74,4 +77,4 @@ submit: clean
 
 clean:
 	find $(ROOTLIB) $(ROOTBIN) -type f ! -name .empty -print -delete
-	rm -rfv obj kernel $(ROOTBOOT)/kernel/kernel $(USER).img $(USER).iso
+	rm -rfv obj kernel newfs.506 $(ROOTBOOT)/kernel/kernel
